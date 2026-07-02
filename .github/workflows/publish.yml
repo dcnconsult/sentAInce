@@ -16,8 +16,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Build wheel + sdist
@@ -36,7 +36,7 @@ jobs:
           assert {"sentaince","exocortex","cerebral"} <= tops, f"missing community packages: {tops}"
           print("wheel clean:", whl)
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: dist
           path: dist/
@@ -48,7 +48,7 @@ jobs:
     permissions:
       id-token: write        # OIDC — Trusted Publishing, no stored token
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v6
         with:
           name: dist
           path: dist/
