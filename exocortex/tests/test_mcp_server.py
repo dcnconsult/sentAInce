@@ -2,6 +2,12 @@
 querying never deposits τ, never persists the cue classifier, never mutates a colony. Desktop consumes;
 only a verified exit-0 (Code side) earns. (The derived wiki digest cache is excluded — it's a cache, not
 memory.)"""
+import pytest
+
+# The read-only MCP server (T2) needs the optional `mcp` extra. Skip cleanly when it is absent (e.g. a lean
+# `numpy + pytest` environment) instead of erroring collection — the extra is exercised where it is installed.
+pytest.importorskip("mcp")
+
 from exocortex import mcp_server
 from exocortex.colony import Colony, MIN_DEPOSITS_TO_SPLICE, _SEP
 from exocortex.cue_classifier import CueClassifier

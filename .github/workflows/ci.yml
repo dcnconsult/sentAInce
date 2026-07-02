@@ -1,7 +1,8 @@
 name: CI
 
 # The deterministic build-gate stays green on every push/PR: the 99-test C1–C7 evidence lock plus the
-# out-of-lock component suites. Pure-Python, numpy + pytest only — no Docker, no Ollama, no network.
+# out-of-lock component suites. Pure-Python, numpy + pytest only — no Docker, no Ollama, no network. Tests
+# that need an optional extra (e.g. the read-only `mcp` server) skip cleanly when it is absent.
 on:
   push:
     branches: [ main ]
@@ -19,9 +20,9 @@ jobs:
       matrix:
         python-version: [ "3.11", "3.12", "3.13" ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install
