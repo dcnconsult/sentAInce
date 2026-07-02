@@ -1,0 +1,41 @@
+# syntax=docker/dockerfile:1
+#
+# The ORGANISM service — the somatic immune system (the component that MUST survive).
+# Pure Python + numpy. Holds no destructive capability and no Docker socket.
+#
+# The 99-test deterministic lock runs at BUILD time (plus the 11 battle seam tests): the image
+# FAILS TO BUILD if C1–C7 regress. "The battle test never touched the lock" is therefore a build
+# invariant, not a promise.
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Source (build context is the repo root: `docker build -f docker/Dockerfile.organism .`).
+COPY pyproject.toml ./
+COPY sentaince ./sentaince
+COPY experiments ./experiments
+COPY tests ./tests
+COPY battle ./battle
+COPY demo ./demo
+COPY vendor ./vendor
+
+# numpy + pytest arrive as manylinux wheels — no compiler needed.
+RUN pip install --no-cache-dir .[dev]
+
+# The C5 arm imports the frozen kernel's Z3 VSA (`freqos.tam`) read-only. On a dev host this is the
+# sibling repo; in the container it is the pinned snapshot under vendor/kernel/ on PYTHONPATH.
+ENV PYTHONPATH=/app/vendor/kernel
+
+# --- build-time green gate: the FULL 99-test deterministic lock + the battle seam tests ---
+# The image fails to build if any of the 99 regress. Nothing here is the C1–C7 evidence lock; this is
+# a build invariant that the battle test never disturbed it.
+RUN python -m pytest -q tests \
+ && python -m pytest -q battle/tests
+
+# Defaults for a live episode. In compose the head is the `head` service; for a bare `docker run`
+# against the host's Ollama, host.docker.internal resolves the daemon. Override via env or args.
+ENV BATTLE_MODEL=llama3:8b \
+    BATTLE_BASE_URL=http://host.docker.internal:11434/v1 \
+    PYTHONUNBUFFERED=1
+
+CMD ["python", "demo/live_homeostasis.py", "--live"]

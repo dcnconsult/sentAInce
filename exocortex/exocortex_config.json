@@ -1,0 +1,72 @@
+{
+  "_comment": "The Genome of the Exocortex organism — every tuning knob in one place (see exocortex/genome.py + MEMORY_GAUGE_DESIGN.md). Values here are the mathematically-verified defaults from the R&D arc; edit to run longitudinal experiments without touching code. Precedence: env var > this file > code DEFAULTS. A missing/partial file falls back to the code DEFAULTS.",
+
+  "thermodynamics": {
+    "decay": 0.9,
+    "prune_floor": 0.05,
+    "deposit_base_weight": 1.0,
+    "session_discount_rate": 0.8,
+    "weight_min": 0.1,
+    "max_edges_per_class": 32,
+    "min_deposits_to_splice": 2
+  },
+
+  "epistemic_classifier": {
+    "mode": "semantic",
+    "model": "all-MiniLM-L6-v2",
+    "abstain_threshold_cosine": 0.45,
+    "match_margin": 0.0
+  },
+
+  "somatic_gate": {
+    "mode": "observe"
+  },
+
+  "endocrine": {
+    "_comment": "Allostatic thermodynamics (organ 3A): make prune_floor/max_edges functions of the metabolic tier. mode 'off' = the static thermodynamics above (verified baseline); 'tier' = the gauge-verified tier-stepped values below (SAFE; HYPOXIA = tunnel-vision). See gauge/endocrine_gauge.py.",
+    "mode": "off",
+    "tiers": {
+      "SATED":    {"prune_floor": 0.03, "max_edges_per_class": 40},
+      "STARVING": {"prune_floor": 0.05, "max_edges_per_class": 32},
+      "HYPOXIA":  {"prune_floor": 0.12, "max_edges_per_class": 16}
+    }
+  },
+
+  "eligibility_trace": {
+    "_comment": "Organ 3D (within-segment credit assignment): weight each deposited edge by recency-to-consequence (gamma^delta) instead of uniformly. mode 'off' = uniform deposit (verified status quo); 'trace' = the gauge-verified gamma credit trace (isolates the ah-ha, evaporates the flail prefix; no-op on short segments). See gauge/eligibility_gauge.py.",
+    "mode": "off",
+    "gamma": 0.80
+  },
+
+  "integrity": {
+    "_comment": "Cryptographic immune system (ADR-009): protect FreqOS from the host. DORMANT. mode off=no checks / warn=audit a frozen-DNA mismatch but continue / enforce=fail-closed exit 1 (apoptosis). audit_chain hash-chains the epigenetic ledger (fail-open). The locked-DNA glob set lives in integrity.py (not config-overridable). EXOCORTEX_INTEGRITY / EXOCORTEX_AUDIT_CHAIN env override.",
+    "mode": "off",
+    "audit_chain": true,
+    "baseline": ""
+  },
+
+  "declarative": {
+    "_comment": "Live declarative wiki organ (NEXT_PHASE_PLAN §6, Ticket 1). Ships DORMANT: the hook touches the wiki only when mode=='live' AND vault_path is set (enable after gauging attribution precision on the BYO testbed). EXOCORTEX_DECLARATIVE/EXOCORTEX_WIKI_VAULT env override. explore_budget breaks the cold-start deadlock (inject N sub-floor UNVERIFIED candidates; exit-0 awards first tau). attribution credits tau only to notes whose content echoes in exit-0 actions (never merely injected).",
+    "mode": "off",
+    "vault_path": "",
+    "explore_budget": 0,
+    "max_exons": 20,
+    "proposer_k": 24,
+    "link_hops": 1,
+    "attribution": {
+      "_comment": "Used-note attribution (#2): credit tau ONLY to notes whose distinctive content (code/inline/path tokens) echoes in the exit-0 segment's actions, never merely because injected. min_overlap=2 is the precision-first setting from gauge/attribution_gauge.py (=1 precision 0.79 via coincidental echo on git/kubectl; =2 precision 1.0, recall 0.45 recovered by exploration). prose_echo = dormant claim-grounded tier (Stop last_assistant_message, discounted).",
+      "min_overlap": 2,
+      "prose_echo": false
+    },
+    "bridge": {
+      "_comment": "Hippocampus bridge organ (Ticket 2, suggest-then-verify). Sleep proposes a provisional A->D over semantic phasors; 0-well abstain gates it; the LIVE session walks it (A then D used in one exit-0 segment); exit-0 crystallizes tau, exit-1/no-pay scars sigma. NEVER autonomous. DORMANT (mode off). See docs/BRIDGE_ORGAN_DESIGN.md + results/bridge_gauge_v1/. Flip to suggest only after the soak shows bridgeable declarative routes.",
+      "mode": "off",
+      "top_k": 4,
+      "abstain_conf": 0.14,
+      "abstain_margin": 0.03,
+      "max_provisional": 32,
+      "offer_cap": 2,
+      "scar_after_k_walks": 3
+    }
+  }
+}

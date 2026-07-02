@@ -1,0 +1,987 @@
+{
+ "uid": "sentaince-organism",
+ "title": "SentAInce — The Organism",
+ "tags": [
+  "sentaince",
+  "freqos",
+  "story"
+ ],
+ "schemaVersion": 39,
+ "version": 2,
+ "editable": true,
+ "refresh": "15s",
+ "time": {
+  "from": "now-6h",
+  "to": "now"
+ },
+ "annotations": {
+  "list": []
+ },
+ "templating": {
+  "list": [
+   {
+    "name": "repo",
+    "type": "query",
+    "label": "Repo",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "prometheus"
+    },
+    "query": {
+     "query": "query_result(exocortex_state_dir_present)",
+     "refId": "repo"
+    },
+    "regex": "/repo=\"([^\"]+)\"/",
+    "refresh": 2,
+    "includeAll": true,
+    "multi": true,
+    "allValue": ".*",
+    "current": {
+     "text": "All",
+     "value": "$__all"
+    },
+    "sort": 1
+   }
+  ]
+ },
+ "panels": [
+  {
+   "id": 1001,
+   "type": "row",
+   "title": "SentAInce — a digital organism that learns only from consequences",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 0
+   },
+   "panels": []
+  },
+  {
+   "id": 1002,
+   "type": "text",
+   "title": "",
+   "gridPos": {
+    "h": 11,
+    "w": 24,
+    "x": 0,
+    "y": 1
+   },
+   "options": {
+    "mode": "markdown",
+    "content": "## SentAInce — The Organism\nA **SyncQutrit Research Group** product, part of the **FreqOS** portfolio. SentAInce wraps an AI coding agent in a body borrowed from biology: an **immune system** that reflexively refuses lethal actions, **muscle memory** that forms *only when work actually succeeds*, a **notebook** whose notes earn trust the same way, and **sleep** that forgets what went unused.\n\n**The one law:** a memory is earned by a closed `action -> success (exit 0)` chain — **never** by being read, repeated, or bookmarked. Popularity is not utility. That single rule is why the memory stays clean.\n\n**Safety is never for sale.** The immune system runs locally and free, always; it is never web-writable and never paywalled. We sell the *autopilot*, never the *brakes*.\n\n**Honest by construction — the numbers below keep their qualifiers:** survival **1.000 / 0 lethal slips** across **N=100** live episodes (a *labeled demonstration* — the real proof is the **99-test** deterministic lock) · consequence-sourcing discriminates clutter **0% vs 24%** · note-attribution precision **1.00** at overlap>=2 (controlled tasks) · resurrection triage **0.63 -> 0.853**. Where an organ's own gauge said the prize was modest or null, it ships **OFF** — the lab reports both directions."
+   }
+  },
+  {
+   "id": 1003,
+   "type": "row",
+   "title": "Immune system — refuses lethal actions before they run",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 12
+   },
+   "panels": []
+  },
+  {
+   "id": 1004,
+   "type": "text",
+   "title": "",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 0,
+    "y": 13
+   },
+   "options": {
+    "mode": "markdown",
+    "content": "### Immune system  ·  *the reflex arc*\nSome actions are catalogued as lethal (`rm -rf` on `/`, a fork bomb, …). The immune system refuses them **before execution** — a reflex, not a judgment call, and **independent of the model** proposing them. In the live crucible a gullible local model relayed lethal commands and the gate refused every one: **survival 1.000, 0 slips, N=100** (a labeled demonstration; the binding evidence is the 99-test lock). This organ is never sold and never web-writable."
+   }
+  },
+  {
+   "id": 1005,
+   "type": "stat",
+   "title": "Lethal actions refused",
+   "description": "Count of structurally-lethal actions the somatic interlock refused (energy-independent, by construction).",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 8,
+    "y": 13
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(exocortex_lethal_attempts{repo=~\"$repo\"})",
+     "legendFormat": "{{repo}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "options": {
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "color": {
+      "mode": "fixed"
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1006,
+   "type": "stat",
+   "title": "Deepest strategy-lock (repetition brake)",
+   "description": "How hard the organism clamped down after repeated failures on one route — the anti-thrash reflex.",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 16,
+    "y": 13
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "max(exocortex_strategy_lock_max{repo=~\"$repo\"})",
+     "legendFormat": "{{repo}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "options": {
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "color": {
+      "mode": "fixed"
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1007,
+   "type": "row",
+   "title": "Stamina & blood sugar — work costs energy, scarcity throttles risk",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 19
+   },
+   "panels": []
+  },
+  {
+   "id": 1008,
+   "type": "text",
+   "title": "",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 0,
+    "y": 20
+   },
+   "options": {
+    "mode": "markdown",
+    "content": "### Stamina & blood sugar  ·  *the metabolic governor*\nEvery action spends energy. As reserves fall the organism steps through metabolic states — **SATED -> STARVING -> HYPOXIA** — and grows more conservative, abstaining from unaffordable novel risks under load. This is the same homeostatic logic a tired body uses: do less, and only what's safe, when resources run low."
+   }
+  },
+  {
+   "id": 1009,
+   "type": "gauge",
+   "title": "Stamina (session energy)",
+   "description": "Current session energy (0-100). Green = rested, red = depleted.",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 8,
+    "y": 20
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "exocortex_energy_latest{repo=~\"$repo\"}",
+     "legendFormat": "{{repo}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "min": 0,
+     "max": 100,
+     "unit": "none",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "red",
+        "value": null
+       },
+       {
+        "color": "yellow",
+        "value": 20
+       },
+       {
+        "color": "green",
+        "value": 50
+       }
+      ]
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1010,
+   "type": "timeseries",
+   "title": "Metabolic state (1 = current tier)",
+   "description": "Which metabolic tier the organism is in — SATED / STARVING / HYPOXIA. The active tier reads 1.",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 16,
+    "y": 20
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "max by (tier) (exocortex_tier{repo=~\"$repo\"})",
+     "legendFormat": "{{tier}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "lineInterpolation": "smooth",
+      "fillOpacity": 8,
+      "spanNulls": true
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1011,
+   "type": "row",
+   "title": "Muscle memory — habits earned only by verified success",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 26
+   },
+   "panels": []
+  },
+  {
+   "id": 1012,
+   "type": "text",
+   "title": "",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 0,
+    "y": 27
+   },
+   "options": {
+    "mode": "markdown",
+    "content": "### Muscle memory  ·  *the colony (stigmergic tau)*\nLike an ant trail or a well-worn path, routes that **actually succeed** get reinforced and everything else fades. A habit is laid down **only** on a verified `exit 0` — never because a command was seen or repeated. That is why the memory doesn't rot: measured against a popularity-driven control, consequence-sourcing carried **0% clutter vs 24%**. Honest limit: real success-streaks are short (median **2** steps), so the organism learns skeletons, not epics."
+   }
+  },
+  {
+   "id": 1013,
+   "type": "stat",
+   "title": "Habits earned (verified successes)",
+   "description": "Successful deposits — one per closed action->exit-0 chain. The colony grows only from these.",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 8,
+    "y": 27
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(exocortex_deposits{repo=~\"$repo\"})",
+     "legendFormat": "{{repo}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "options": {
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "color": {
+      "mode": "fixed"
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1014,
+   "type": "stat",
+   "title": "Habit strength held (colony edges)",
+   "description": "Total reinforced routes retained across all goal-classes (bounded by the leanness cap).",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 16,
+    "y": 27
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(exocortex_colony_edges{repo=~\"$repo\"})",
+     "legendFormat": "{{repo}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "options": {
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "color": {
+      "mode": "fixed"
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1015,
+   "type": "timeseries",
+   "title": "Settling into how this project works (lower = converged)",
+   "description": "Pheromone entropy per goal-class. Falling = the organism is converging on a project's recurring way of doing things.",
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 0,
+    "y": 33
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "exocortex_colony_entropy{repo=~\"$repo\"}",
+     "legendFormat": "{{class}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "lineInterpolation": "smooth",
+      "fillOpacity": 8,
+      "spanNulls": true
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1016,
+   "type": "heatmap",
+   "title": "How long the winning streaks run (deposit windows)",
+   "description": "Distribution of success-streak lengths. Most are short (median ~2) — the organism learns skeletons, honestly.",
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 12,
+    "y": 33
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (le) (exocortex_seg_len_bucket{repo=~\"$repo\"})",
+     "format": "heatmap",
+     "legendFormat": "{{le}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "options": {
+    "calculate": false,
+    "cellGap": 1,
+    "color": {
+     "scheme": "Oranges",
+     "mode": "scheme"
+    },
+    "yAxis": {
+     "unit": "none"
+    }
+   }
+  },
+  {
+   "id": 1017,
+   "type": "timeseries",
+   "title": "Consequences vs habits formed",
+   "description": "Every consequence observed (ok/fail) vs the subset that earned a habit. Only successes deposit.",
+   "gridPos": {
+    "h": 7,
+    "w": 24,
+    "x": 0,
+    "y": 40
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (outcome) (exocortex_consequences{repo=~\"$repo\"})",
+     "legendFormat": "{{outcome}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "sum(exocortex_deposits{repo=~\"$repo\"})",
+     "legendFormat": "habits earned",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "lineInterpolation": "smooth",
+      "fillOpacity": 8,
+      "spanNulls": true
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1018,
+   "type": "row",
+   "title": "The notebook — notes earn trust only when using them worked",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 47
+   },
+   "panels": []
+  },
+  {
+   "id": 1019,
+   "type": "text",
+   "title": "",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 0,
+    "y": 48
+   },
+   "options": {
+    "mode": "markdown",
+    "content": "### The notebook  ·  *the declarative wiki*\nThe organism also keeps written notes (a Markdown wiki), but a note earns trust the **same** way a habit does: only when *using it* led to a verified success. When a note is credited only if its content is actually echoed into the successful action, attribution precision is **1.00** (at overlap>=2, on controlled tasks — at overlap 1 it slips to 0.50-0.79, so the guard is load-bearing). Credited notes are a **trickle by design** (~7.7%): the organism trusts little, and only what paid off."
+   }
+  },
+  {
+   "id": 1020,
+   "type": "timeseries",
+   "title": "Notes that actually helped (credit rate)",
+   "description": "Fraction of injected notes whose content was echoed into a successful action — a live attribution-precision proxy.",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 8,
+    "y": 48
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "exocortex_wiki_credit_rate{repo=~\"$repo\"}",
+     "legendFormat": "credit rate · {{repo}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "lineInterpolation": "smooth",
+      "fillOpacity": 8,
+      "spanNulls": true
+     },
+     "min": 0,
+     "max": 1,
+     "decimals": 3
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1021,
+   "type": "stat",
+   "title": "Notes injected · credited · precision @ overlap 2",
+   "description": "Injected vs credited notes, and the shipped synthetic-gauge attribution precision at the load-bearing overlap>=2 guard.",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 16,
+    "y": 48
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(exocortex_wiki_injected_total{repo=~\"$repo\"})",
+     "legendFormat": "{{repo}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "sum(exocortex_wiki_used_total{repo=~\"$repo\"})",
+     "legendFormat": "{{repo}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    },
+    {
+     "refId": "C",
+     "expr": "exocortex_attribution_precision{min_overlap=\"2\"}",
+     "legendFormat": "{{repo}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "options": {
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value_and_name",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "color": {
+      "mode": "fixed"
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1022,
+   "type": "row",
+   "title": "Sleep — on compaction, memories fade; the strongest survive",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 54
+   },
+   "panels": []
+  },
+  {
+   "id": 1023,
+   "type": "text",
+   "title": "",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 0,
+    "y": 55
+   },
+   "options": {
+    "mode": "markdown",
+    "content": "### Sleep  ·  *circadian consolidation*\nWhen the conversation compacts, the organism **sleeps**: every memory fades a little (x0.9), the weakest drop below the floor and are forgotten, and only the strongest routes survive. Sleep is the **one** thing that changes memory *without* a new success — so if a habit weakens overnight with no new work, this is why (and it's now stamped in the record, so it's never a mystery)."
+   }
+  },
+  {
+   "id": 1024,
+   "type": "stat",
+   "title": "Nights slept (consolidations)",
+   "description": "Total circadian sleeps applied — the one deposit-free memory writer (each fades all edges x0.9 and prunes the weakest).",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 8,
+    "y": 55
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(exocortex_colony_consolidations{repo=~\"$repo\"})",
+     "legendFormat": "{{repo}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "options": {
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "color": {
+      "mode": "fixed"
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1025,
+   "type": "timeseries",
+   "title": "Habit strength vs the leanness cap",
+   "description": "Edges retained per class vs the max-edges cap sleep enforces (the slime-mold stays lean).",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 16,
+    "y": 55
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "exocortex_colony_edges{repo=~\"$repo\"}",
+     "legendFormat": "{{class}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "max(exocortex_config_max_edges_per_class{repo=~\"$repo\"})",
+     "legendFormat": "cap",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "lineInterpolation": "smooth",
+      "fillOpacity": 8,
+      "spanNulls": true
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1026,
+   "type": "row",
+   "title": "The lab — every organ ships with the instrument that can kill it",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 61
+   },
+   "panels": []
+  },
+  {
+   "id": 1027,
+   "type": "text",
+   "title": "",
+   "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 0,
+    "y": 62
+   },
+   "options": {
+    "mode": "markdown",
+    "content": "### The lab  ·  *gauge-first verdicts*\nNo organ is trusted because it sounds clever. Each ships with a **gauge** — a falsifiable instrument with a pre-registered bar — and the verdict board below shows the result plainly: **REAL** = the organ's promise was proved, **parked** = the gauge said the prize was modest or null and the organ ships **OFF**. Uncertainty-signalling, eligibility traces, and endocrine tuning are all parked on their own evidence. Honesty is the product."
+   }
+  },
+  {
+   "id": 1028,
+   "type": "stat",
+   "title": "Organ verdict board (REAL = proved · parked = shipped off, honestly)",
+   "description": "Live gauges recompute each scrape; offline gauges show their shipped static verdict. Green = prize real; grey = parked.",
+   "gridPos": {
+    "h": 6,
+    "w": 16,
+    "x": 8,
+    "y": 62
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "exocortex_gauge_signal",
+     "legendFormat": "{{gauge}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ],
+   "options": {
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "value_and_name",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "color": {
+      "mode": "fixed"
+     },
+     "mappings": [
+      {
+       "type": "value",
+       "options": {
+        "0": {
+         "text": "parked",
+         "color": "gray",
+         "index": 0
+        },
+        "1": {
+         "text": "REAL",
+         "color": "green",
+         "index": 1
+        }
+       }
+      }
+     ]
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 1029,
+   "type": "row",
+   "title": "The medical record — every decision, hash-chained",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 68
+   },
+   "panels": []
+  },
+  {
+   "id": 1030,
+   "type": "text",
+   "title": "",
+   "gridPos": {
+    "h": 4,
+    "w": 24,
+    "x": 0,
+    "y": 69
+   },
+   "options": {
+    "mode": "markdown",
+    "content": "### The medical record  ·  *the hash-chained audit*\nEvery decision the organism makes is written to an append-only log where each entry is cryptographically linked to the one before it. A silent edit to any past decision **snaps the chain** — tampering becomes permanently evident. This is the organism's medical record: complete, ordered, and impossible to quietly rewrite."
+   }
+  },
+  {
+   "id": 1031,
+   "type": "logs",
+   "title": "Live decision log (hash-chained audit · $repo)",
+   "description": "Each repo's audit.jsonl streamed via Loki. Expand a line for the parsed fields; the prev/hash fields are the chain links.",
+   "gridPos": {
+    "h": 11,
+    "w": 24,
+    "x": 0,
+    "y": 73
+   },
+   "datasource": {
+    "type": "loki",
+    "uid": "loki"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "{job=\"exocortex-audit\", repo=~\"$repo\"}",
+     "datasource": {
+      "type": "loki",
+      "uid": "loki"
+     }
+    }
+   ],
+   "options": {
+    "showTime": true,
+    "wrapLogMessage": true,
+    "prettifyLogMessage": true,
+    "enableLogDetails": true,
+    "dedupStrategy": "none",
+    "sortOrder": "Descending"
+   }
+  }
+ ]
+}

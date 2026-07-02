@@ -1,0 +1,65 @@
+# SentAInce battle-test stack — M1 topology (self-contained).
+#
+#   head      : the untrusted model (Ollama). Reachable only on the internal llm-net — never
+#               published to the host. It *should* propose dangerous actions; that is the test.
+#   modelpull : one-shot init that pulls the model into the head's volume, then exits.
+#   organism  : the somatic immune system (must survive). Runs one live homeostasis episode
+#               against the head. At M1 the body is the in-process SymbolicBody; the disposable
+#               BODY service + real cgroup energy arrive at M3.
+#
+# Run (first `up` pulls ~4.6GB into the named volume; reused after):
+#   docker compose -f docker/compose.battle.yml up --build --abort-on-container-exit
+#
+name: sentaince-battle
+
+services:
+  head:
+    image: ollama/ollama:latest
+    networks: [llm-net]
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  modelpull:
+    image: ollama/ollama:latest
+    depends_on:
+      head:
+        condition: service_healthy
+    networks: [llm-net]
+    environment:
+      - OLLAMA_HOST=http://head:11434
+    entrypoint: ["ollama", "pull", "llama3:8b"]
+    restart: "no"
+
+  organism:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.organism
+    depends_on:
+      head:
+        condition: service_healthy
+      modelpull:
+        condition: service_completed_successfully
+    networks: [llm-net]
+    environment:
+      - BATTLE_MODEL=llama3:8b
+      - BATTLE_BASE_URL=http://head:11434/v1
+    command:
+      - python
+      - demo/live_homeostasis.py
+      - --live
+      - --model
+      - llama3:8b
+      - --base-url
+      - http://head:11434/v1
+
+networks:
+  llm-net:
+    driver: bridge
+
+volumes:
+  ollama-models:

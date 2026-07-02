@@ -1,0 +1,236 @@
+{
+  "uid": "exocortex-testbed",
+  "title": "Exocortex testbed",
+  "tags": ["exocortex", "byo-model"],
+  "schemaVersion": 39,
+  "version": 5,
+  "editable": true,
+  "refresh": "15s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "repo",
+        "type": "query",
+        "label": "Repo",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": { "query": "query_result(exocortex_state_dir_present)", "refId": "repo" },
+        "regex": "/repo=\"([^\"]+)\"/",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": { "text": "All", "value": "$__all" },
+        "sort": 1
+      }
+    ]
+  },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 100, "type": "row", "title": "🧭 Gauge verdict board — is each organ's prize real?",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "collapsed": false, "panels": []
+    },
+    {
+      "id": 101, "type": "stat", "title": "Gauge verdicts (1 = prize real / build · 0 = park / null · global)",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Live stdlib gauges are recomputed each scrape over every repo; offline simulation gauges (kind=offline) show their shipped static verdict. Green = the organ's prize is real; grey = parked / null.",
+      "targets": [ { "refId": "A", "expr": "exocortex_gauge_signal", "legendFormat": "{{gauge}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ],
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value_and_name", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "park", "color": "gray", "index": 0 }, "1": { "text": "PRIZE", "color": "green", "index": 1 } } } ], "color": { "mode": "fixed" } }, "overrides": [] }
+    },
+    {
+      "id": 200, "type": "row", "title": "🔬 Live gauges (per-repo · $repo)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 }, "collapsed": false, "panels": []
+    },
+    {
+      "id": 201, "type": "timeseries", "title": "D4 · dep↔τ ρ (vectors 1–3, →1 good) & DEI_seen (β4; <0.4 = exploration-directed)",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "exocortex_gauge_dep_tau_rho{repo=~\"$repo\"}", "legendFormat": "ρ · {{repo}}", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "exocortex_gauge_dei_seen{repo=~\"$repo\"}", "legendFormat": "DEI · {{repo}}", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": { "min": -1, "max": 1, "decimals": 3, "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 8, "spanNulls": true } }, "overrides": [] }
+    },
+    {
+      "id": 202, "type": "timeseries", "title": "Credit hygiene · W5 τ-noise reclaim & W4 failure plasticity",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "exocortex_gauge_credit_reclaim_frac{repo=~\"$repo\"}", "legendFormat": "W5 τ-noise · {{repo}}", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "exocortex_gauge_failure_plasticity{repo=~\"$repo\"}", "legendFormat": "W4 plasticity · {{repo}}", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": { "min": 0, "max": 1, "decimals": 3, "unit": "percentunit", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 8, "spanNulls": true } }, "overrides": [] }
+    },
+    {
+      "id": 203, "type": "timeseries", "title": "F3 · model-provenance coverage & excess within-class drift",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "exocortex_gauge_model_coverage{repo=~\"$repo\"}", "legendFormat": "model cov · {{repo}}", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "exocortex_gauge_drift_excess{repo=~\"$repo\"}", "legendFormat": "excess drift · {{repo}}", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": { "decimals": 3, "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 8, "spanNulls": true } }, "overrides": [] }
+    },
+    {
+      "id": 204, "type": "timeseries", "title": "Uncertainty · abstain rate (G1) & veto rate (F2)",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "exocortex_gauge_abstain_rate{repo=~\"$repo\"}", "legendFormat": "abstain · {{repo}}", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "exocortex_gauge_veto_rate{repo=~\"$repo\"}", "legendFormat": "veto · {{repo}}", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": { "min": 0, "decimals": 4, "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 8, "spanNulls": true } }, "overrides": [] }
+    },
+    {
+      "id": 300, "type": "row", "title": "📊 Overview ($repo)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 }, "collapsed": false, "panels": []
+    },
+    {
+      "id": 1, "type": "gauge", "title": "Session energy",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "exocortex_energy_latest{repo=~\"$repo\"}", "legendFormat": "{{repo}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ],
+      "fieldConfig": { "defaults": { "min": 0, "max": 100, "unit": "none",
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 20 }, { "color": "green", "value": 50 } ] } }, "overrides": [] }
+    },
+    {
+      "id": 2, "type": "stat", "title": "Deposits (seg_len>0)",
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum(exocortex_deposits{repo=~\"$repo\"})", "datasource": { "type": "prometheus", "uid": "prometheus" } } ],
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 3, "type": "stat", "title": "Mean seg_len",
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum(exocortex_seg_len_sum{repo=~\"$repo\"}) / clamp_min(sum(exocortex_seg_len_count{repo=~\"$repo\"}), 1)", "datasource": { "type": "prometheus", "uid": "prometheus" } } ],
+      "fieldConfig": { "defaults": { "decimals": 2,
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null }, { "color": "green", "value": 4 } ] } }, "overrides": [] },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 4, "type": "stat", "title": "Colony edges (all classes)",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum(exocortex_colony_edges{repo=~\"$repo\"})", "datasource": { "type": "prometheus", "uid": "prometheus" } } ],
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 400, "type": "row", "title": "🐜 Colony convergence",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 28 }, "collapsed": false, "panels": []
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Colony convergence — entropy (lower = converged)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 29 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "exocortex_colony_entropy{repo=~\"$repo\"}", "legendFormat": "{{repo}} · {{class}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 8 } }, "overrides": [] },
+      "options": { "legend": { "showLegend": false } }
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Colony edges vs CAP",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 29 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "exocortex_colony_edges{repo=~\"$repo\"}", "legendFormat": "{{repo}} · {{class}}", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "max(exocortex_config_max_edges_per_class{repo=~\"$repo\"})", "legendFormat": "CAP", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 5 } },
+        "overrides": [ { "matcher": { "id": "byName", "options": "CAP" }, "properties": [ { "id": "custom.lineStyle", "value": { "dash": [8, 6], "fill": "dash" } }, { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } } ] } ] },
+      "options": { "legend": { "showLegend": false } }
+    },
+    {
+      "id": 7, "type": "heatmap", "title": "seg_len distribution (deposit windows; compare ≥4 tail vs flagship 26%)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 37 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum by (le) (exocortex_seg_len_bucket{repo=~\"$repo\"})", "format": "heatmap", "legendFormat": "{{le}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ],
+      "options": { "calculate": false, "cellGap": 1, "color": { "scheme": "Oranges", "mode": "scheme" }, "yAxis": { "unit": "none" } }
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Consequences & deposits",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 37 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (outcome) (exocortex_consequences{repo=~\"$repo\"})", "legendFormat": "{{outcome}}", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "sum(exocortex_deposits{repo=~\"$repo\"})", "legendFormat": "deposits", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 8 } },
+        "overrides": [ { "matcher": { "id": "byName", "options": "fail" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } } ] }, { "matcher": { "id": "byName", "options": "ok" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] } ] }
+    },
+    {
+      "id": 500, "type": "row", "title": "🧠 Declarative memory",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 }, "collapsed": false, "panels": []
+    },
+    {
+      "id": 11, "type": "timeseries", "title": "Wiki credit rate (used/injected — live attribution-precision proxy)",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 46 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "exocortex_wiki_credit_rate{repo=~\"$repo\"}", "legendFormat": "credit · {{repo}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ],
+      "fieldConfig": { "defaults": { "min": 0, "max": 1, "decimals": 2, "unit": "percentunit",
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 },
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 0.2 }, { "color": "green", "value": 0.5 } ] } }, "overrides": [] }
+    },
+    {
+      "id": 12, "type": "stat", "title": "Wiki injected / used · attribution precision @ mo=2 (synthetic, global)",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 46 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum(exocortex_wiki_injected_total{repo=~\"$repo\"})", "legendFormat": "injected", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "sum(exocortex_wiki_used_total{repo=~\"$repo\"})", "legendFormat": "used", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "C", "expr": "exocortex_attribution_precision{min_overlap=\"2\"}", "legendFormat": "precision @mo2", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "options": { "colorMode": "value", "graphMode": "none", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "decimals": 2 }, "overrides": [] }
+    },
+    {
+      "id": 600, "type": "row", "title": "🛡️ Safety & metabolism",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 52 }, "collapsed": false, "panels": []
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "Metabolic tier (1 = current)",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 53 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "max by (tier) (exocortex_tier{repo=~\"$repo\"})", "legendFormat": "{{tier}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ],
+      "fieldConfig": { "defaults": { "min": 0, "max": 1, "custom": { "drawStyle": "line", "lineInterpolation": "stepAfter", "fillOpacity": 15 } }, "overrides": [] }
+    },
+    {
+      "id": 13, "type": "stat", "title": "Lethal attempts blocked · max strategy-lock",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 53 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum(exocortex_lethal_attempts{repo=~\"$repo\"})", "legendFormat": "lethal blocked", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "max(exocortex_strategy_lock_max{repo=~\"$repo\"})", "legendFormat": "max strategy-lock", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "options": { "colorMode": "value", "graphMode": "none", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 3 } ] } }, "overrides": [] }
+    },
+    {
+      "id": 10, "type": "stat", "title": "Organ flags (0=off / 1=on)",
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 53 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "max(exocortex_config_endocrine_mode{repo=~\"$repo\"})", "legendFormat": "endocrine 3A", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "max(exocortex_config_eligibility_trace_mode{repo=~\"$repo\"})", "legendFormat": "eligibility 3D", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "C", "expr": "max(exocortex_config_declarative_mode{repo=~\"$repo\"})", "legendFormat": "declarative T1", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "off", "color": "blue" }, "1": { "text": "ON", "color": "green" } } } ] }, "overrides": [] }
+    },
+    {
+      "id": 700, "type": "row", "title": "📜 Live audit tail",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 59 }, "collapsed": false, "panels": []
+    },
+    {
+      "id": 701, "type": "logs", "title": "Live audit tail ($repo) — raw audit.jsonl via Loki",
+      "gridPos": { "h": 11, "w": 24, "x": 0, "y": 60 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Each repo's audit.jsonl streamed by Promtail → Loki. Filter by the Repo dropdown; expand a line for the parsed JSON fields.",
+      "targets": [ { "refId": "A", "expr": "{job=\"exocortex-audit\", repo=~\"$repo\"}", "datasource": { "type": "loki", "uid": "loki" } } ],
+      "options": { "showTime": true, "wrapLogMessage": true, "prettifyLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending" }
+    }
+  ]
+}

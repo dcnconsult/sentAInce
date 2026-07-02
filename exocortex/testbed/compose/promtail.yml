@@ -1,0 +1,28 @@
+# Promtail — tails every repo's audit.jsonl and ships each line to Loki with a repo label (multi-repo,
+# containerised; mirrors how the exporter auto-scans /projects). The Grafana "Live audit tail" logs panel
+# queries {job="exocortex-audit", repo=~"$repo"}. Raw JSON lines are shipped verbatim — parse fields at query
+# time with `| json` (keeps label cardinality to job+repo only).
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: exocortex-audit
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: exocortex-audit
+          __path__: /projects/*/.claude/exocortex/audit.jsonl
+    pipeline_stages:
+      # derive the repo label from the file path (/projects/<repo>/.claude/exocortex/audit.jsonl)
+      - regex:
+          source: filename
+          expression: '/projects/(?P<repo>[^/]+)/\.claude/exocortex/audit\.jsonl'
+      - labels:
+          repo:

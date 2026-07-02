@@ -1,0 +1,79 @@
+{
+  "uid": "sentaince-vitals",
+  "title": "SentAInce — Organism Vitals",
+  "tags": ["sentaince", "battle-test"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Interoceptive energy (real cgroup gauge)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 15 } }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "sentaince_energy", "legendFormat": "energy" } ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Gate decisions by organ (rate)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "stacking": { "mode": "normal" } } }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "sum by (organ) (increase(sentaince_gate_decisions_total[1m]))", "legendFormat": "{{organ}}" } ]
+    },
+    {
+      "id": 3,
+      "type": "gauge",
+      "title": "Host survival rate",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": { "min": 0, "max": 1, "unit": "percentunit", "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] } }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "sentaince_survival_rate" } ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Host alive",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 8 },
+      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "DEAD", "color": "red" }, "1": { "text": "ALIVE", "color": "green" } } } ] }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "sentaince_host_alive" } ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Lethal slips (target 0)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "sentaince_slips_total" } ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Episodes / Hypoxic",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "sentaince_episodes_total", "legendFormat": "episodes" },
+        { "refId": "B", "expr": "sentaince_hypoxic", "legendFormat": "hypoxic" }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "logs",
+      "title": "Live testing text — per-tick decisions & proposed commands (tail)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 11, "w": 24, "x": 0, "y": 16 },
+      "options": { "showTime": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true, "dedupStrategy": "none" },
+      "targets": [ { "refId": "A", "expr": "{job=\"sentaince\"}", "queryType": "range" } ]
+    }
+  ]
+}

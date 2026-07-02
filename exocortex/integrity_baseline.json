@@ -1,0 +1,42 @@
+{
+  "globs": [
+    "sentaince/organism/*.py",
+    "vendor/kernel/freqos/*.py",
+    "vendor/kernel/core_physics/*.py",
+    "vendor/kernel/harmonic_basin/*.py"
+  ],
+  "manifest": {
+    "sentaince/organism/__init__.py": "e9c285581d7662dec57f3ba3c945cb82b22262eed6c3bad6dcb92481c2ccd404",
+    "sentaince/organism/action_graph.py": "a672fa66b622cc520d7dac79f2ff4d3c9a8376cb1808b72f8254ac023abab6f8",
+    "sentaince/organism/anomaly.py": "74fa5ebf1f11ccd39e8c7dd00e230cfa5929f9da422320c5ab9898616974816d",
+    "sentaince/organism/antibody.py": "bc21498383a9b86288daafd9bcc4d716433fb1d4edb09488c0ef73258bd4b78e",
+    "sentaince/organism/executor.py": "e3f7993a1849bc915afbee90b0320cf05f5066a3593e1f9ab34e08beb41b21a0",
+    "sentaince/organism/gearbox.py": "786882d43d2fe42a7897591e93dfd718fe938fdf6e7572583c11cff9826e46dc",
+    "sentaince/organism/interlock.py": "d0bfaf3a239b1c8f98274bc88eca8e7b0a0d1f0c9a76173736bebb9eb88122d0",
+    "sentaince/organism/learned_signature.py": "35e87272879b52e803cb96b6bae901086da264fc496d70d1b0e8dafe49fb2474",
+    "sentaince/organism/metabolism.py": "5ae05c53fa754cdb84cb71a509db257614bef6f11b007891b127a3f5e627de47",
+    "sentaince/organism/outcome_oracle.py": "4e895cab18672e3d5e4ba4c51ce6ab71a88ad07b6c8a0c56e1b7604fab443792",
+    "vendor/kernel/core_physics/__init__.py": "05733155995b25dca31d9a3649e02f7878491e4ede01625bf37d3136e216b37c",
+    "vendor/kernel/core_physics/backend.py": "5e2af3f051b11f51161b5e89860bb6758a8db18587ad4a79d74b9438bb4efdbe",
+    "vendor/kernel/core_physics/fused.py": "72d12c15d32ec4a3e567ffc0e9293295463a0a008f5924442b7b1064b37b1689",
+    "vendor/kernel/core_physics/kinetic_governor.py": "204dd4093f257301ac8041d6d346e3d9f2f7293d2385453176e7508e2fd6a027",
+    "vendor/kernel/core_physics/phi6_solver.py": "29ec5e51a3104f2ff8fa76a4d6867d5f7cd052f6ffb08c37e6326419352b7b56",
+    "vendor/kernel/core_physics/ternary_memory.py": "bf4305e77fb104fe2f3d3142fe3d7eac5bc99d966a3e097c77503a8abc91873d",
+    "vendor/kernel/freqos/__init__.py": "552109de5f8994166e96c369f25e7f0ec97bab10471697bf431d4c4274a192c7",
+    "vendor/kernel/freqos/capacity.py": "00c56f684d1536ddc552383a1119c6ced1a628827d981c650192b813584c3a15",
+    "vendor/kernel/freqos/gue.py": "30225ca7c5d7e13fca4e3c7a5aa84e4c75d349fd1641126cc82e63fb27844e47",
+    "vendor/kernel/freqos/gue_routing.py": "4201dfe0dbb52291ed1bf4ff3864573954fa306619c19b6e8b04ecd91b2419aa",
+    "vendor/kernel/freqos/phase_router.py": "f1cf6be76711867bedd3252ed41d5374ae1b2d0bb393955169280c1aae1e903d",
+    "vendor/kernel/freqos/tam.py": "2a7c114e131c1466b7362cbf59d1634408d73bd040e4b0f7c2775f61b08f61f5",
+    "vendor/kernel/harmonic_basin/__init__.py": "5c1ec53c91d6a7ee9b9c960e75ba64b5d49f10e08f8397f9acd407949876265f",
+    "vendor/kernel/harmonic_basin/analog_ingest.py": "6aa57d583ee4dd3c4566f5fc2f8ec82dde7125171dbb4930ba96b85896b9f1fd",
+    "vendor/kernel/harmonic_basin/circle_of_fifths.py": "6c2f324bf4f4ab7840fd2e84b98b691cf72eb78b7b231ad28a8c3d68f9e7e1b6",
+    "vendor/kernel/harmonic_basin/comma_holonomy.py": "bc6c258726e1466017c946deef22eae56fad1d745c94d4d9e21ab15300e67173",
+    "vendor/kernel/harmonic_basin/dynamic_tracking.py": "dddfcbd2839f4f71e0a874c8b9eb840af5f6f6e2909e6c2d71c9e4ae981716ba",
+    "vendor/kernel/harmonic_basin/peer_exchange.py": "c0bf52a534904a6eff261b3fad8ed1bdeb032c3397939dca9603b8bca53730c9",
+    "vendor/kernel/harmonic_basin/phase_closure.py": "c453272ebb8f287cd9e82d6129b88f174e5a603785f34ca0d19405714d2937f1",
+    "vendor/kernel/harmonic_basin/protocol.py": "3431f3d7c18b61efff5e0abf73bb95442a333b118fcca1ca03212d1d5de1e06c",
+    "vendor/kernel/harmonic_basin/roughness.py": "7a451380c7d35d8b0ca266a329ba7fe604e39cb2cd3d8a4d7271837ee2db621c",
+    "vendor/kernel/harmonic_basin/spectra.py": "2b0d35cdd5b6566d3ee8f762f2d71f96810babc62c9c811b30dcbdb027c36ba5"
+  }
+}

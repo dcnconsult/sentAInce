@@ -1,0 +1,142 @@
+{
+  "state_dir": "<state-dir>",
+  "n_classes": 16,
+  "payoff": {
+    "per_class": [
+      {
+        "class": "compose-stack#11",
+        "nodes": 6,
+        "edges": 9,
+        "max_path": 5,
+        "bridge_candidates": 5
+      },
+      {
+        "class": "design-attribution#6",
+        "nodes": 5,
+        "edges": 8,
+        "max_path": 3,
+        "bridge_candidates": 3
+      },
+      {
+        "class": "go-ahead#4",
+        "nodes": 3,
+        "edges": 4,
+        "max_path": 2,
+        "bridge_candidates": 0
+      },
+      {
+        "class": "go-option#9",
+        "nodes": 5,
+        "edges": 7,
+        "max_path": 2,
+        "bridge_candidates": 7
+      },
+      {
+        "class": "going-keep#15",
+        "nodes": 4,
+        "edges": 5,
+        "max_path": 3,
+        "bridge_candidates": 4
+      },
+      {
+        "class": "integration-hook#7",
+        "nodes": 4,
+        "edges": 6,
+        "max_path": 3,
+        "bridge_candidates": 2
+      },
+      {
+        "class": "llm-wiki#2",
+        "nodes": 9,
+        "edges": 13,
+        "max_path": 3,
+        "bridge_candidates": 15
+      },
+      {
+        "class": "precision-attribution#8",
+        "nodes": 8,
+        "edges": 12,
+        "max_path": 4,
+        "bridge_candidates": 15
+      },
+      {
+        "class": "self-manifold#3",
+        "nodes": 5,
+        "edges": 8,
+        "max_path": 3,
+        "bridge_candidates": 6
+      },
+      {
+        "class": "server-scrape#14",
+        "nodes": 6,
+        "edges": 8,
+        "max_path": 3,
+        "bridge_candidates": 3
+      },
+      {
+        "class": "show-exporter#13",
+        "nodes": 2,
+        "edges": 2,
+        "max_path": 1,
+        "bridge_candidates": 0
+      },
+      {
+        "class": "tao-live#12",
+        "nodes": 6,
+        "edges": 8,
+        "max_path": 4,
+        "bridge_candidates": 8
+      },
+      {
+        "class": "task-id#1",
+        "nodes": 8,
+        "edges": 12,
+        "max_path": 4,
+        "bridge_candidates": 8
+      },
+      {
+        "class": "wiki_credit_rate-add#10",
+        "nodes": 4,
+        "edges": 6,
+        "max_path": 3,
+        "bridge_candidates": 2
+      },
+      {
+        "class": "yes-proce#5",
+        "nodes": 10,
+        "edges": 18,
+        "max_path": 5,
+        "bridge_candidates": 17
+      },
+      {
+        "class": "_default",
+        "nodes": 21,
+        "edges": 45,
+        "max_path": 6,
+        "bridge_candidates": 57
+      }
+    ],
+    "path_len_hist": {
+      "1": 141,
+      "2": 166,
+      "3": 152,
+      "4": 155,
+      "5": 156,
+      "6": 146
+    },
+    "total_paths": 916,
+    "frac_ge2": 0.846,
+    "frac_ge3": 0.665,
+    "bridge_candidates": 152
+  },
+  "hdc": {
+    "m": 2048,
+    "abstain": 0.1,
+    "one_hop_fidelity": 1.0,
+    "bridges_proposed": 52,
+    "bridge_precision": 0.962,
+    "bridges_after_abstain": 32,
+    "bridge_precision_abstained": 1.0,
+    "conf_median": 0.126
+  }
+}

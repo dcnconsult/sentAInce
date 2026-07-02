@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+.venv/
+venv/
+# transient battle-test run artifacts (the durable evidence is the CLAIM_BOUNDARY entry)
+demo/results/
+# transient exocortex run artifacts (audit trails, run logs, baseline summaries)
+exocortex/results/
+# live Exocortex per-project runtime state (colony/state/audit) when the hook is installed locally
+.claude/exocortex/
+# Claude Code personal local settings (the `.local.` convention — machine-specific, never shared)
+.claude/settings.local.json
+# LOCAL declarative-wiki go-live activation (machine-specific vault + mode=live); the committed default
+# at exocortex/exocortex_config.json stays dormant. Repo-root only (leading slash).
+/exocortex_config.json
+# PRE-DISCLOSURE PATENT DRAFTS — deliberately NEVER tracked. This repo is the OSS candidate; anything
+# committed here can leak into public git history on release (history is hard to scrub) and constitutes
+# public disclosure that can bar patent rights (absolute-novelty jurisdictions). Keep drafts local +
+# route to counsel. See patent/README.md for the rationale and the reduction-to-practice note.
+patent/
+# MACHINE-LOCAL compose override (host paths + private-crucible mounts; auto-merged by docker compose
+# when run from the compose dir). The committed docker-compose.yml must stay generic (release-gate clean).
+exocortex/testbed/compose/docker-compose.override.yml

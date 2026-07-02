@@ -1,0 +1,5 @@
+Provisional patent application(s) FILED — recorded 2026-07-01 (PI confirmation in-session).
+
+This marker clears the `patent_filed` pre-push gate (release/prepush_gates.py). It does NOT mean
+"push now": the remaining gates (no_denylisted_tokens — the TAO/PII scrub — etc.) still fail-closed,
+the repo remains local-only (no remote), and the push decision stays with the PI.

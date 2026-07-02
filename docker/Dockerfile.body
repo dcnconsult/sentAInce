@@ -1,0 +1,22 @@
+# syntax=docker/dockerfile:1
+#
+# The BODY service — the disposable host the organism protects (M3). Minimal: the stdlib in-body
+# agent only (no deps, no sentaince). Only PERMITTED (gate-approved) commands ever reach it; the
+# container's limits (cap_drop, mem/pids caps, no-egress net, disposable) are the OUTER boundary.
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY body ./body
+
+# Bake the declared invariants into the image so they are READ-ONLY at runtime (with the container's
+# read_only root). A declared invariant is immutable by definition — no command can violate it, even
+# the find-exec deletions the symbolic oracle misses. The writable world is a tmpfs mounted at runtime.
+RUN for d in backups userdb etc_config boot disk; do \
+        mkdir -p "/declared/$d" && echo "$d" > "/declared/$d/.sentinel"; \
+    done
+
+ENV BODY_PORT=8088 \
+    PYTHONUNBUFFERED=1
+EXPOSE 8088
+
+CMD ["python", "body/agent.py"]

@@ -1,0 +1,99 @@
+# SentAInce battle-test — combined M3×M4 real-body statistical homeostasis.
+#
+# The WIRED treatment episodes EXECUTE on the real BODY container (real RPC, real fs, real cgroup
+# energy gauge); the destructive null arms stay symbolic (never run against the real container).
+#
+#   body     : on body-net (internal: true) → NO egress. It can never phone home, by construction.
+#   organism : on body-net (to drive the body) AND llm-net (egress, to reach the host's Ollama).
+#              Holds no Docker socket. Runs N=100 live episodes against the body.
+#
+# Run (long — ~40 min for N=100; the verdict prints to the organism's stdout):
+#   docker compose -f docker/compose.realstat.yml up --build --abort-on-container-exit
+#
+name: sentaince-battle-realstat
+
+services:
+  body:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.body
+    networks: [body-net]            # internal only → no egress
+    mem_limit: 512m
+    pids_limit: 256
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true                 # system FS read-only → a gate-permitted destructive command on an
+    tmpfs:                          # UNDECLARED path (rm -rf /usr) fails harmlessly; only the world is writable
+      - /world
+      - /var/log
+      - /tmp
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request;urllib.request.urlopen('http://localhost:8088/healthz',timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  shadow:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.body
+    networks: [body-net]            # internal only → no egress
+    environment:
+      - BODY_ROLE=shadow            # declared invariants WRITABLE → /dryrun reveals the real effect
+    mem_limit: 512m
+    pids_limit: 256
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /world
+      - /var/log
+      - /tmp
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request;urllib.request.urlopen('http://localhost:8088/healthz',timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  organism:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.organism
+    depends_on:
+      body:
+        condition: service_healthy
+      shadow:
+        condition: service_healthy
+    networks: [body-net, llm-net]   # body-net → body + shadow; llm-net → host Ollama
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../demo/results:/app/demo/results   # persist the labeled summary to the host (gitignored)
+    command:
+      - python
+      - demo/live_homeostasis.py
+      - --statistical
+      - --live
+      - --model
+      - llama3:8b
+      - --base-url
+      - http://host.docker.internal:11434/v1
+      - --body-url
+      - http://body:8088
+      - --shadow-url
+      - http://shadow:8088
+      - --episodes
+      - "100"
+      - --temperature
+      - "0.8"
+
+networks:
+  body-net:
+    driver: bridge
+    internal: true   # the body cannot reach anything outside this compose — local-only, can't get out
+  llm-net:
+    driver: bridge

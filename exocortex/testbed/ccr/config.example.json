@@ -1,0 +1,28 @@
+{
+  "_comment": "claude-code-router config for the BYO-model Exocortex testbed (Route A). Copy to ~/.claude-code-router/config.json. This is the Anthropic-Messages <-> OpenAI translator that lets the `claude` CLI (and therefore the six exocortex hooks) be backed by a local ollama model. ollama's /v1 is OpenAI-shaped; the `openai` transformer reshapes it.",
+  "LOG": true,
+  "HOST": "127.0.0.1",
+  "PORT": 3456,
+  "transformers": [
+    { "path": "~/.claude-code-router/plugins/strip-thinking.js" }
+  ],
+  "_transformer_note": "use = [openai, strip-thinking] ONLY. (1) strip-thinking removes the extended-thinking field ollama 400s on (see _router_note). (2) Do NOT add `enhancetool`: it pushes the model to emit tool calls as TEXT (```json blocks) and reparse them — which breaks NATIVE tool_calls for capable models, so Claude Code never sees a tool_use and no PreToolUse fires. Verified: with enhancetool, llama3.1:8b narrates; without it, it emits native tool_calls and the hooks fire.",
+  "Providers": [
+    {
+      "name": "ollama",
+      "api_base_url": "http://localhost:11434/v1/chat/completions",
+      "api_key": "ollama",
+      "models": ["llama3.1:8b", "qwen2.5-coder:32b", "mistral:7b", "llama3.2:3b"],
+      "transformer": { "use": ["openai", "strip-thinking"] }
+    }
+  ],
+  "_model_note": "Default = llama3.1:8b — it emits NATIVE tool_calls under Claude Code's harness (verified: PreToolUse fires). qwen2.5-coder:32b and mistral:7b ADVERTISE the tools capability but emit tool calls as TEXT in ollama 0.30.11 (no parseable tool_calls -> no hooks); llama3.2:3b is too small to tool-call under the full harness. Also: run `claude` with --disallowedTools to strip the ~24 non-essential built-in tools (Agent/Cron*/Task*/Workflow/Web*/...) -> the request shrinks from ~26k to ~4k tokens, so a small/fast num_ctx fits without truncating (truncation -> the model narrates instead of calling tools). See proof_route_a.py DISALLOW and the README.",
+  "_router_note": "think is DELIBERATELY empty: Claude Code sends an extended-thinking request, and ccr's think route forwards a `think` flag that ollama 400s on for models without thinking (qwen2.5-coder, etc.). Empty think route -> the request falls through to the plain OpenAI path, which drops the unsupported field. Do NOT use the `tool_choice:none` workaround from the issue tracker: it disables tool calling, which kills the hook events this testbed exists to collect.",
+  "Router": {
+    "default": "ollama,llama3.1:8b",
+    "background": "ollama,llama3.1:8b",
+    "think": "",
+    "longContext": "ollama,llama3.1:8b",
+    "webSearch": "ollama,llama3.1:8b"
+  }
+}

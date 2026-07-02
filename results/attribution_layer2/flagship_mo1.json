@@ -1,0 +1,109 @@
+{
+  "n_tasks": 5,
+  "n_completed": 5,
+  "completion_rate": 1.0,
+  "precision": 0.5,
+  "recall": 1.0,
+  "tp": 5,
+  "fp": 5,
+  "per_task": [
+    {
+      "id": "deploy",
+      "credited": [
+        "deploy-ops.md",
+        "deploy.md"
+      ],
+      "tp": 1,
+      "fp": 1,
+      "solution_credited": true,
+      "completed": true,
+      "ran_magic": true,
+      "exit0": true,
+      "wiki_injected": 3,
+      "wiki_used": 2,
+      "wall_s": 15.0,
+      "rc": 0,
+      "final": "I ran exactly this command:\n\n```\necho FREQOK7Q2A > done.txt\n```\n\nThe command executed successfully.",
+      "stderr": ""
+    },
+    {
+      "id": "migrate",
+      "credited": [
+        "migrate-ops.md",
+        "migrate.md"
+      ],
+      "tp": 1,
+      "fp": 1,
+      "solution_credited": true,
+      "completed": true,
+      "ran_magic": true,
+      "exit0": true,
+      "wiki_injected": 3,
+      "wiki_used": 2,
+      "wall_s": 13.0,
+      "rc": 0,
+      "final": "I ran: `echo FREQMG5W1B > done.txt`",
+      "stderr": ""
+    },
+    {
+      "id": "seed",
+      "credited": [
+        "seed-ops.md",
+        "seed.md"
+      ],
+      "tp": 1,
+      "fp": 1,
+      "solution_credited": true,
+      "completed": true,
+      "ran_magic": true,
+      "exit0": true,
+      "wiki_injected": 3,
+      "wiki_used": 2,
+      "wall_s": 13.4,
+      "rc": 0,
+      "final": "I ran the command: `echo FREQSD8K3C > done.txt`",
+      "stderr": ""
+    },
+    {
+      "id": "token",
+      "credited": [
+        "token-ops.md",
+        "token.md"
+      ],
+      "tp": 1,
+      "fp": 1,
+      "solution_credited": true,
+      "completed": true,
+      "ran_magic": true,
+      "exit0": true,
+      "wiki_injected": 3,
+      "wiki_used": 2,
+      "wall_s": 13.6,
+      "rc": 0,
+      "final": "I ran: `echo FREQTK4P7D > done.txt`",
+      "stderr": ""
+    },
+    {
+      "id": "build",
+      "credited": [
+        "build-ops.md",
+        "build.md"
+      ],
+      "tp": 1,
+      "fp": 1,
+      "solution_credited": true,
+      "completed": true,
+      "ran_magic": true,
+      "exit0": true,
+      "wiki_injected": 3,
+      "wiki_used": 2,
+      "wall_s": 14.1,
+      "rc": 0,
+      "final": "I ran: `echo FREQBD6R9E > done.txt`",
+      "stderr": ""
+    }
+  ],
+  "mode": "flagship",
+  "model": "haiku",
+  "min_overlap": 1
+}

@@ -1,0 +1,56 @@
+name: Publish to PyPI
+
+# Publishes the `sentaince` wheel to PyPI on a GitHub Release, via Trusted Publishing (OIDC — no API
+# token stored). The wheel is the community body: sentaince + exocortex + cerebral, with exocortex/tuner
+# excluded by pyproject (belt-and-braces; the public repo has no tuner at all). Configure the trusted
+# publisher once on PyPI (project `sentaince`, this repo, workflow `publish.yml`, environment `pypi`).
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build wheel + sdist
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+      - name: Assert the wheel is tuner-free (the ADR-011/012 boundary at the artifact)
+        run: |
+          python - <<'PY'
+          import zipfile, glob, sys
+          whl = sorted(glob.glob("dist/*.whl"))[-1]
+          names = zipfile.ZipFile(whl).namelist()
+          tuner = [n for n in names if n.startswith("exocortex/tuner")]
+          assert not tuner, f"commercial tuner leaked into the wheel: {tuner[:5]}"
+          tops = {n.split('/',1)[0] for n in names}
+          assert {"sentaince","exocortex","cerebral"} <= tops, f"missing community packages: {tops}"
+          print("wheel clean:", whl)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write        # OIDC — Trusted Publishing, no stored token
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

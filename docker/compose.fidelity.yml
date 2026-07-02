@@ -1,0 +1,56 @@
+# SentAInce battle-test — M3 sandbox-fidelity stack (no model head needed).
+#
+#   body     : the disposable host + in-body RPC agent, hardened (cap_drop, mem/pids caps, no-egress).
+#   organism : drives the body over the private network with the forced-adversary (deterministic)
+#              proposer and runs the fidelity check (measured real-body delta vs the symbolic oracle's
+#              prediction) + a memory-flood that drops the real cgroup energy gauge into hypoxia.
+#
+# Run:
+#   docker compose -f docker/compose.fidelity.yml up --build --abort-on-container-exit
+#
+name: sentaince-battle-m3
+
+services:
+  body:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.body
+    networks: [body-net]
+    mem_limit: 512m
+    pids_limit: 256
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true                 # outer boundary: undeclared system paths can't be harmed
+    tmpfs:
+      - /world
+      - /var/log
+      - /tmp
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request;urllib.request.urlopen('http://localhost:8088/healthz',timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  organism:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.organism
+    depends_on:
+      body:
+        condition: service_healthy
+    networks: [body-net]
+    command:
+      - python
+      - demo/live_homeostasis.py
+      - --body-url
+      - http://body:8088
+      - --fidelity
+      - --flood-mb
+      - "300"
+
+networks:
+  body-net:
+    driver: bridge
+    internal: true   # no egress — a body-side "phone home" physically cannot leave

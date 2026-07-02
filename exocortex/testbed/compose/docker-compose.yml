@@ -1,0 +1,116 @@
+# Exocortex testbed — multi-repo observability + control stack (the free/community tier).
+#
+# FIVE containers, all self-healing (restart: unless-stopped):
+#   exporter   — multi-repo Prometheus exporter + browser control plane, built from
+#                docker/Dockerfile.exporter (community image: no tuner, no pip deps). AUTO-SCANS
+#                <projects root>/*/.claude/exocortex, emitting every series with a repo="<name>" label.
+#                Control page at :9109/ (tweak each repo's TUNABLE organs; the safety genome is never
+#                web-writable; POSTs are CSRF-guarded — see exporter/metrics.py).
+#   prometheus — scrapes the exporter over the compose network; 1y retention on a named volume.
+#   grafana    — the dashboard (anonymous VIEWER by default — override locally to relax; see below).
+#   loki/promtail — the audit.jsonl log stream per repo.
+#
+# Bring up (from THIS directory, so a local docker-compose.override.yml is auto-loaded):
+#   cd exocortex/testbed/compose && docker compose up -d --build
+#   Control:    http://localhost:9109/          Grafana: http://localhost:3000
+#   Prometheus: http://localhost:9090
+# Tear down:  docker compose down    (add -v to also wipe the retained metric history)
+#
+# Host-specific paths NEVER belong in this committed file (they are release-gate denylist material).
+# Override via shell env, a sibling `.env`, or a gitignored `docker-compose.override.yml` (auto-merged —
+# machine-local mounts, extra out-of-scan-root repos, a Grafana Admin role, a control token):
+#   EXOCORTEX_PROJECTS_ROOT  (default: this dir's ../../../.. = the repos' parent)  → mounted at /projects
+#   EXOCORTEX_REGISTRY_DIR   (default: ~/.exocortex — holds repos.json)             → mounted ro
+#   EXOCORTEX_CONTROL_TOKEN  (optional: gates config writes; pair with the tuner client --control-token)
+#   GF_ANON_ROLE             (default Viewer; Admin only on a trusted machine)
+services:
+  exporter:
+    build:
+      context: ../../..
+      dockerfile: docker/Dockerfile.exporter
+    image: sentaince-exporter:local
+    container_name: exocortex-exporter
+    environment:
+      - EXOCORTEX_CONTROL_TOKEN=${EXOCORTEX_CONTROL_TOKEN:-}
+    command:
+      - --scan-root=/projects
+      - --registry=/etc/exocortex/repos.json
+      - --host=0.0.0.0
+      - --port=9109
+    volumes:
+      # read-WRITE: the control page writes <repo>/exocortex_config.json. The write surface is held narrow
+      # server-side (TUNABLE allowlist; safety genome refused; CSRF + optional token — metrics.py).
+      - "${EXOCORTEX_PROJECTS_ROOT:-../../../..}:/projects"
+      - "${EXOCORTEX_REGISTRY_DIR:-~/.exocortex}:/etc/exocortex:ro"
+    ports:
+      - "127.0.0.1:9109:9109"     # loopback-only; any wider exposure should run --read-only or --token
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: exocortex-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=1y      # the long historical stream (default was 15d)
+    ports:
+      - "127.0.0.1:9090:9090"     # loopback-only (inter-container scrape uses the compose net, not this port)
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus            # history survives container recreation
+    depends_on:
+      - exporter
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: exocortex-grafana
+    ports:
+      - "127.0.0.1:3000:3000"     # loopback-only
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      # VIEWER is the safe committed posture; a trusted machine may set GF_ANON_ROLE=Admin (or an
+      # override file) to edit dashboards without a login form.
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=${GF_ANON_ROLE:-Viewer}
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      # land first-time visitors on the story skin ("SentAInce — The Organism"); the technical
+      # "Exocortex testbed" dashboard stays one click away in the dashboard list.
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/organism.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:latest
+    container_name: exocortex-loki
+    command: ["-config.file=/etc/loki/local-config.yaml"]   # image-default single-binary config (filesystem, no auth)
+    ports:
+      - "127.0.0.1:3100:3100"     # loopback-only (Grafana reaches it over the compose net at http://loki:3100)
+    volumes:
+      - loki-data:/loki
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: exocortex-promtail
+    command: ["-config.file=/etc/promtail/promtail.yml"]
+    volumes:
+      - ./promtail.yml:/etc/promtail/promtail.yml:ro
+      # read-only tail of every repo's audit.jsonl (same projects root the exporter scans)
+      - "${EXOCORTEX_PROJECTS_ROOT:-../../../..}:/projects:ro"
+      - promtail-positions:/tmp/positions      # remembers read offsets across restarts
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+  promtail-positions:

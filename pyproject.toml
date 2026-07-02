@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sentaince"
+version = "0.1.0"
+description = "Phase II embodiment of the FreqOS organism — a synthetic immune system (auto-immune interlock)."
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+# The read-only memory MCP server (exocortex/mcp_server.py) — lets Claude Desktop / Code / Cursor RETRIEVE
+# the organism's earned memory over MCP. Not needed for the hooks, the organs, or the test lock.
+mcp = ["mcp>=1.2"]
+# Optional live-console vitals for the battle-test runner (battle/). The runner falls back to plain
+# text if absent, so this is never required to run M0 or the battle seam tests.
+demo = ["rich>=13.0"]
+
+# Human-invoked CLIs (PATH-resolved is fine here). Hooks deliberately do NOT use these — they are wired
+# as `"{sys.executable}" -m exocortex.hook` (no PATH dependence at hook-fire time); see exocortex/runner.py.
+[project.scripts]
+sentaince-deploy = "exocortex.deploy:main"
+sentaince-mcp = "exocortex.mcp_server:main"
+sentaince-exporter = "exocortex.testbed.exporter.metrics:main"
+
+[tool.hatch.build.targets.wheel]
+# The community wheel = the whole local body. `exocortex/tuner` (the paid Tuner: policy table, emulator,
+# client<->Tuner protocol) is excluded belt-and-braces — the canonical publish builds from the derived
+# public tree where tuner/ is already absent (ADR-011/ADR-012), but the PRIVATE tree must also never
+# produce a leaking wheel. release/prepush_gates.py asserts wheel purity.
+packages = ["sentaince", "exocortex", "cerebral"]
+exclude = ["exocortex/tuner"]
+
+[tool.pytest.ini_options]
+# Run from the repo root so both `sentaince` and `experiments` import without an install; `vendor/kernel`
+# makes the vendored `freqos` Z3 kernel importable with no external checkout (so the suite is green on a
+# fresh clone / in CI, where the sibling `circle_of_fifths_rc2` kernel is absent).
+pythonpath = [".", "vendor/kernel"]
+testpaths = ["tests"]

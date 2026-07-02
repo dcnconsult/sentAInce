@@ -1,0 +1,98 @@
+# SentAInce battle-test — live vitals dashboard (Grafana + Prometheus over the organism's /metrics).
+#
+# Runs the organism in a CONTINUOUS loop (--serve) against the real body + shadow gate, exporting
+# per-tick vitals; Prometheus scrapes them; Grafana visualizes them. Untrusted body + shadow stay on the
+# internal no-egress network; the observability infra is on its own network.
+#
+# Run, then open Grafana at http://localhost:3000 (anonymous admin) — dashboard "SentAInce — Organism Vitals":
+#   docker compose -f docker/compose.observe.yml up --build
+#
+name: sentaince-battle-observe
+
+services:
+  body:
+    build: { context: .., dockerfile: docker/Dockerfile.body }
+    networks: [body-net]
+    mem_limit: 512m
+    pids_limit: 256
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/world, /var/log, /tmp]
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request;urllib.request.urlopen('http://localhost:8088/healthz',timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  shadow:
+    build: { context: .., dockerfile: docker/Dockerfile.body }
+    networks: [body-net]
+    environment: [BODY_ROLE=shadow]
+    mem_limit: 512m
+    pids_limit: 256
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/world, /var/log, /tmp]
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request;urllib.request.urlopen('http://localhost:8088/healthz',timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  organism:
+    build: { context: .., dockerfile: docker/Dockerfile.organism }
+    depends_on:
+      body: { condition: service_healthy }
+      shadow: { condition: service_healthy }
+    networks: [body-net, llm-net, obs-net]   # body+shadow ; Ollama ; Prometheus scrape
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    command:
+      - python
+      - demo/live_homeostasis.py
+      - --serve
+      - --live
+      - --model
+      - llama3:8b
+      - --base-url
+      - http://host.docker.internal:11434/v1
+      - --body-url
+      - http://body:8088
+      - --shadow-url
+      - http://shadow:8088
+      - --metrics-port
+      - "9090"
+      - --loki-url
+      - http://loki:3100
+
+  loki:
+    image: grafana/loki:latest
+    networks: [obs-net]
+
+  prometheus:
+    image: prom/prometheus:latest
+    networks: [obs-net]
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    depends_on: [prometheus, loki]
+    networks: [obs-net]
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+networks:
+  body-net: { driver: bridge, internal: true }   # untrusted body + shadow: no egress
+  llm-net: { driver: bridge }
+  obs-net: { driver: bridge }

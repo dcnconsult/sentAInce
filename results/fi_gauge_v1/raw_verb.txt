@@ -1,0 +1,38 @@
+FI_hat DECISIVE GAUGE  (does the ATTEMPTS denominator carry signal raw τ does not?)
+  audit=audit.jsonl  altitude=verb  records=2908
+
+  configs=33  powered(n≥5)=11  (attempts=501  successes=460)
+  failures: total=45  on-noise-verbs=38  (noise_frac=0.844)
+  base success rate (powered) = 0.9182
+
+  POWERED configs  [succ/att  reliability p̂  FI_hat bits]:
+    bash:cd                         245/268   p̂=0.91  FI=0.13  NOISE
+    bash:echo                        53/63    p̂=0.84  FI=0.26  NOISE
+    bash:git                         50/51    p̂=0.97  FI=0.04  flaky
+    bash:python                      46/48    p̂=0.95  FI=0.08  flaky
+    bash:find                        16/17    p̂=0.92  FI=0.13  flaky
+    bash:grep                        15/16    p̂=0.91  FI=0.13  flaky
+    bash:ls                          10/13    p̂=0.75  FI=0.41  NOISE
+    bash:EXOCORTEX_EMBED=0            9/9     p̂=0.95  FI=0.07  
+    bash:exocortex"                   6/6     p̂=0.93  FI=0.11  
+    bash:cli.js"                      5/5     p̂=0.92  FI=0.13  
+    bash:f=$(ls                       5/5     p̂=0.92  FI=0.13  
+
+  DECISIVE — reliability-heterogeneity vs the frequency-matched shuffle null:
+    dispersion T_obs=0.00224  permutation p=0.14093  (R=2000, seed=0)
+    Spearman(τ-analog k, reliability p̂) on powered = -0.1287  (≈1 → FI redundant with τ)
+    what FI would DEMOTE (high-τ but low reliability):
+      bash:ls                        10/13 ok  p̂=0.75  (mechanical noise)
+      bash:echo                      53/63 ok  p̂=0.84  (mechanical noise)
+      bash:grep                      15/16 ok  p̂=0.91
+      bash:cd                        245/268 ok  p̂=0.91  (mechanical noise)
+      bash:find                      16/17 ok  p̂=0.92
+      bash:python                    46/48 ok  p̂=0.95
+      bash:git                       50/51 ok  p̂=0.97
+
+VERDICT:
+  label=NULL  signal=False  p_value=0.14093  powered=11
+  => NULL — per-config reliabilities are indistinguishable from one shared base rate (p=0.14093 ≥ 0.05) on 11 powered configs → the denominator adds nothing here; FI_hat is a better *language* for what τ already does, not a new mechanism.
+  NOTE: the audit is the SOLE live denominator (τ has none; intent −1/0 valence unparsed in v1).
+        Live = demonstration, never evidence — the C1–C7 lock rests on topology, not on this.
+

@@ -1,0 +1,21 @@
+# The community dashboard/exporter image — the multi-repo Prometheus exporter + browser control plane.
+# Build from the REPO ROOT:   docker build -f docker/Dockerfile.exporter -t sentaince-exporter .
+#
+# Multi-stage on purpose: the commercial `exocortex/tuner/` is stripped in a scratch stage so the final
+# image's layer history contains NO tuner bits (a single-stage COPY-then-rm would keep them in the layer —
+# the same belt-and-braces as the wheel exclude; the canonical public image builds from the derived public
+# tree where tuner/ is already absent). Stdlib-only at runtime: no pip install, no numpy.
+
+FROM python:3.12-slim AS staging
+COPY exocortex/ /staging/exocortex/
+RUN rm -rf /staging/exocortex/tuner
+
+FROM python:3.12-slim
+ENV PYTHONPATH=/app PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /app
+COPY --from=staging /staging/exocortex/ /app/exocortex/
+EXPOSE 9109
+# Posture flags (see exporter --help): --read-only (free-tier monitoring), --token/EXOCORTEX_CONTROL_TOKEN
+# (gated writes for the paid client). Compose supplies --scan-root/--registry + mounts.
+ENTRYPOINT ["python", "-m", "exocortex.testbed.exporter.metrics"]
+CMD ["--host=0.0.0.0", "--port=9109"]

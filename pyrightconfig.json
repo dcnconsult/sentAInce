@@ -1,0 +1,6 @@
+{
+  "include": ["sentaince", "experiments", "tests"],
+  "extraPaths": ["."],
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "warning"
+}
