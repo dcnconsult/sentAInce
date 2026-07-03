@@ -85,6 +85,10 @@ The C6 oracle is *pluggable* (`permits(cmd)`), and its implementation is where t
   No pattern to evade. Bounded by its observation window (Finding 3).
 - **Composite** (`CompositeOracle`) — the gate's actual oracle: permit iff **symbolic AND shadow** both
   permit. Fail-safe: anything it cannot verify (shadow unreachable, dry-run timeout) is **refused**.
+  *(Tier boundary, to prevent a common misreading: the shadow dry-run and its timeout exist only in THIS
+  container tier — the calibration reference. The live hook path's veto is an in-process symbolic check
+  (pattern + declared-invariant topology), no dry-run, sub-millisecond — there is no per-command delay
+  in normal agent sessions.)*
 
 ### 3.5 The body and shadow — real execution behind an RPC agent
 `body/agent.py` is a stdlib RPC agent (no deps, no `sentaince`) running inside the disposable body. The

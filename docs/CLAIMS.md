@@ -145,6 +145,10 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
   layer complete (the battle-test whitepaper's standing conclusion).
 - Not a generative model or a RAG replacement that "knows more" — it reorganizes memory by *empirical
   utility*, and abstains in a void.
+- Not (yet) a memory for non-verifiable work — consequence-sourcing requires a **binary-verifiable
+  outcome** (today: `exit 0`). Generative and judgment tasks ("write nicer CSS", "summarize this")
+  carry no such terminal signal, so they earn nothing; widening the set of verifiable signals is held
+  roadmap, gauge-first.
 - Live model runs are **labeled demonstrations, never evidence** — a `0/−1` outcome indicts the model or
   infrastructure, never the locked verdicts.
 

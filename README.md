@@ -38,6 +38,22 @@ never for sale — the immune system runs locally and free, always.
 
 **→ Read the full story (anatomy + honest numbers + what the dashboard shows): [`docs/STORY.md`](docs/STORY.md).**
 
+### If you're shopping for… (the metaphor, translated)
+
+The biology is load-bearing, not decoration — but you shouldn't need a xenobiology degree to find the
+part you came for:
+
+| You're looking for | We call it | Where |
+|---|---|---|
+| A **guardrail / command firewall** that can't be prompt-injected | the somatic gate (immune system) | `sentaince/organism/`, C1–C7 |
+| A **token / runaway-loop governor** | metabolism & tiers (SATED→HYPOXIA) | `exocortex/interocept.py` |
+| A **success-weighted route cache** (memory that can't rot) | the pheromone colony (muscle memory) | `exocortex/colony.py` |
+| **Automatic cache decay / pruning** | circadian consolidation (sleep) | PreCompact hook |
+| A **knowledge base that only trusts what worked** | the declarative wiki (notebook) | `exocortex/wiki/` |
+| **Adaptive rate/retention limits** | the endocrine organ (ships off — its own gauge said modest) | `exocortex/endocrine.py` |
+
+Full mapping (metaphor → CS reality → code → status): [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
+
 ## Getting started
 
 Pick the path that fits you — no account, nothing leaves your machine.
