@@ -1,0 +1,37 @@
+name: 🐛 Bug report
+description: Something misbehaved — a hook, a dashboard, the deploy tool, the MCP server.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks — real-traffic reports are exactly the population data this project needs.
+        **False refusals matter as much as slips**: if the gate blocked something benign, that's a bug too.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Python version, host (Claude Code / Cursor / MCP-only), install method (pip / clone).
+      placeholder: "Windows 11 · Python 3.12 · Claude Code · pip install sentaince"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence (audit lines welcome)
+      description: |
+        If hooks are installed, the relevant lines from `.claude/exocortex/audit.jsonl` are the best
+        evidence there is (strip anything private). Dashboard issues: a screenshot.
+  - type: checkboxes
+    id: lock
+    attributes:
+      label: Evidence-lock check
+      options:
+        - label: "`python -m pytest -q tests` passes on my machine (or the failure IS the bug I'm reporting)"

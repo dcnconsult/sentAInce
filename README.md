@@ -5,6 +5,10 @@
 It **physically refuses catalogued lethal actions** — even when the model is prompt-injected into proposing
 one — and it **only remembers what actually worked**. Runs locally. Open source. **Safety is never for sale.**
 
+*(Claim boundary, up front: the deterministic evidence lock proves the refusal logic under mock
+executors — it records intent, not syscalls. Real-body protection is the layered container posture
+described in [`SECURITY.md`](SECURITY.md).)*
+
 ![License](https://img.shields.io/badge/license-Apache--2.0-1E6F5C)
 ![Python](https://img.shields.io/badge/python-3.11%2B-3776AB)
 ![Evidence lock](https://img.shields.io/badge/evidence--lock-99%20passing-2ea44f)
@@ -38,8 +42,9 @@ never for sale — the immune system runs locally and free, always.
 
 Pick the path that fits you — no account, nothing leaves your machine.
 
-- **Just curious? Watch the safety reflex work (no setup, ~1 min).** With Python + `numpy` installed:
+- **Just curious? Watch the safety reflex work (no setup, ~1 min).** From a fresh clone:
   ```
+  python -m pip install -e ".[dev]"          # numpy + pytest — everything the demo and the lock need
   python experiments/exp1_autoimmune.py      # a prompt-injected model proposes a lethal action; the gate refuses it
   python -m pytest -q tests                    # the full 99-test evidence lock, deterministic
   ```
@@ -146,5 +151,11 @@ open, always.** Safety is never paywalled. What keeps the project alive is an op
 tune-up subscription (the *Appliance*) that maintains and auto-tunes your organism over time — your code
 never leaves your machine. See [`docs/PRODUCT.md`](docs/PRODUCT.md) for the honest commercial model, and
 [`docs/STORY.md`](docs/STORY.md) for the plain-language tour.
+
+| | What it is |
+|---|---|
+| **Free, forever** | The complete organism: safety gate + audit chain, earned memory, MCP recall, deploy tooling, the full dashboard stack. 100% local, no account, no telemetry. |
+| **Paid (optional)** | The **Appliance** — a fully local, offline tune-up subscription: maintained signed auto-tune cadence, history-mined insights, ranked estate view, local alerts. Unlimited repos, DRM-free (cancelling stops updates, never the running organism). |
+| **Never** | Paywalled safety. Your code leaving your machine. A kill-switch. |
 
 > Built by one maintainer, in the open, gauge-first — every claim is broken by its own null or it doesn't ship.

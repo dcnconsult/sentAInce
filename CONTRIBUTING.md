@@ -30,6 +30,21 @@ python -m pytest                                                             # t
 - **Gauge-first (ADR-002).** New organs ship dormant with a falsifiable gauge and a pre-registered bar;
   a `results/<gauge>_v1/RESULTS.md` verdict is expected alongside the code.
 
+## Your first contribution (the gentle on-ramp)
+
+You can help meaningfully without going anywhere near the frozen DNA. Great first contributions:
+
+- **Docs** — clarify a runbook step that confused you, fix a stale count, improve a diagram.
+- **Dashboard polish** — Grafana panels, the story-skin wording, the estate view.
+- **Packaging & platforms** — install ergonomics, OS quirks, CI matrix, wheel hygiene.
+- **Provider adapters** — new agent hosts for the hook layer (the Cursor adapter is the template).
+- **Examples** — a worked deploy on a real project shape we haven't covered.
+
+Please **don't** start in `tests/` or `experiments/` (the 99-test evidence lock — changing it is
+changing what the project has proven), or `sentaince/organism/*` / `vendor/kernel/*` (frozen,
+integrity-baselined). If your idea needs a new organ: it ships **dormant with a gauge** — open a
+discussion first and we'll shape it together.
+
 ## Practical bits
 
 - Pure-stdlib bias: the hot path (hooks) must stay dependency-free; heavier deps are confined to leaf

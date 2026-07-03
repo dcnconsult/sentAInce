@@ -620,9 +620,30 @@ def repo_vitals(state_dir: Path, genome: dict) -> dict:
     used = sum(int(r.get("wiki_used", 0) or 0) for r in cons)
     ok = sum(1 for r in cons if r.get("outcome") == "ok")
     fail = sum(1 for r in cons if r.get("outcome") == "fail")
+    # tier occupancy + somatic refusals (the policy/2 vitals — same audit walk, no new reads)
+    tiers = {"SATED": 0, "STARVING": 0, "HYPOXIA": 0}
+    latest_tier = ""
+    for r in audit:
+        t = r.get("tier")
+        if t in tiers:
+            tiers[t] += 1
+            latest_tier = t
+    tier_total = sum(tiers.values())
+    lethal = sum(1 for r in audit
+                 if r.get("event") == "PreToolUse" and r.get("somatic_permitted") is False)
+    # declarative tail: per injected segment (consequence with wiki_injected>0), how many notes credited
+    seg_used = sorted(int(r.get("wiki_used", 0) or 0) for r in cons
+                      if int(r.get("wiki_injected", 0) or 0) > 0)
+    n_inj_segs = len(seg_used)
+    ge2 = sum(1 for u in seg_used if u >= 2)
     return {
         "deposits": n,
         "consequences": {"ok": ok, "fail": fail},
+        "fail_rate": round(fail / (ok + fail), 3) if (ok + fail) else 0.0,
+        "lethal_attempts": lethal,
+        "tier": {"now": latest_tier,
+                 "occupancy": {t: round(c / tier_total, 3) if tier_total else 0.0
+                               for t, c in tiers.items()}},
         "seg_len_median": seglens[n // 2] if n else 0,
         "seg_len_ge4": ge4,
         "seg_len_ge4_pct": round(ge4 / n, 3) if n else 0.0,
@@ -631,10 +652,15 @@ def repo_vitals(state_dir: Path, genome: dict) -> dict:
             "eligibility_trace_mode": 1 if genome.get("eligibility_trace", {}).get("mode") == "trace" else 0,
             "declarative_mode": 1 if genome.get("declarative", {}).get("mode") == "live" else 0,
             "endocrine_mode": 1 if genome.get("endocrine", {}).get("mode") == "tier" else 0,
+            "explore_budget": genome.get("declarative", {}).get("explore_budget",
+                              DEFAULTS["declarative"].get("explore_budget", 0)),
             "max_edges_per_class": cap,
             "prune_floor": therm.get("prune_floor", DEFAULTS["thermodynamics"]["prune_floor"]),
         },
-        "wiki": {"injected": inj, "used": used, "credit_rate": round(used / inj, 3) if inj else 0.0},
+        "wiki": {"injected": inj, "used": used, "credit_rate": round(used / inj, 3) if inj else 0.0,
+                 "segments_injected": n_inj_segs,
+                 "segments_ge2_pct": round(ge2 / n_inj_segs, 3) if n_inj_segs else 0.0,
+                 "notes_credited_median": seg_used[n_inj_segs // 2] if n_inj_segs else 0},
     }
 
 

@@ -1,0 +1,183 @@
+{
+  "annotations": { "list": [] },
+  "description": "The estate — every organism the exporter discovers, one pane. Free tier: the same honest per-repo vitals the exporter already serves, side by side. (The paid Appliance layer ranks these rows by what needs attention; this view never hides anything.)",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "SentAInce — The Organism (single-repo story)",
+      "type": "link",
+      "url": "/d/sentaince-organism"
+    },
+    {
+      "title": "Exocortex testbed (technical)",
+      "type": "link",
+      "url": "/d/exocortex-testbed"
+    }
+  ],
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "mode": "markdown",
+        "content": "## 🏙️ The estate — every organism, one pane\nOne row per repository the exporter discovers. All numbers are the same consequence-sourced vitals each organism already reports — **habits are earned only on verified success (exit 0), never by repetition**. Nothing here is ranked or interpreted; that judgment layer is the Appliance's job."
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Organisms discovered",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 3 },
+      "id": 2,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "exocortex_repos_discovered", "instant": true, "refId": "A" }
+      ],
+      "options": { "textMode": "value", "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" }, "decimals": 0 }, "overrides": [] }
+    },
+    {
+      "type": "stat",
+      "title": "Habits earned (estate, verified successes)",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 3 },
+      "id": 3,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(exocortex_deposits)", "instant": true, "refId": "A" }
+      ],
+      "options": { "textMode": "value", "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "decimals": 0 }, "overrides": [] }
+    },
+    {
+      "type": "stat",
+      "title": "Lethal actions refused (estate)",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 3 },
+      "id": 4,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(exocortex_lethal_attempts)", "instant": true, "refId": "A" }
+      ],
+      "options": { "textMode": "value", "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" }, "decimals": 0 }, "overrides": [] }
+    },
+    {
+      "type": "stat",
+      "title": "Nights slept (estate consolidations)",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 3 },
+      "id": 5,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(exocortex_colony_consolidations)", "instant": true, "refId": "A" }
+      ],
+      "options": { "textMode": "value", "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "decimals": 0 }, "overrides": [] }
+    },
+    {
+      "type": "table",
+      "title": "🗺️ The estate table — one row per organism",
+      "description": "Deposits = habits earned by verified success. Fail share = failing consequences / all consequences. Credit rate = injected notes that demonstrably helped. At-cap classes = colony classes whose retained edges hit the leanness CAP.",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 7 },
+      "id": 6,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "exocortex_audit_records", "instant": true, "format": "table", "refId": "A" },
+        { "expr": "exocortex_deposits", "instant": true, "format": "table", "refId": "B" },
+        { "expr": "sum by (repo) (exocortex_consequences{outcome=\"fail\"}) / sum by (repo) (exocortex_consequences)", "instant": true, "format": "table", "refId": "C" },
+        { "expr": "exocortex_wiki_credit_rate", "instant": true, "format": "table", "refId": "D" },
+        { "expr": "exocortex_colony_classes", "instant": true, "format": "table", "refId": "E" },
+        { "expr": "count by (repo) (exocortex_colony_edges >= on(repo) group_left() exocortex_config_max_edges_per_class)", "instant": true, "format": "table", "refId": "F" },
+        { "expr": "exocortex_lethal_attempts", "instant": true, "format": "table", "refId": "G" }
+      ],
+      "transformations": [
+        { "id": "merge", "options": {} },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": {
+              "repo": "Organism",
+              "Value #A": "Audit records",
+              "Value #B": "Habits earned",
+              "Value #C": "Fail share",
+              "Value #D": "Note credit rate",
+              "Value #E": "Colony classes",
+              "Value #F": "At-cap classes",
+              "Value #G": "Lethal refused"
+            }
+          }
+        }
+      ],
+      "options": { "showHeader": true, "sortBy": [{ "displayName": "Habits earned", "desc": true }] },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "filterable": false }, "noValue": "0", "decimals": 0 },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Fail share" },
+            "properties": [ { "id": "unit", "value": "percentunit" }, { "id": "decimals", "value": 2 } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Note credit rate" },
+            "properties": [ { "id": "unit", "value": "percentunit" }, { "id": "decimals", "value": 3 } ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "📈 Habits earned per organism (6h windows)",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 17 },
+      "id": 7,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum by (repo) (increase(exocortex_deposits[6h]))", "legendFormat": "{{repo}}", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 8, "lineWidth": 2 }, "decimals": 1 }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "📉 Fail share per organism (6h windows)",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 17 },
+      "id": 8,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum by (repo) (increase(exocortex_consequences{outcome=\"fail\"}[6h])) / sum by (repo) (increase(exocortex_consequences[6h]))", "legendFormat": "{{repo}}", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1, "min": 0, "custom": { "fillOpacity": 8, "lineWidth": 2 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "type": "stat",
+      "title": "🔬 The lab — organ verdict board (estate-wide; 1 = prize real / build, 0 = parked honestly)",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 26 },
+      "id": 9,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "exocortex_gauge_signal", "legendFormat": "{{gauge}} ({{kind}})", "instant": true, "refId": "A" }
+      ],
+      "options": { "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "dark-gray", "value": null }, { "color": "green", "value": 1 } ] }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["sentaince", "estate", "multi-repo"],
+  "templating": { "list": [] },
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "SentAInce — The Estate",
+  "uid": "exocortex-estate",
+  "version": 1,
+  "weekStart": ""
+}

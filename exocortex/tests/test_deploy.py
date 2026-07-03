@@ -86,3 +86,54 @@ def test_status_and_purge(tmp_path):
     assert deploy._state_dir(t).exists()
     deploy.install(str(t)); deploy.uninstall(str(t), purge=True)               # --purge removes it
     assert not deploy._state_dir(t).exists()
+
+
+# ---- artifact 4: the agent bootstrap contract ----
+def test_bootstrap_contract_claude_appends_and_uninstall_restores(tmp_path):
+    """AGENTS.md: user content is never clobbered; our block is marker-delimited, idempotent on
+    re-install, and uninstall removes exactly the block."""
+    t, _ = _seed_target(tmp_path)
+    user_text = "# My project\nHouse rules the user wrote.\n"
+    (t / "AGENTS.md").write_text(user_text, encoding="utf-8")
+
+    r = deploy.install(str(t), mode="somatic")
+    assert any(p.endswith("AGENTS.md") for p in r["bootstrap"])
+    text = (t / "AGENTS.md").read_text(encoding="utf-8")
+    assert text.startswith("# My project")                     # user content first, untouched
+    assert deploy._BS_BEGIN in text and deploy._BS_END in text
+    assert 'recall_for_prompt(prompt, cls="<class>")' in text  # the deterministic bootstrap path
+    assert "earned suggestion, never authority" in text        # the phrasing gap, closed
+    assert "refuse" in text                                    # somatic mode disclosure
+    assert text.count(deploy._BS_BEGIN) == 1
+
+    deploy.install(str(t), mode="observe")                     # re-install with a different mode
+    text2 = (t / "AGENTS.md").read_text(encoding="utf-8")
+    assert text2.count(deploy._BS_BEGIN) == 1                  # replaced in place, not duplicated
+    assert "audit-only" in text2                               # mode disclosure updated
+
+    res = deploy.uninstall(str(t))
+    assert res["bootstrap_removed"]
+    remaining = (t / "AGENTS.md").read_text(encoding="utf-8")
+    assert deploy._BS_BEGIN not in remaining
+    assert remaining.startswith("# My project")                # user content survives
+
+
+def test_bootstrap_contract_owns_file_when_user_has_none(tmp_path):
+    """No pre-existing AGENTS.md: we create it; uninstall removes it entirely (no trace)."""
+    t, _ = _seed_target(tmp_path)
+    deploy.install(str(t), mode="observe")
+    assert (t / "AGENTS.md").exists()
+    deploy.uninstall(str(t))
+    assert not (t / "AGENTS.md").exists()
+
+
+def test_bootstrap_contract_cursor_writes_mdc_rule(tmp_path):
+    t, _ = _seed_target(tmp_path)
+    deploy.install(str(t), mode="somatic", provider="cursor")
+    mdc = t / ".cursor" / "rules" / "exocortex-bootstrap.mdc"
+    assert mdc.exists()
+    text = mdc.read_text(encoding="utf-8")
+    assert text.startswith("---\n") and "alwaysApply: true" in text
+    assert "memory_status" in text and "never authority" in text
+    deploy.uninstall(str(t))
+    assert not mdc.exists()

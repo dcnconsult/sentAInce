@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & discussion
+    url: https://github.com/dcnconsult/sentAInce/discussions
+    about: How it works, deploy help, the claim boundary, organ ideas before they become issues.

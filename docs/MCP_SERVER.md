@@ -20,6 +20,12 @@ goal-class from `memory_status`). The `task`/`query` → goal-class step is a **
 free-text probe routes opaquely; pass `cls=` to address a known class **deterministically** (it's the
 reliable way to hit a positive return).
 
+> **Brief your agent:** `python -m exocortex.deploy install` now writes an *agent bootstrap contract*
+> (AGENTS.md block / `.cursor/rules`) encoding the reliable calling pattern — `memory_status` at task
+> start, `recall_for_prompt(prompt, cls=…)` on known classes, and *recall is earned suggestion, never
+> authority*. See the "Bootstrap your agent" section of
+> [`DEPLOY_TO_A_PROJECT.md`](DEPLOY_TO_A_PROJECT.md).
+
 | Tool | Returns |
 |---|---|
 | `recall_procedural(task, repo="", cls="")` | The converged tool-use route for that class — τ earned only by verified `exit 0`. Abstains until a route repeats. |

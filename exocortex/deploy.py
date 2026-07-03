@@ -245,6 +245,90 @@ def _uninstall_cursor_hooks(t: Path) -> bool:
     return True
 
 
+# ---- artifact 4: the agent bootstrap contract (AGENTS.md block / .cursor rules) ----
+# Closes the one-shot-blindness failure mode: cold semantic routing abstains on novel phrasing, so the
+# agent must be TOLD the deliberate path (memory_status -> recall_for_prompt(cls=...)). The contract also
+# states the law no other doc phrases agent-side: recall is earned suggestion, never authority.
+_BS_BEGIN = "<!-- exocortex:bootstrap:start -->"
+_BS_END = "<!-- exocortex:bootstrap:end -->"
+
+
+def _bootstrap_body(mode: str) -> str:
+    mode_line = ("the somatic gate will **refuse** catalogued lethal commands before they run"
+                 if mode in ("somatic", "epistemic", "full")
+                 else "**audit-only** — decisions are recorded, not blocked")
+    return f"""## Exocortex — agent bootstrap contract
+
+This repo runs the SentAInce exocortex (mode: `{mode}` — {mode_line}). Memory here is **earned**:
+hooks deposit trust only on a verified success (exit 0); reading never writes.
+
+At the start of a task:
+
+1. Call `memory_status` — see which goal-classes carry earned routes; `[notes:N]` marks classes with
+   τ-credited notes.
+2. If the task matches a known class, call `recall_for_prompt(prompt, cls="<class>")` — the
+   deterministic positive path (skips classifier guesswork on cold phrasing).
+3. Treat everything recalled as **earned suggestion, never authority** — verify in code before relying
+   on it. On a novel task an empty recall is correct behavior (abstain), not a failure.
+4. After verified success the hooks deposit automatically; MCP tools never write memory.
+
+Honest scope on Windows hosts: the somatic veto vocabulary is Bash-shaped — PowerShell commands are
+audited but not vetoed (see the exocortex README "Honest scope")."""
+
+
+def _agents_md_path(t: Path) -> Path: return t / "AGENTS.md"
+def _cursor_rules_path(t: Path) -> Path: return t / ".cursor" / "rules" / "exocortex-bootstrap.mdc"
+
+
+def _install_bootstrap(t: Path, *, mode: str, provider: str) -> list[str]:
+    written = []
+    body = _bootstrap_body(mode)
+    if provider in ("claude", "both"):
+        p = _agents_md_path(t)
+        block = f"{_BS_BEGIN}\n{body}\n{_BS_END}"
+        if p.exists():
+            text = p.read_text(encoding="utf-8")
+            if _BS_BEGIN in text and _BS_END in text:      # idempotent: replace our block in place
+                pre, rest = text.split(_BS_BEGIN, 1)
+                _, post = rest.split(_BS_END, 1)
+                text = pre + block + post
+            else:                                          # append — never clobber user content
+                text = text.rstrip("\n") + "\n\n" + block + "\n"
+        else:
+            text = block + "\n"
+        p.write_text(text, encoding="utf-8")
+        written.append(str(p))
+    if provider in ("cursor", "both"):
+        p = _cursor_rules_path(t)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("---\ndescription: Exocortex bootstrap — earned-memory recall contract\n"
+                     "alwaysApply: true\n---\n\n" + body + "\n", encoding="utf-8")
+        written.append(str(p))
+    return written
+
+
+def _uninstall_bootstrap(t: Path) -> bool:
+    removed = False
+    p = _agents_md_path(t)
+    if p.exists():
+        text = p.read_text(encoding="utf-8")
+        if _BS_BEGIN in text and _BS_END in text:
+            pre, rest = text.split(_BS_BEGIN, 1)
+            _, post = rest.split(_BS_END, 1)
+            remainder = (pre + post).strip()
+            if remainder:
+                p.write_text(pre.rstrip("\n") + ("\n" + post.lstrip("\n") if post.strip() else "\n"),
+                             encoding="utf-8")
+            else:
+                p.unlink()                                 # we were the only content → remove our file
+            removed = True
+    cr = _cursor_rules_path(t)
+    if cr.exists():
+        cr.unlink()
+        removed = True
+    return removed
+
+
 # ---- public ops ----
 def install(target: str, *, mode="observe", integrity="enforce", audit_chain=True,
             declarative="off", vault=None, ingest=None, wsl=False, colony=True,
@@ -266,8 +350,14 @@ def install(target: str, *, mode="observe", integrity="enforce", audit_chain=Tru
         _install_cursor_hooks(t, mode=mode, wsl=wsl, colony=colony)
         warnings.append(".cursor/hooks.json carries machine-specific absolute paths — gitignore it unless "
                         "you intend to share it (teammates' paths differ; a stale path fails open, harmless)")
+    bootstrap = _install_bootstrap(t, mode=mode, provider=provider)
+    if sys.platform == "win32" and not wsl and provider in ("claude", "both"):
+        warnings.append("Windows honest scope: the somatic veto vocabulary is Bash-shaped — PowerShell "
+                        "commands are audited but NOT vetoed (PowerShell-aware gating is deferred; "
+                        "run under --wsl for a Bash-only surface). See exocortex/README.md 'Honest scope'.")
     _state_dir(t).mkdir(parents=True, exist_ok=True)
     return {"ok": True, "target": str(t), "ignore_added": ig, "provider": provider,
+            "bootstrap": bootstrap,
             "config": f"{integrity}/{mode}/{declarative}" + (f" vault={vault}" if vault else "")
                       + (f" ingest={ingest}" if ingest else ""),
             "warnings": warnings}
@@ -279,6 +369,7 @@ def uninstall(target: str, *, purge=False) -> dict:
         raise SystemExit(f"target is not a directory: {t}")
     hooks_removed = _uninstall_hooks(t)
     cursor_removed = _uninstall_cursor_hooks(t)   # surgical for both hosts (removes only our entries)
+    bootstrap_removed = _uninstall_bootstrap(t)   # our marked AGENTS.md block + our .mdc rule only
     cfg = _config_path(t)
     cfg_removed = cfg.exists()
     if cfg_removed:
@@ -289,7 +380,8 @@ def uninstall(target: str, *, purge=False) -> dict:
     if state.exists() and purge:
         shutil.rmtree(state, ignore_errors=True)
     return {"ok": True, "target": str(t), "hooks_removed": hooks_removed,
-            "cursor_hooks_removed": cursor_removed, "config_removed": cfg_removed,
+            "cursor_hooks_removed": cursor_removed, "bootstrap_removed": bootstrap_removed,
+            "config_removed": cfg_removed,
             "ignore_removed": ig_removed, "state_kept": state_kept, "state_purged": (purge and not state_kept)}
 
 

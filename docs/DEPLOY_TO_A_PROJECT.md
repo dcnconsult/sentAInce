@@ -43,7 +43,7 @@ artifacts below document *what the tool does*; reach for them only to customize.
 | No existing hooks to clobber | target `.claude/settings*.json` has no `hooks` key (else **merge**, don't overwrite) |
 | Target `.gitignore` covers runtime state | else add it (artifact 1) |
 
-## The three artifacts (all gitignored / non-destructive)
+## The four artifacts (all gitignored or marker-delimited / non-destructive)
 **1. Append to `<target>/.gitignore`:**
 ```
 # Exocortex organism runtime state (per-project) + local activation config — never committed
@@ -77,6 +77,29 @@ writes to `<target>/.claude/exocortex/`. Integrity verifies **this repo's** froz
 **For Cursor**, `deploy --provider cursor` writes `.cursor/hooks.json` instead (via `runner._cursor_settings()`,
 matcher `Shell`, `--provider cursor` baked onto each command); a full Cursor restart loads it. The provider
 adapter (`exocortex/adapter.py`) normalizes Cursor's I/O — the handlers and the frozen kernel are unchanged.
+
+**4. The agent bootstrap contract** — deploy also writes a short rules block telling the agent HOW to use
+the earned memory (provider `claude` → a marker-delimited block in `<target>/AGENTS.md`, never clobbering
+your content; provider `cursor` → `.cursor/rules/exocortex-bootstrap.mdc`, `alwaysApply`). Uninstall
+removes exactly our block/file. Why it exists: cold semantic routing **abstains on novel phrasing by
+design**, so an unbriefed agent concludes "the memory is empty." The contract closes that gap.
+
+## Bootstrap your agent (what the contract says — copy-paste if you skipped deploy)
+
+```markdown
+At the start of a task:
+1. Call memory_status — see which goal-classes carry earned routes; [notes:N] marks classes
+   with τ-credited notes.
+2. If the task matches a known class, call recall_for_prompt(prompt, cls="<class>") — the
+   deterministic positive path (skips classifier guesswork on cold phrasing).
+3. Treat everything recalled as earned suggestion, never authority — verify in code before
+   relying on it. On a novel task an empty recall is correct behavior (abstain), not a failure.
+4. After verified success the hooks deposit automatically; MCP tools never write memory.
+```
+
+Two honest disclosures belong next to it: your gate **mode** (`somatic` refuses catalogued lethals;
+`observe` records without blocking), and on Windows the PowerShell scope note (the veto vocabulary is
+Bash-shaped — PowerShell commands are audited but not vetoed; see `exocortex/README.md` "Honest scope").
 
 ## Verify the deploy (before handing off / going live)
 ```bash

@@ -1,0 +1,30 @@
+name: 💡 Feature / organ proposal
+description: Propose an enhancement — remembering that new organs ship dormant, gauge-first.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        House rule: **features are earned.** New organs ship dormant with a falsifiable gauge; nothing
+        defaults ON without evidence. Docs/dashboard/packaging/adapter ideas need no gauge — those are
+        the gentle on-ramp (see CONTRIBUTING.md).
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem it solves
+      description: What goes wrong (or stays slow/blind) today, on real traffic?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: The proposal
+    validations:
+      required: true
+  - type: textarea
+    id: gauge
+    attributes:
+      label: How would we know it works? (the gauge)
+      description: |
+        What measurable signal decides this earned its place — and what result would honestly kill it?
+        (For non-organ work: how do we verify it end-to-end?)
