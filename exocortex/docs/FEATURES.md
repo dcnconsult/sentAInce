@@ -102,6 +102,16 @@ What the system does today, with the verified evidence behind each. Honest statu
   credited notes directly (the deliberate positive path, bypassing the lexical+classifier coincidence). Large
   vaults digest once in a background thread so a tool call never blocks (the 240s host-timeout fix). `mcp_server.py`.
 
+- **Estate dashboard** **[shipped, live-verified]** — every discovered repo on one Grafana pane
+  (`estate.json`, uid `exocortex-estate`): per-repo deposits/fail share/credit rate/at-cap/lethal-refused
+  table, estate totals, 6h top movers, the verdict board. A contract test renders the REAL exporter over
+  a frozen fixture and asserts every panel expression targets an emitted metric.
+- **Local alerts engine** **[shipped]** — `testbed/exporter/notify.py` (stdlib): detectors are pure folds
+  `(prev_state, observation) → (alerts, new_state)` so the backtest IS the live behavior. Free safety
+  detectors (never paywalled): lethal-refusal increments, HYPOXIA entry (edge, not level — anti-nag),
+  audit-chain break. Sinks: self-hosted webhook + best-effort desktop toast; per-fingerprint cooldown.
+  Commercial insight rules lazy-load only where the tuner leaf exists.
+
 ## Configuration & operations
 
 - **The Genome** **[shipped]** — one `exocortex_config.json` for every knob (thermodynamic, epistemic,
@@ -114,6 +124,15 @@ What the system does today, with the verified evidence behind each. Honest statu
   un-wires the hooks into a target's `.claude/settings.json`. Uninstall is **surgical** (strips only our hook
   entries; keeps the target's permissions/MCP/foreign hooks and accrued data unless `--purge`) and
   **non-invasive to the target's git** (ignore rules go to `.git/info/exclude`, a one-time `.bak`).
+- **Agent bootstrap contract (deploy artifact 4)** **[shipped]** — deploy writes the earned-memory calling
+  pattern where the agent will read it: a marker-delimited `AGENTS.md` block (claude) or
+  `.cursor/rules/exocortex-bootstrap.mdc` (cursor). `memory_status` at task start →
+  `recall_for_prompt(cls=…)` on known classes → *recall is earned suggestion, never authority* → hooks
+  deposit, MCP never writes. Mode-disclosing; idempotent; uninstall removes exactly our block. Closes the
+  one-shot-blindness gap (cold routing abstains by design; an unbriefed agent reads that as "empty").
+- **Vitals API (policy-grade)** **[shipped]** — `/api/vitals` now serves fail rate, lethal count, tier
+  occupancy, explore budget, and the declarative tail (segments ≥2 notes, median notes credited) — the
+  fields the Tuner's policy table keys on, free observability for everyone else.
 
 ## Research instrumentation
 

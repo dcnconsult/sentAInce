@@ -131,13 +131,22 @@ the managed-update cadence**, not obfuscation.
 
 ## Status
 
-**Shipped today:** the free local dashboard + control plane (now with CSRF guards, a `--read-only`
-monitoring posture, and an optional write token — the free/paid write seam), the locked safety gate, the
-completed community wheel (`sentaince` + `exocortex` + `cerebral`; tuner excluded and gate-asserted), the
-first **read-only** slices of the **Cerebral Substrate**, and the Tuner emulator's **commercial trust
-layer** (Ed25519 signing + DRM-free license/manifest tooling — see ADR-012). **Still unbuilt:** the
-packaged appliance image on a registry, any hosting, accounts/billing, the actuator. This document must
-not be read as a claim — see [`CLAIMS.md`](CLAIMS.md).
+**Shipped today — free tier:** the local dashboards (organism + technical + the multi-repo **estate**
+view) + control plane (CSRF guards, `--read-only` posture, optional write token — the free/paid write
+seam), the locked safety gate, **local alerts** (lethal-refusal / hypoxia / chain-break detectors,
+webhook + desktop sinks), the agent **bootstrap contract** written by deploy, the completed community
+wheel (`sentaince` + `exocortex` + `cerebral`; tuner excluded and gate-asserted), and the first
+**read-only** Cerebral Substrate slices.
+
+**Built in the private tree (the Appliance core, validated by its own test suite; not yet distributed):**
+the weekly **vitals digest** (hash-traceable insight cards off the local stores), the **autopilot** —
+suggest-then-verify with bounded **auto-revert** (acute-regression, verdict-at-20-deposits, unproven-
+window discipline), the ranked **estate rollup**, policy pack v2 (the ROADMAP §2 flip-triggers as code)
+with Ed25519-**signed releases**, the **appliance container** (license mounted read-only, DRM-free
+semantics), and the signed **update channel** (expiry blocks the pull, never the runtime).
+
+**Still unbuilt:** the appliance image on a distribution registry, any hosting, accounts/billing
+automation. This document must not be read as a claim — see [`CLAIMS.md`](CLAIMS.md).
 
 **See also:** [`STORY.md`](STORY.md) (the product in human terms) · [`CLAIMS.md`](CLAIMS.md) (binding ledger) ·
 [`../exocortex/testbed/README.md`](../exocortex/testbed/README.md).
