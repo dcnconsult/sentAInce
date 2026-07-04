@@ -39,6 +39,9 @@ PUBLIC_INCLUDE = [
 # analytics land here too as they are built.
 COMMERCIAL_EXCLUDE = [
     "exocortex/tuner/",
+    # the reflect gauge's verdict validates a paid-tier method (the reflection lenses) and names it;
+    # held with the leaf it gauges until the PI's IP review clears reflection for disclosure.
+    "results/reflection_gauge_v1/",
 ]
 
 # ---- never public under any circumstance ------------------------------------------------------------

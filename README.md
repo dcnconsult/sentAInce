@@ -50,6 +50,7 @@ part you came for:
 | A **success-weighted route cache** (memory that can't rot) | the pheromone colony (muscle memory) | `exocortex/colony.py` |
 | **Automatic cache decay / pruning** | circadian consolidation (sleep) | PreCompact hook |
 | A **knowledge base that only trusts what worked** | the declarative wiki (notebook) | `exocortex/wiki/` |
+| **Read-only ChatGPT / OpenAI MCP access** to earned memory | the ChatGPT Apps memory adapter | `exocortex/chatgpt_mcp.py`, `docs/CHATGPT_APP.md` |
 | **Adaptive rate/retention limits** | the endocrine organ (ships off — its own gauge said modest) | `exocortex/endocrine.py` |
 
 Full mapping (metaphor → CS reality → code → status): [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
@@ -72,6 +73,14 @@ Pick the path that fits you — no account, nothing leaves your machine.
 - **Want it working in your own project?** Follow the runbook in
   [`docs/DEPLOY_TO_A_PROJECT.md`](docs/DEPLOY_TO_A_PROJECT.md). It installs cleanly, runs in a safe
   watch-only mode by default, and uninstalls with one command.
+- **Want ChatGPT to read earned memory?** Install the optional MCP extra and run the read-only ChatGPT
+  Apps adapter. It exposes `search`/`fetch` plus native recall tools, but it never writes memory and is not
+  a ChatGPT Desktop safety veto:
+  ```
+  python -m pip install -e ".[mcp]"
+  sentaince-chatgpt-mcp --transport sse --host 127.0.0.1 --port 8000
+  ```
+  See [`docs/CHATGPT_APP.md`](docs/CHATGPT_APP.md).
 
 New to all this? [`docs/STORY.md`](docs/STORY.md) explains the whole system in everyday terms;
 [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) is the step-by-step operator's guide.
@@ -151,6 +160,7 @@ model or infrastructure, never the locked physics. Latest demo (`llama3:8b`, N=1
 | `experiments/`         | the A/B crucible runners (exp1–exp7 + the domain crucibles) |
 | `tests/`               | the 99-test deterministic suite (69 C1–C7 + 30 domain/adapter) |
 | `battle/` · `body/` · `docker/` · `demo/` | Track A.2 containerized battle-test (demonstration) |
+| `exocortex/chatgpt_mcp.py` | read-only ChatGPT Apps / OpenAI remote-MCP adapter for earned memory |
 | `vendor/kernel/`       | pinned read-only frozen-kernel snapshot (lets the suite run in-container) |
 | `docs/CLAIM_BOUNDARY.md` | the binding claim ledger (C1–C7) |
 | `docs/use_cases/`      | domain application designs + contracts |
