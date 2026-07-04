@@ -8,11 +8,15 @@
 colony + the declarative wiki — as MCP tools, so any MCP host (**Claude Desktop, Claude Code, Cursor,
 Cline, …**) can RETRIEVE it. One server, every surface: this is the *consume* side.
 
+`exocortex/chatgpt_mcp.py` is an additive ChatGPT Apps / OpenAI remote-MCP wrapper around the same read side.
+It adds the data-only `search(query)` / `fetch(id)` convention ChatGPT expects, plus the same native recall
+primitives. See [CHATGPT_APP.md](CHATGPT_APP.md).
+
 It is the answer to "can the organism integrate with any host?" — **memory, yes; the hard somatic veto, only
 where there are hooks.** An MCP server has no interception authority or per-tool exit-code callback (verified
 against the docs), so the *earn + enforce* half (somatic veto + τ-on-`exit 0`) needs **hooks** — live today on
 **Claude Code and Cursor** (see [DEPLOY_TO_A_PROJECT.md](DEPLOY_TO_A_PROJECT.md)); a hookless host like Claude
-Desktop gets **recall only**. This server is the read side that *all* surfaces share.
+Desktop or ChatGPT gets **recall only**. This server is the read side that *all* surfaces share.
 
 ## Tools
 The recall tools take an optional `repo` (see *Single vs multi-repo*) and an optional `cls` (an exact
@@ -28,9 +32,13 @@ reliable way to hit a positive return).
 
 | Tool | Returns |
 |---|---|
+| `search(query)` | ChatGPT-compatible data search: `{ "results": [{ "id", "title", "url" }] }`. Implemented in `chatgpt_mcp.py`; read-only. |
+| `fetch(id)` | ChatGPT-compatible data fetch: `{ "id", "title", "text", "url", "metadata" }` for an ID returned by `search`; read-only. |
+| `recall_for_prompt(prompt, repo="", cls="")` | The converged route plus any τ-verified declarative notes for a task prompt. |
 | `recall_procedural(task, repo="", cls="")` | The converged tool-use route for that class — τ earned only by verified `exit 0`. Abstains until a route repeats. |
 | `recall_notes(query, repo="", cls="")` | τ-verified declarative notes the work actually USED to reach `exit 0`. Surfaces a note only when `query` lexically matches one that earned τ in the class — so it abstains often, by design. Use `cls=` a `[notes]`-marked class for a reliable hit. |
 | `memory_status(repo="")` | Read-only vitals: goal-classes (deposits, converged route, `[notes]` = carries declarative credit), vault size. |
+| `memory_diff(repo="", mode="diff")` | In-memory baseline/diff of colony state; read-only snapshots, no store writes. |
 | `list_repos()` | Every repo this server can reach, with its goal-class count + declarative vault — names to use as `repo`. |
 | `resurrection_candidates(repo="", now="", limit=25)` | **Cerebral Substrate (Governor).** Stale OPEN research intents ("crack-fallers") in the repo's declarative vault — *declared* items (checkboxes + `ledger.json`) that opened, never closed, and went silent past a reasonable timeframe; ranked by days-silent, with dormant-paper clusters called out separately. Read-only: it surfaces, you resume/close. Composes the Cerebral S0 resurrection gauge into the shared read side; needs a declarative vault; declared-intents-only (recall is a floor). |
 
@@ -62,6 +70,18 @@ than a host's tool timeout (Claude Desktop cancels at **240 s**). So the persist
 cold digest**. `memory_status` never digests (node count appears once warm); `recall_notes` returns a
 "warming" note until the digest finishes (a few seconds), then serves instantly. Restart the server to
 re-digest after large vault changes.
+
+## Wire it into ChatGPT Apps / OpenAI remote MCP
+The ChatGPT wrapper defaults to SSE transport and a local bind:
+
+```bash
+python -m pip install -e ".[mcp]"
+sentaince-chatgpt-mcp --transport sse --host 127.0.0.1 --port 8000
+```
+
+Place it behind a trusted tunnel or reverse proxy before connecting it as a remote ChatGPT app. Bind to
+`0.0.0.0` only when that tunnel/proxy is the intended boundary. The wrapper adds `search`/`fetch`, read-only
+metadata, and a claim-boundary doc, but it does not make ChatGPT a host-side safety gate.
 
 ## Wire it into Claude Desktop
 `claude_desktop_config.json` (Settings → Developer → Edit Config):
@@ -97,6 +117,6 @@ On Code the hooks already inject this memory automatically; the MCP tools add *o
 BYO/non-hook agent reach the same store).
 
 ## Scope / not yet
-Read-only, lexical, stdio, single- **and** multi-repo (`list_repos` + the `repo` arg). Later: embedding
+Read-only, lexical, stdio/SSE, single- **and** multi-repo (`list_repos` + the `repo` arg). Later: embedding
 recall (semantic paraphrase matching, opt-in to stay light), a `.mcpb` Desktop Extension bundle (one-click
 install), and (separately) the MCP **gateway/proxy** pattern if a partial Desktop gate is ever wanted.
