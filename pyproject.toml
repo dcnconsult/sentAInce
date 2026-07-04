@@ -24,6 +24,7 @@ demo = ["rich>=13.0"]
 [project.scripts]
 sentaince-deploy = "exocortex.deploy:main"
 sentaince-mcp = "exocortex.mcp_server:main"
+sentaince-chatgpt-mcp = "exocortex.chatgpt_mcp:main"
 sentaince-exporter = "exocortex.testbed.exporter.metrics:main"
 
 [tool.hatch.build.targets.wheel]
