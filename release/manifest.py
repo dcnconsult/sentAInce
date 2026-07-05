@@ -42,6 +42,11 @@ COMMERCIAL_EXCLUDE = [
     # the reflect gauge's verdict validates a paid-tier method (the reflection lenses) and names it;
     # held with the leaf it gauges until the PI's IP review clears reflection for disclosure.
     "results/reflection_gauge_v1/",
+    # a feasibility probe held private per PI (no promotion) pending IP review — module, test, and
+    # findings held together. The method is not named in this public manifest until counsel clears it.
+    "battle/twin_reporter.py",
+    "battle/tests/test_twin_reporter.py",
+    "results/twin_reporter_probe_v1/",
 ]
 
 # ---- never public under any circumstance ------------------------------------------------------------

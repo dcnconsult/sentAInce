@@ -33,6 +33,10 @@ def test_is_public_community():
 def test_is_public_commercial_and_private_excluded():
     assert not M.is_public("exocortex/tuner/policy.py")          # the paid brain
     assert not M.is_public("exocortex/tuner/emulator.py")
+    assert not M.is_public("battle/twin_reporter.py")            # feasibility probe held private (no promotion)
+    assert not M.is_public("battle/tests/test_twin_reporter.py")
+    assert not M.is_public("results/twin_reporter_probe_v1/FINDINGS.md")
+    assert M.is_public("battle/README.md")                       # ...but the rest of battle/ still ships
     assert not M.is_public("patent/PROVISIONAL_CLAIMS_DRAFT.md")  # never public
     assert not M.is_public("docs/INVESTOR_SUMMARY.md")
     assert not M.is_public("exocortex_config.json")
