@@ -81,7 +81,7 @@ that `enhancetool` is absent, and that `num_ctx` ≥ the (disallowed-shrunk) pro
 ## Slices 2–5 (see the plan)
 - **2 — exporter:** `python -m exocortex.testbed.exporter.metrics` → Prometheus text on `:9109/metrics`
   (works against existing audit data immediately). Now **multi-repo** — see below.
-- **3 — observability:** `docker compose -f exocortex/testbed/compose/docker-compose.yml up -d` → Grafana on `:3000`.
+- **3 — observability:** `docker compose --project-directory exocortex/testbed/compose up -d` → Grafana on `:3000`.
 - **4 — repo-feeder:** ✅ built — `python -m exocortex.testbed.feeder --episodes N` drives a disposable repo
   to accrue real vitals (the science check). See "Slice 4" below.
 - **5 — open-webui (optional):** ollama inspection UI; **not** a hook data source (see gotcha above).
@@ -92,11 +92,19 @@ The stack is **three self-healing containers** — the metrics exporter is no lo
 process (it died on the host's first reboot). One `docker compose up -d` and it stays up.
 
 ```bash
-docker compose -f exocortex/testbed/compose/docker-compose.yml up -d
+docker compose --project-directory exocortex/testbed/compose up -d
 #   Control:    http://localhost:9109/    — tweak each repo's organs in the browser (anatomy-skinned)
 #   Grafana:    http://localhost:3000     — lands on "SentAInce — The Organism" (the story skin)
 #   Prometheus: http://localhost:9090
 ```
+
+> **The `-f` trap.** Don't bring the stack up with `docker compose -f …/docker-compose.yml up -d`: an
+> explicit `-f` loads *only* that file and **silently suppresses the auto-merge of a local
+> `docker-compose.override.yml`** — the stack comes up missing your machine-local mounts, and any repo
+> that depends on them reads all-zero (`exocortex_state_dir_present 0`). Run compose from the compose
+> directory, or pass `--project-directory` as above, so both files are discovered. After editing the
+> override, re-run `up -d` (which *recreates* changed containers) — a plain restart never re-reads
+> compose files.
 
 ### Two dashboard skins (same live data)
 
@@ -129,6 +137,27 @@ Deploy the organism into any repo under that root and it appears in Grafana's `$
 - **Central registry** (`~/.exocortex/repos.json`, mounted read-only) is the *override*: add a repo
   **outside** the scan root, or pin a custom display name. Auto-scan covers the common case; the registry
   covers the rest. Re-read every scrape — edit and save, no restart.
+
+  **A repo outside the scan root needs BOTH halves** — the registry *names* it, a mount *makes it
+  readable*. Registering alone yields a repo whose every series is zero (`exocortex_state_dir_present 0`
+  is the tell). Host paths never belong in the committed compose file, so the mount goes in a
+  machine-local `docker-compose.override.yml` next to `docker-compose.yml` (gitignored; auto-merged when
+  compose runs from that directory — see the `-f` trap above). Mount only what the exporter reads — the
+  `.claude` state dir and the activation config, read-only:
+  ```yaml
+  # docker-compose.override.yml (machine-local, never committed)
+  services:
+    exporter:
+      volumes:
+        - "/path/to/MyRepo/.claude:/projects-ext/MyRepo/.claude:ro"
+        - "/path/to/MyRepo/exocortex_config.json:/projects-ext/MyRepo/exocortex_config.json:ro"
+  ```
+  then register it **by its in-container path** in `~/.exocortex/repos.json`:
+  ```json
+  { "repos": [ { "name": "MyRepo", "root": "/projects-ext/MyRepo" } ] }
+  ```
+  Recreate the stack (`docker compose --project-directory exocortex/testbed/compose up -d`) and the repo's
+  real vitals appear under `repo="MyRepo"` within one scrape.
 - **History** is Prometheus's job, not Grafana's: the stack gives Prometheus a named volume + **1-year
   retention**, so the stream survives container recreation (`down -v` to wipe it).
 - **One synthetic series stays global:** the offline attribution-precision gauge is repo-independent, so it
@@ -205,7 +234,7 @@ Rule of thumb: stay in the **hundreds–low-thousands of nodes**. A 344k-node ar
 **3. Bring up the containerized stack** (the exporter reads each repo's live `exocortex_config.json`
 automatically — drop the file at the repo root and it is picked up; no `--config` flag needed):
 ```bash
-docker compose -f exocortex/testbed/compose/docker-compose.yml up -d
+docker compose --project-directory exocortex/testbed/compose up -d
 ```
 The exporter auto-scans every repo under the mounted projects root and labels each series `repo="<name>"`.
 (The old native single-repo `--config` invocation and the Windows `:9109` duplicate-bind gotcha are

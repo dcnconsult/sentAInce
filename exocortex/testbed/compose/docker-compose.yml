@@ -10,7 +10,8 @@
 #   grafana    — the dashboard (anonymous VIEWER by default — override locally to relax; see below).
 #   loki/promtail — the audit.jsonl log stream per repo.
 #
-# Bring up (from THIS directory, so a local docker-compose.override.yml is auto-loaded):
+# Bring up (from THIS directory, so a local docker-compose.override.yml is auto-loaded — NEVER via an
+# explicit `-f`, which loads only the named file and silently drops the override's machine-local mounts):
 #   cd exocortex/testbed/compose && docker compose up -d --build
 #   Control:    http://localhost:9109/          Grafana: http://localhost:3000
 #   Prometheus: http://localhost:9090
