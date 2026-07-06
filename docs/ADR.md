@@ -515,9 +515,67 @@ provenance a federated route carries. **Decision deferred; this ADR reserves the
 
 ---
 
+## ADR-015 — Reasoning discipline: agents render a triadic verdict and label the kind of claim
+
+**Status:** ADOPTED (2026-07-05). Operating discipline for any agent working in this project; the full
+instruction text is [REASONING_DISCIPLINE.md](REASONING_DISCIPLINE.md).
+
+**Context.** A read-only sandbox harvest over a private research-vault repo's session transcripts showed that
+valence — what was promoted, parked, or falsified — is *latent* in agent prose but **precision-bound**: the
+reliable signal is a *structured* validated/falsified artifact-ID convention the work already emits, not prose
+adjectives ("passed", "confirmed") that collide with homographs (arg-passing, acknowledgment). The cheapest
+way to get a clean, harvestable valence signal is therefore to **emit it consistently at reasoning time**, not
+to reverse-engineer it afterward.
+
+**Decision.** Agents apply a triadic decision method — **−1** falsify/park · **0** continue diagnostic
+exploration · **+1** promote only when evidence survives controls — prefer audit-grade reasoning over
+persuasive narrative, separate conceptual alignment from technical transfer, and label each claim's kind
+(proof machinery / emulator machinery / product architecture / experimental design / speculative framing),
+noting that the type is orthogonal to the PROVEN…MARGINAL strength tag.
+
+**Two guardrails.** (1) A rendered verdict is a **legible claim, never a consequence** — it never earns τ
+(ADR-001 / ADR-013); the falsifiable `−1 if <condition>` is the bridge back to verifiability. (2) **Abstention
+(0) is first-class** — no manufactured precision.
+
+**Why it's an ADR, not a style note.** It changes what agents *emit*, which is the emit-side half of a
+reflection loop (the read-side lens is tracked separately as a parked, gauge-first candidate). It is
+deliberative discipline that mirrors the substrate's mechanical valence (exit-0 = +1 τ, harm = −1 σ, abstain
+= 0), keeping agent judgments legible to the same consequence law. **Soft by nature:** it is instruction, not
+a frozen gate — it shapes reasoning, it does not enforce it, and it grants no authority (ADR-010 unchanged).
+
+---
+
+## ADR-016 — The R3 control-plane pin is a governance gate, re-baselined on the record — not a frozen monument
+
+**Status:** ADOPTED (2026-07-06). Enforced by
+`exocortex/tuner/tests/test_reflect_preamble.py::test_the_p1_pin_holds`.
+
+**Context.** R3 (the reflection-preamble organ) shipped as a *sibling* `UserPromptSubmit` hook and proved it
+with a pin: a test asserting `hook.py` / `colony.py` / `epistemic.py` are byte-identical since `746a482` — the
+null for the claim "reflection added nothing to the memory+gate control plane." A benign F3 provenance-hygiene
+fix (`colony.consolidate()` now prunes `meta` in lockstep with `tau`, `2acf273`) necessarily edits `colony.py`,
+tripping the pin — the first control-plane change since R3.
+
+**Decision.** The pin is a **governance gate, not a monument.** A deliberate, safety-argued, PI-approved
+control-plane change may pass, and passing is **recorded — never silent.** `2acf273` is admitted (pure hygiene;
+ADR-001 unaffected — no τ added or moved; the 99-test lock stays green; frozen DNA untouched), and the pin
+baseline is re-based `746a482 → 2acf273`. R3's original sibling guarantee is a permanent fact of history
+(`git diff 746a482 <R3-tip>` on the three files is empty) and held through v0.1.1; the live pin now enforces the
+freeze **forward from `2acf273`**.
+
+**Consequences.**
+- The freeze keeps meaning what it says *because* every move is on the record (this ADR + the test docstring). A
+  silent re-baseline — the failure mode this ADR forecloses — would let a later change hide behind "the pin
+  moved once."
+- Each future control-plane edit trips the pin again and must clear the same bar (safety argument + PI approval
+  + a recorded re-baseline) or be dropped. The gate is not weakened by being passed once.
+- The `meta ⊆ tau` invariant now holds on disk at every consolidate, not only after the next `load()`.
+
+---
+
 ## The through-line
 
-These fourteen decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
+These sixteen decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
 consequence, nothing unproven reaches the user's hot path or the committed defaults, and the organism's own
 integrity is a mathematical invariant — not a secret.**
 Consequence-sourcing (ADR-001) is the law; the σ economy (ADR-004) and suggest-then-verify (ADR-008) protect
@@ -532,7 +590,9 @@ product — the safety kernel is free and open by *license*, only the *autopilot
 is a service boundary plus signatures, never obfuscation; and the completion of the law states its negatives
 plainly — retrieval never earns τ (ADR-001) and **authority never earns τ** (ADR-013), so even a human in
 the loop credits only verified outcomes, with cross-repo federation (ADR-014) reserved as an open,
-consequence-preserving design space. The boundary of what these decisions do and do **not** buy is in
+consequence-preserving design space; and the reasoning discipline (ADR-015) carries the same valence up into
+how agents *deliberate* — a rendered −1/0/+1 verdict is a legible claim, never a consequence. The boundary of
+what these decisions do and do **not** buy is in
 [CLAIMS.md](CLAIMS.md) ("What this system is NOT") and [CLAIM_BOUNDARY.md](CLAIM_BOUNDARY.md). For the organs
 themselves, see the Exocortex docs ([CORE.md](../exocortex/docs/CORE.md),
 [WHITEPAPER.md](../exocortex/docs/WHITEPAPER.md)); for the somatic floor, the

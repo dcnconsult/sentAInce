@@ -215,6 +215,8 @@ class Colony:
         self.tau = {k: w for k, w in self.tau.items() if w >= floor}
         if len(self.tau) > ceiling:
             self.tau = dict(sorted(self.tau.items(), key=lambda kv: -kv[1])[:ceiling])
+        if self.meta:                        # F3: keep provenance in lockstep with the pruned/capped τ
+            self.meta = {k: m for k, m in self.meta.items() if k in self.tau}   # mirror deposit(); else orphans
         self.consolidations += 1
         self.last_consolidated = time.time()
 

@@ -173,7 +173,15 @@ pwsh -File exocortex/testbed/compose/autostart/install-autostart.ps1   # uninsta
   walking the tree (on `research-vault`: 3,947 tracked vs 6,889 total `.md`, and ~4× faster discovery per hook).
   Committed default stays `"all"` (ADR-003); `"tracked"` falls open to `"all"` on a non-git vault.
 - **Non-invasive + no exfil:** the hooks are local Python, write only to the gitignored state dir, and send
-  nothing off-host (MiniLM off when declarative is off).
+  nothing off-host. All MiniLM use — the wiki note-embeddings **and** the semantic cue-classifier — runs
+  fully local; nothing leaves the host.
+- **Classifier cold-start (hot path):** "MiniLM off" above scopes to the *wiki* embedder only. The
+  **cue-classifier** still loads MiniLM on `UserPromptSubmit` whenever `epistemic_classifier.mode =
+  "semantic"` (the genome default), independent of `declarative` — a cold first prompt can stall tens of
+  seconds (torch + model load), enough to trip a host hook-timeout, which drops that turn's earned-memory
+  recall injection (the `PreToolUse` somatic gate is unaffected). Keep MiniLM off the hot path with
+  `epistemic_classifier.mode = "lexical"` (or `EXOCORTEX_EMBED=0`), or raise the generated hooks' `timeout`
+  to keep `semantic`.
 
 ## Revert (instant)
 `python -m exocortex.deploy uninstall <target>` (surgical; keeps accrued data — add `--purge` to drop it).

@@ -85,3 +85,23 @@ def test_meta_is_pruned_in_lockstep_with_tau():
         col.deposit([("c", "d")], ts=2.0)                # a→b decays past the prune floor → its meta goes too
     assert f"a{SEP}b" not in col.tau and f"a{SEP}b" not in col.meta
     assert f"c{SEP}d" in col.meta                        # the live edge keeps its stamp
+
+
+def test_consolidate_prunes_meta_in_lockstep_with_tau(tmp_path, monkeypatch):
+    """consolidate() must sync meta to the pruned/capped τ, exactly as deposit() does.
+    Without it, a consolidated colony carries ORPHANED provenance on disk (meta keys with
+    no τ edge) — an on-disk break of the meta ⊆ tau invariant, cleaned only on the next
+    load()/deposit(). Regression guard for that gap (deposit was covered; consolidate was not)."""
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(tmp_path))
+    ab = C.PRUNE / C.DECAY * 0.99                         # one decay pass drops it just below the prune floor
+    col = C.Colony(label="cons",
+                   tau={f"a{SEP}b": ab, f"c{SEP}d": 5.0},
+                   meta={f"a{SEP}b": {"ts": 1.0, "model": "m"},
+                         f"c{SEP}d": {"ts": 2.0, "model": "m"}})
+    col.consolidate()                                    # a→b decays below the floor → pruned; c→d survives
+    assert f"a{SEP}b" not in col.tau
+    assert f"a{SEP}b" not in col.meta                    # provenance pruned in lockstep (no orphan)
+    assert f"c{SEP}d" in col.tau and f"c{SEP}d" in col.meta   # the survivor keeps its stamp
+    col.save()                                           # and the on-disk file satisfies meta ⊆ tau
+    d = json.loads((tmp_path / "colony_cons.json").read_text(encoding="utf-8"))
+    assert set(d.get("meta", {})) <= set(d.get("tau", {}))
