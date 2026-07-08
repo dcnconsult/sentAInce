@@ -215,9 +215,10 @@ for _fn in (
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Run the read-only SentAInce MCP server for ChatGPT Apps")
-    parser.add_argument("--transport", choices=("sse", "stdio"),
+    parser.add_argument("--transport", choices=("sse", "stdio", "streamable-http"),
                         default=os.environ.get("SENTAINCE_CHATGPT_TRANSPORT", "sse"),
-                        help="sse for ChatGPT remote MCP / Apps; stdio for local MCP clients")
+                        help="sse for ChatGPT remote MCP / Apps; stdio for local MCP clients; "
+                             "streamable-http for remote hosts on the current MCP convention")
     parser.add_argument("--host", default=os.environ.get("SENTAINCE_CHATGPT_HOST", "127.0.0.1"),
                         help="bind host for SSE; use 0.0.0.0 only behind a trusted tunnel/proxy")
     parser.add_argument("--port", type=int, default=int(os.environ.get("SENTAINCE_CHATGPT_PORT", "8000")),
@@ -229,10 +230,10 @@ def main(argv: list[str] | None = None) -> None:
         mcp.run(transport="stdio")
     else:
         # FastMCP.run() takes no host/port kwargs (verified against the pinned SDK: run(transport,
-        # mount_path)) — the SSE bind comes from the server settings.
+        # mount_path)) — the HTTP bind comes from the server settings.
         mcp.settings.host = args.host
         mcp.settings.port = args.port
-        mcp.run(transport="sse")
+        mcp.run(transport=args.transport)
 
 
 if __name__ == "__main__":

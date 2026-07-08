@@ -256,3 +256,24 @@ def test_memory_diff_snapshot_then_delta_is_read_only(tmp_path, monkeypatch):
     # memory_diff must not have written any memory file (only the planted+manual saves changed state)
     after = snap_files()
     assert set(after) - set(before) == {"colony_fresh-class_9.json"}   # only OUR save, not memory_diff's
+
+
+def test_cli_transport_flag_defaults_and_choices(monkeypatch):
+    """The transport flag is additive: no args ⇒ stdio (every existing install unchanged); the remote
+    transports parse with their bind settings; junk is rejected. Parsing only — nothing binds a port."""
+    monkeypatch.delenv("SENTAINCE_MCP_TRANSPORT", raising=False)
+    monkeypatch.delenv("SENTAINCE_MCP_HOST", raising=False)
+    monkeypatch.delenv("SENTAINCE_MCP_PORT", raising=False)
+
+    args = mcp_server._parse_args([])
+    assert (args.transport, args.host, args.port) == ("stdio", "127.0.0.1", 8001)
+
+    args = mcp_server._parse_args(["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "9000"])
+    assert (args.transport, args.host, args.port) == ("streamable-http", "0.0.0.0", 9000)
+
+    monkeypatch.setenv("SENTAINCE_MCP_TRANSPORT", "sse")     # env default honored, flag still wins
+    assert mcp_server._parse_args([]).transport == "sse"
+    assert mcp_server._parse_args(["--transport", "stdio"]).transport == "stdio"
+
+    with pytest.raises(SystemExit):
+        mcp_server._parse_args(["--transport", "carrier-pigeon"])

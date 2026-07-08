@@ -30,6 +30,8 @@ PUBLIC_INCLUDE = [
     ".github/",
     # top-level project files
     "README.md", "LICENSE", "NOTICE", "CONTRIBUTING.md", "pyproject.toml", "pyrightconfig.json", ".gitignore",
+    # the AGNTCY/OASF agent-directory record (machine-readable card for the MCP memory server)
+    "oasf-record.json",
 ]
 
 # ---- the paid tier — held OUT of the public tree even though under a public parent -------------------

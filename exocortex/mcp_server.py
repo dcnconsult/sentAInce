@@ -20,10 +20,12 @@ memory; tool calls never block on a cold digest. `memory_status` never digests a
 
 Repo selection: ``EXOCORTEX_STATE_DIR`` = one repo; ``EXOCORTEX_PROJECTS_ROOT`` = scan a parent for many;
 set both to include an out-of-root repo plus the fleet. Pass ``repo=<name>`` to the tools (see ``list_repos``).
-Run (stdio). Requires the ``mcp`` SDK (`pip install mcp`).
+Run (stdio by default; ``--transport sse`` / ``--transport streamable-http`` serve remote MCP hosts —
+streamable-http is the current remote-MCP convention). Requires the ``mcp`` SDK (`pip install mcp`).
 """
 from __future__ import annotations
 
+import argparse
 import contextlib
 import json
 import os
@@ -579,9 +581,31 @@ for _fn in (recall_procedural, recall_notes, recall_for_prompt, memory_status, m
     mcp.tool()(_fn)
 
 
-def main() -> None:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the read-only exocortex memory MCP server")
+    parser.add_argument("--transport", choices=("stdio", "sse", "streamable-http"),
+                        default=os.environ.get("SENTAINCE_MCP_TRANSPORT", "stdio"),
+                        help="stdio for local MCP hosts (default, unchanged); sse / streamable-http "
+                             "for remote MCP (streamable-http is the current remote-MCP convention)")
+    parser.add_argument("--host", default=os.environ.get("SENTAINCE_MCP_HOST", "127.0.0.1"),
+                        help="bind host for the HTTP transports; use 0.0.0.0 only behind a trusted "
+                             "tunnel/proxy")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("SENTAINCE_MCP_PORT", "8001")),
+                        help="bind port for the HTTP transports")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = _parse_args(argv)
     threading.Thread(target=_prewarm_all, daemon=True).start()   # digest vaults off the request path
-    mcp.run(transport="stdio")
+    if args.transport == "stdio":
+        mcp.run(transport="stdio")
+    else:
+        # FastMCP.run() takes no host/port kwargs (run(transport, mount_path)) — bind via settings,
+        # same as chatgpt_mcp.py. Memory stays read-only regardless of transport (ADR-001).
+        mcp.settings.host = args.host
+        mcp.settings.port = args.port
+        mcp.run(transport=args.transport)
 
 
 if __name__ == "__main__":
