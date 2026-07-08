@@ -46,6 +46,9 @@ actually closes (internal design notes).
 - Every downstream ADR (the σ economy, suggest-then-verify, min_overlap) exists to *protect* this law at a
   new layer. Collapsing it invalidates the colony, the wiki, and the bridge at once.
 
+**Recall discipline:** recalling a note never reinforces its trust — retrieval earns no τ; a memory's
+trust is deposited only by a closed `action → … → exit 0` consequence, and otherwise it decays.
+
 ---
 
 ## ADR-002 — Gauge-first: measure the prize offline before wiring the organ
@@ -203,6 +206,9 @@ gauge 0.79; the planted sim/flagship runs 0.50, every task false-crediting its c
 
 **Status:** LOCKED engineering invariant ("the iron law"). Evidence: `../exocortex/colony.py`;
 `../exocortex/wiki/bridge.py` ([BRIDGE_ORGAN_DESIGN.md](../exocortex/docs/BRIDGE_ORGAN_DESIGN.md) §"Lanes preserved").
+
+**Hot path posture:** The hot path does **not** lean on numpy — it is numpy-free, pure-Python, and
+fail-open; numpy and the kernel geometry are confined to the sleep lane (`PreCompact` consolidation).
 
 **Context.** The live organ runs *inside* Claude Code hooks on the per-tool critical path
 (`UserPromptSubmit`, `PreToolUse`, `PostToolUse`). Anything on that path that is slow or that can *throw*

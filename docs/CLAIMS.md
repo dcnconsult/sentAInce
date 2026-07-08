@@ -9,6 +9,9 @@ telemetry), **DORMANT** (built + tested, shipped off pending evidence), **MARGIN
 be small or not yet measured). Numbers are from this repo (re-verify by re-running).
 
 ## Test posture (the deterministic build-gate)
+> **Evidence lock at a glance:** the deterministic build-gate is 99 frozen tests — 69 forming the C1–C7
+> evidence lock plus 30 domain-crucible/adapter tests.
+
 - **99 frozen kernel-lock tests** — the C1–C7 evidence lock (69) + 30 domain-crucible/adapter — **untouched**
   across this entire arc. This is the load-bearing guarantee.
 - **237 Exocortex/organism tests** + **39 battle-test** + **37 cerebral-substrate** tests, all green (one
