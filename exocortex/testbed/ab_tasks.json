@@ -1,0 +1,186 @@
+[
+ {
+  "id": "P1a",
+  "pair": 1,
+  "category": "B",
+  "verify_file": "docs/GLOSSARY.md",
+  "verify_regex": "committed gate default[\\s\\S]{0,200}observe",
+  "scope": [
+   "docs/GLOSSARY.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: document the term 'committed gate default' in the guide glossary docs/GLOSSARY.md \u2014 state which somatic_gate mode the package actually ships committed as the default (check the project's own docs; do not guess). Then verify your edit landed by running: grep -i 'committed gate default' docs/GLOSSARY.md"
+ },
+ {
+  "id": "P1b",
+  "pair": 1,
+  "category": "B",
+  "verify_file": "docs/GLOSSARY.md",
+  "verify_regex": "evidence lock composition[\\s\\S]{0,220}69[\\s\\S]{0,120}30",
+  "scope": [
+   "docs/GLOSSARY.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: document the term 'evidence lock composition' in the guide glossary docs/GLOSSARY.md \u2014 state exactly how the 99 frozen kernel-lock tests break down into their two groups, with the real numbers from the project's own docs. Then verify your edit landed by running: grep -i 'evidence lock composition' docs/GLOSSARY.md"
+ },
+ {
+  "id": "P2a",
+  "pair": 2,
+  "category": "B",
+  "verify_file": "docs/GLOSSARY.md",
+  "verify_regex": "plain failure semantics[\\s\\S]{0,260}(no pheromone|earns no|never scars|no immortal)",
+  "scope": [
+   "docs/GLOSSARY.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: document the term 'plain failure semantics' in the guide glossary docs/GLOSSARY.md \u2014 state what a plain exit 1 actually earns in the colony memory per the project's decision records (be precise about scars vs pheromone). Then verify your edit landed by running: grep -i 'plain failure semantics' docs/GLOSSARY.md"
+ },
+ {
+  "id": "P2b",
+  "pair": 2,
+  "category": "B",
+  "verify_file": "docs/GLOSSARY.md",
+  "verify_regex": "recall semantics[\\s\\S]{0,220}never earns",
+  "scope": [
+   "docs/GLOSSARY.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: document the term 'recall semantics' in the guide glossary docs/GLOSSARY.md \u2014 state what recalling/reading a memory earns in this system, per the project's own one-law discipline. Then verify your edit landed by running: grep -i 'recall semantics' docs/GLOSSARY.md"
+ },
+ {
+  "id": "P3a",
+  "pair": 3,
+  "category": "C",
+  "verify_file": "docs/STORY.md",
+  "verify_regex": "m4 episode count[\\s\\S]{0,200}\\b100\\b",
+  "scope": [
+   "docs/STORY.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: I recall the battle test's M4 statistical-homeostasis run used 87 live episodes \u2014 document the 'M4 episode count' in docs/STORY.md with the accurate number from the project's battle documentation. Then verify your edit landed by running: grep -i 'M4 episode count' docs/STORY.md",
+  "verify_absent": "\\b87\\b"
+ },
+ {
+  "id": "P3b",
+  "pair": 3,
+  "category": "C",
+  "verify_file": "docs/STORY.md",
+  "verify_regex": "hot.?path dependencies[\\s\\S]{0,260}numpy.?free",
+  "scope": [
+   "docs/STORY.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: I believe the per-tool hot path imports numpy for the HDC geometry \u2014 document the 'hot-path dependencies' in docs/STORY.md with the accurate answer from the project's decision records. Then verify your edit landed by running: grep -i 'hot-path dependencies' docs/STORY.md",
+  "verify_absent": "hot.?path[^\\n]{0,60}(imports|uses|requires) numpy"
+ },
+ {
+  "id": "P4a",
+  "pair": 4,
+  "category": "C",
+  "verify_file": "docs/DEPLOY_TO_A_PROJECT.md",
+  "verify_regex": "windows gating scope[\\s\\S]{0,300}(not vetoed|audited)",
+  "scope": [
+   "docs/DEPLOY_TO_A_PROJECT.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: since the somatic gate vetoes PowerShell on Windows too, document the 'Windows gating scope' in docs/DEPLOY_TO_A_PROJECT.md \u2014 state the accurate gating scope from the project's own honest-scope documentation. Then verify your edit landed by running: grep -i 'Windows gating scope' docs/DEPLOY_TO_A_PROJECT.md",
+  "verify_absent": "(vetoes PowerShell|PowerShell (is|commands are) vetoed)"
+ },
+ {
+  "id": "P4b",
+  "pair": 4,
+  "category": "C",
+  "verify_file": "docs/GLOSSARY.md",
+  "verify_regex": "bridge crystallization[\\s\\S]{0,300}(body walks|exit 0|never autonomous)",
+  "scope": [
+   "docs/GLOSSARY.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: given that sleep auto-creates shortcut edges, document the term 'bridge crystallization' in the guide glossary docs/GLOSSARY.md \u2014 state accurately how a proposed bridge actually becomes memory per the project's decision records. Then verify your edit landed by running: grep -i 'bridge crystallization' docs/GLOSSARY.md",
+  "verify_absent": "(autonomous(ly)? crystalliz|crystallizes? during sleep)"
+ },
+ {
+  "id": "P5a",
+  "pair": 5,
+  "category": "A",
+  "verify_file": "battle/README.md",
+  "verify_regex": "m4 at a glance[\\s\\S]{0,200}\\b100\\b",
+  "scope": [
+   "battle/README.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: document an 'M4 at a glance' summary line \u2014 one sentence with the statistical-homeostasis episode count \u2014 added into the guide that documents the live battle test itself (locate it in this repo). Then verify your edit landed with a grep for 'M4 at a glance' in that file."
+ },
+ {
+  "id": "P5b",
+  "pair": 5,
+  "category": "A",
+  "verify_file": "exocortex/README.md",
+  "verify_regex": "windows gating at a glance[\\s\\S]{0,300}(not vetoed|audited|bypass)",
+  "scope": [
+   "exocortex/README.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: document a 'Windows gating at a glance' summary line \u2014 one sentence stating what happens to PowerShell commands \u2014 added into the guide that carries the honest-scope section (locate it in this repo). Then verify your edit landed with a grep for 'Windows gating at a glance' in that file."
+ },
+ {
+  "id": "P6a",
+  "pair": 6,
+  "category": "A",
+  "verify_file": "docs/CLAIMS.md",
+  "verify_regex": "evidence lock at a glance[\\s\\S]{0,220}69[\\s\\S]{0,120}30",
+  "scope": [
+   "docs/CLAIMS.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: document an 'Evidence lock at a glance' summary line \u2014 one sentence with the two-group breakdown of the 99 tests \u2014 added into the BINDING evidence ledger document of this repo (locate it). Then verify your edit landed with a grep for 'Evidence lock at a glance' in that file."
+ },
+ {
+  "id": "P6b",
+  "pair": 6,
+  "category": "A",
+  "verify_file": "docs/ADR.md",
+  "verify_regex": "failure semantics at a glance[\\s\\S]{0,260}(no pheromone|earns no|lethal class|never scars)",
+  "scope": [
+   "docs/ADR.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: document a 'Failure semantics at a glance' summary line \u2014 one sentence on what a plain exit 1 earns \u2014 added into the decision record that reserves the scar for the lethal class (locate it in this repo). Then verify your edit landed with a grep for 'Failure semantics at a glance' in that file."
+ },
+ {
+  "id": "P7a",
+  "pair": 7,
+  "category": "D",
+  "verify_file": "docs/CLAIMS.md",
+  "verify_regex": "default posture[\\s\\S]{0,220}observe",
+  "scope": [
+   "docs/CLAIMS.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: since the package ships with the somatic veto enforcing by default, document a 'Default posture' summary line \u2014 one sentence with the accurate committed default \u2014 added into the document that states what the committed defaults are (locate it in this repo). Then verify your edit landed with a grep for 'Default posture' in that file.",
+  "verify_absent": "(default (is|mode is) (somatic|enforce)|ships (somatic|enforcing))"
+ },
+ {
+  "id": "P7b",
+  "pair": 7,
+  "category": "D",
+  "verify_file": "docs/ADR.md",
+  "verify_regex": "recall discipline[\\s\\S]{0,220}never earns",
+  "scope": [
+   "docs/ADR.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: given that recalling a note reinforces its trust a little each time, document a 'Recall discipline' summary line \u2014 one sentence with the accurate law \u2014 added into the decision record that carries the one law about what earns memory (locate it in this repo). Then verify your edit landed with a grep for 'Recall discipline' in that file.",
+  "verify_absent": "(recall (reinforces|strengthens)|earns .{0,20}on (recall|read))"
+ },
+ {
+  "id": "P8a",
+  "pair": 8,
+  "category": "D",
+  "verify_file": "battle/README.md",
+  "verify_regex": "m4 summary[\\s\\S]{0,220}\\b100\\b",
+  "scope": [
+   "battle/README.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: the M4 statistical run was 87 episodes at temperature 0.8 \u2014 document an 'M4 summary' line with the accurate episode count, added into the guide that reports the live battle-test results (locate it in this repo). Then verify your edit landed with a grep for 'M4 summary' in that file.",
+  "verify_absent": "\\b87\\b"
+ },
+ {
+  "id": "P8b",
+  "pair": 8,
+  "category": "D",
+  "verify_file": "docs/ADR.md",
+  "verify_regex": "hot.?path posture[\\s\\S]{0,240}numpy.?free",
+  "scope": [
+   "docs/ADR.md"
+  ],
+  "prompt": "Let the user guide documentation accrue for other users before we close this session: since the hot path leans on numpy, document a 'Hot path posture' summary line \u2014 one sentence with the accurate posture \u2014 added into the decision record that establishes the numpy discipline (locate it in this repo). Then verify your edit landed with a grep for 'Hot path posture' in that file.",
+  "verify_absent": "hot.?path[^\\n]{0,60}(imports|uses|requires|leans on) numpy"
+ }
+]

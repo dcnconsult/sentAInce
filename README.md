@@ -1,13 +1,12 @@
 # 🌱 SentAInce
 
-### A safety reflex and an honest memory for AI coding agents.
+### A safety reflex and an honest memory for AI coding agents. Local, unobtrusive, free.
 
-It **physically refuses catalogued lethal actions** — even when the model is prompt-injected into proposing
-one — and it **only remembers what actually worked**. Runs locally. Open source. **Safety is never for sale.**
-
-*(Claim boundary, up front: the deterministic evidence lock proves the refusal logic under mock
-executors — it records intent, not syscalls. Real-body protection is the layered container posture
-described in [`SECURITY.md`](SECURITY.md).)*
+Your coding agent is powerful and forgetful, and it will cheerfully run a catastrophic command if a
+prompt injection asks nicely. SentAInce wraps it in a **body**: an immune system that **physically
+refuses catalogued lethal actions** — even when the model itself is compromised — and a memory that
+**only remembers what actually worked**. It runs entirely on your machine, installs in minutes, stays
+out of your way, and uninstalls with one command. **Safety is never for sale.**
 
 ![License](https://img.shields.io/badge/license-Apache--2.0-1E6F5C)
 ![Python](https://img.shields.io/badge/python-3.11%2B-3776AB)
@@ -16,27 +15,64 @@ described in [`SECURITY.md`](SECURITY.md).)*
 ![Local-first](https://img.shields.io/badge/runs-100%25%20local-555)
 
 > A **SyncQutrit Research Group** product ([syncqutrit.com](https://syncqutrit.com)) · part of the **FreqOS**
-> software portfolio ([freqos.com](https://freqos.com)). Phase II of the FreqOS arc — a *synthetic immune system*.
+> software portfolio ([freqos.com](https://freqos.com)).
 
 ---
 
-**Why it's different.** Most "AI memory" rewards whatever gets *retrieved often* — popularity as a stand-in
-for usefulness — which is exactly why a knowledge base bolted onto an LLM rots. SentAInce obeys one law
-instead: **a memory is earned by a closed `action → success (exit 0)` chain — never by being read or
-repeated.** That single rule keeps the memory clean; the immune system, the muscle memory, and the
-sleep-time pruning all follow from it. It runs on your machine, under Claude Code or Cursor, and the whole
-body is free and open forever.
+## Pick your door
 
-## In human terms
+| You want to… | Start here | Time |
+|---|---|---|
+| 🛡️ **Protect your agent now** | [Five minutes to a safer agent](#five-minutes-to-a-safer-agent) | ~5 min |
+| 💪 **Give your agent a memory that earns trust** | [The one law](#the-one-law) | 2 min read |
+| 🔬 **See the evidence before you believe anything** | [The evidence lock](#the-evidence-lock--seven-experiments-c1c7) | as long as you like |
 
-SentAInce wraps an AI coding agent in a **body borrowed from biology**: an 🛡️ **immune system** that
-reflexively refuses lethal actions, 💪 **muscle memory** that forms *only when work actually succeeds*, a
-📖 **notebook** whose notes earn trust the same way, and 😴 **sleep** that forgets what went unused. The one
-law underneath all of it: **a memory is earned by a closed `action → success (exit 0)` chain — never by
-being read or repeated.** Popularity is not utility; that rule is why the memory stays clean. Safety is
-never for sale — the immune system runs locally and free, always.
+## Five minutes to a safer agent
 
-**→ Read the full story (anatomy + honest numbers + what the dashboard shows): [`docs/STORY.md`](docs/STORY.md).**
+Works with **Claude Code** and **Cursor**. No account. No telemetry. Nothing leaves your machine.
+
+```bash
+pip install sentaince
+python -m exocortex.deploy install /path/to/your/project
+```
+
+That's it. Your agent's sessions now run through the organism's hooks:
+
+- **Watch-only by default.** It ships observing and auditing — it changes nothing about your agent's
+  behavior until *you* opt in to the safety veto. Cautious defaults are a feature, not a limitation.
+- **Unobtrusive by design.** Every hook is fail-open: if anything is slow or wrong, your agent proceeds
+  untouched. The organism never wedges your session — that rule outranks every feature we ship.
+- **Reversible in one command.** `python -m exocortex.deploy uninstall /path/to/your/project` removes it
+  surgically; your accrued memory is kept unless you `--purge`. Deleting one config file reverts to
+  dormant defaults.
+
+The full walkthrough — what you'll see in the first session, how the memory starts accruing, the live
+dashboard — is in [`docs/QUICKSTART.md`](docs/QUICKSTART.md). The operator's runbook is
+[`docs/DEPLOY_TO_A_PROJECT.md`](docs/DEPLOY_TO_A_PROJECT.md).
+
+**Just curious first?** Watch the safety reflex refuse a prompt-injected lethal command, from a fresh
+clone, no setup beyond pip:
+
+```bash
+python -m pip install -e ".[dev]"
+python experiments/exp1_autoimmune.py      # a compromised model proposes a lethal action; the gate refuses
+python -m pytest -q tests                  # the full 99-test evidence lock, deterministic
+```
+
+## The one law
+
+Most "AI memory" rewards whatever gets *retrieved often* — popularity as a stand-in for usefulness —
+which is exactly why a knowledge base bolted onto an LLM rots. SentAInce obeys one law instead:
+
+> **A memory is earned by a closed `action → success (exit 0)` chain — never by being read or repeated.**
+
+Everything else follows from that rule. The 💪 **muscle memory** (converged tool-routes for the kinds of
+tasks *you* actually do) forms only when work verifiably succeeds. The 📖 **notebook** holds notes that
+earn trust the same way. 😴 **Sleep** (compaction time) prunes what went unused. And the 🛡️ **immune
+system** rests on topology, not on the model's judgment — a prompt-injected model can *propose* anything;
+the catalogued lethal classes still don't execute.
+
+**→ The whole organism in everyday language, with honest numbers: [`docs/STORY.md`](docs/STORY.md).**
 
 ### If you're shopping for… (the metaphor, translated)
 
@@ -55,48 +91,53 @@ part you came for:
 
 Full mapping (metaphor → CS reality → code → status): [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
 
-## Getting started
+**Want the live dashboard?** Bring up the local monitoring stack (Docker) and open your browser — it
+lands on the plain-language **"SentAInce — The Organism"** dashboard:
 
-Pick the path that fits you — no account, nothing leaves your machine.
+```bash
+cd exocortex/testbed/compose && docker compose up -d --build     # then open http://localhost:3000
+```
 
-- **Just curious? Watch the safety reflex work (no setup, ~1 min).** From a fresh clone:
-  ```
-  python -m pip install -e ".[dev]"          # numpy + pytest — everything the demo and the lock need
-  python experiments/exp1_autoimmune.py      # a prompt-injected model proposes a lethal action; the gate refuses it
-  python -m pytest -q tests                    # the full 99-test evidence lock, deterministic
-  ```
-- **Want the live dashboard?** Bring up the local monitoring stack (Docker) and open your browser — it
-  lands on the plain-language **"SentAInce — The Organism"** dashboard:
-  ```
-  cd exocortex/testbed/compose && docker compose up -d --build     # then open http://localhost:3000
-  ```
-- **Want it working in your own project?** Follow the runbook in
-  [`docs/DEPLOY_TO_A_PROJECT.md`](docs/DEPLOY_TO_A_PROJECT.md). It installs cleanly, runs in a safe
-  watch-only mode by default, and uninstalls with one command.
-- **Want ChatGPT to read earned memory?** Install the optional MCP extra and run the read-only ChatGPT
-  Apps adapter. It exposes `search`/`fetch` plus native recall tools, but it never writes memory and is not
-  a ChatGPT Desktop safety veto:
-  ```
-  python -m pip install -e ".[mcp]"
-  sentaince-chatgpt-mcp --transport sse --host 127.0.0.1 --port 8000
-  ```
-  See [`docs/CHATGPT_APP.md`](docs/CHATGPT_APP.md).
+## Where this is going
 
-New to all this? [`docs/STORY.md`](docs/STORY.md) explains the whole system in everyday terms;
-[`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) is the step-by-step operator's guide.
+Today the organism guards and remembers one repo at a time, under Claude Code or Cursor. The arc we're
+building toward — in the open, each step gated by its own evidence — is bigger:
 
----
+- **One memory discipline across your whole desk**: coding, research, and personal knowledge
+  environments sharing the same earned-trust law (cross-repo federation is designed and
+  [on the record](docs/ADR.md) as PROPOSED — we publish designs before code, and status tags mean what
+  they say).
+- **A governed organ for agent fleets**: the hash-chained audit trail, tamper-evident memory, and
+  policy-bound gates are being shaped to plug into emerging agent-governance frameworks — so a company
+  can adopt agent memory *with* corporate standards, not despite them.
+- **A community that measures**: this project grew up gauge-first — features earn their place by
+  measurement or they ship dormant. The most useful thing a user can do isn't star the repo; it's run
+  the gauges on their own corpus and tell us what they see.
 
-It is additive over, and imports read-only from, the **frozen `circle_of_fifths_rc2` kernel**
-(lock `b0702a3`, tag `stigmergic-sparsity-v0.78-evidence-lock` — the v0.78 head, vendored
-read-only at `vendor/kernel/`). The sibling `circle_of_fifths_rag` arc (its own kernel lock
-`0985067`) and the organism/RAG freezes are untouched.
+Everything above is labeled by its real status — SHIPPED, DORMANT, or PROPOSED — in the docs. We'd
+rather show you the vision with honest gates than a demo with hidden wires.
+
+## Community
+
+- **Issues & ideas** — bug reports and design discussions are answered by the maintainer;
+  [open issues](https://github.com/dcnconsult/sentAInce/issues) get real dispositions, not labels.
+- **Agents welcome.** This repo has merged pull requests authored by coding agents (with credit
+  trailers). If your agent found a bug or wrote a fix, send it — see
+  [`CONTRIBUTING.md`](CONTRIBUTING.md).
+- **Run the gauge, post the numbers.** The memory subsystem carries read-only gauges you can run on
+  your own accrued corpus — one command each. Results (including nulls!) are the contribution this
+  project values most.
 
 ## The evidence lock — seven experiments (C1–C7)
 
-A falsifiable arc, scoped to a deterministic symbolic harness. Every claim is broken by its
-load-bearing null or it is vacuous; **two of the seven are intended −1s** (boundaries the arc
-was run to produce), not failed wins.
+Every claim in this repo is bounded by [`docs/CLAIMS.md`](docs/CLAIMS.md) — the binding ledger nothing
+may exceed. The core safety claims rest on a falsifiable arc, scoped to a deterministic symbolic
+harness: every claim is broken by its load-bearing null or it is vacuous, and **two of the seven
+verdicts are intended −1s** (boundaries the arc was run to produce), not failed wins.
+
+*(Claim boundary, stated plainly: the deterministic evidence lock proves the refusal logic under mock
+executors — it records intent, not syscalls. Real-body protection is the layered container posture
+described in [`SECURITY.md`](SECURITY.md).)*
 
 | # | Claim | Verdict | Evidence (tests) |
 |---|-------|---------|------------------|
@@ -109,18 +150,32 @@ was run to produce), not failed wins.
 | **C6** | **Outcome-conditioned oracle** — gating on the sandboxed *effect* vs a declared invariant resolves the C4→C4-R→C5 walls. | **+1** | `exp6_outcome_oracle.py` (9) |
 | **C7** | **Somatic composition crucible** — the four organs survive a starving ambush together; two cross-organ gaps located and each closed with a minimal twin-wire. | **+1 HOMEOSTASIS** | `exp7_crucible.py` (8) |
 
-```
+```bash
 python experiments/exp1_autoimmune.py           # any experiment runs standalone (+ --json)
-python -m pytest -q tests                        # the deterministic suite
+python -m pytest -q tests                       # the deterministic suite
 ```
 
 The suite is **99 tests**: the **69-test C1–C7 evidence lock** + **30** domain-crucible /
-adapter tests (see *Applications* below). Pure-Python, deterministic (same seed →
-byte-identical ledger), `numpy` + `pytest` only — no Docker, no Ollama, no real syscalls in the
-lock; the only "execution" is `MockExecutor`, which records intent. Determinism is deliberate: a
-real, non-deterministic LLM would break the reproducible −1/+1, so the locked claims use a
-scripted proposer. See [`docs/CLAIM_BOUNDARY.md`](docs/CLAIM_BOUNDARY.md) for the binding ledger
-of what each experiment does and does **not** claim.
+adapter tests. Pure-Python, deterministic (same seed → byte-identical ledger), `numpy` + `pytest` only —
+no Docker, no real syscalls in the lock; the only "execution" is `MockExecutor`, which records intent.
+Determinism is deliberate: a real, non-deterministic LLM would break the reproducible −1/+1, so the
+locked claims use a scripted proposer. See [`docs/CLAIM_BOUNDARY.md`](docs/CLAIM_BOUNDARY.md) for the
+binding ledger of what each experiment does and does **not** claim.
+
+**And the live demonstration** (labeled, never a substitute for the lock): the same composition in a
+real Docker container with a real LLM head over a real, disposable body — latest run (`llama3:8b`,
+N=100): survival **1.000**, **0** lethal slips, 100 distinct episodes. See
+[`docs/battle_test/`](docs/battle_test/WHITEPAPER.md). The organism is additive over, and imports
+read-only from, the frozen `circle_of_fifths_rc2` kernel (lock `b0702a3`, vendored at `vendor/kernel/`).
+
+## Applications — domain crucibles (separate tier, **not** in the C1–C7 ledger)
+
+The same locked organs re-skinned onto hostile domain substrates as deterministic,
+Experiment-1-style contracts (each with a load-bearing null). **Built + `+1`** (2026-06-26):
+`manufacturing`, `scada`, `soc`, `spacecraft` (`experiments/*_crucible.py`, 6 tests each).
+**Design-only** (human-authority bounded, no crucible yet): medical, military, search-and-rescue.
+These are *applications* of the locked physics, kept out of the C1–C7 claim ledger.
+See [`docs/use_cases/`](docs/use_cases/README.md).
 
 ## The standard interface (provider-agnostic seam)
 
@@ -128,26 +183,8 @@ A tool/action = `(name, description, JSON-Schema input)`; the proposer emits a t
 the **host decides execution**. This is the common shape of Anthropic tool use, OpenAI/Ollama
 function-calling, and MCP — so the deterministic stub and a real local model are
 interchangeable behind `sentaince.interface.tools.Proposer`. The `OllamaProposer`
-(`interface/ollama.py`) is the live additive swap (Track A demo / Track A.2 container); MCP is
-the promotion path for exposing the ActionGraph across a process boundary.
-
-## Applications — domain crucibles (separate tier, **not** in the C1–C7 ledger)
-
-The same locked organs re-skinned onto hostile domain substrates as deterministic,
-Experiment-1-style contracts (each with a load-bearing null). **Built + `+1`** (2026-06-26):
-`manufacturing`, `scada`, `soc`, `spacecraft` (`experiments/*_crucible.py`, 6 tests each — the
-30 non-C1–C7 tests, with `test_ollama_adapter`). **Design-only** (human-authority bounded, no
-crucible yet): medical, military, search-and-rescue. These are *applications* of the locked
-physics, kept out of the C1–C7 claim ledger. See [`docs/use_cases/`](docs/use_cases/README.md).
-
-## Track A.2 — containerized battle-test (labeled demonstration, **never** a lock)
-
-`battle/`, `body/`, `docker/`, and `demo/live_homeostasis.py` carry the C7 composition into a
-real Docker container with a real LLM head (OpenAI-compatible) over a real, disposable body.
-It is explicitly **non-deterministic** and can never move a C-verdict; a `0`/`−1` indicts the
-model or infrastructure, never the locked physics. Latest demo (`llama3:8b`, N=100): survival
-**1.000**, **0** lethal slips, **100 distinct** runs (labeled). See
-[`docs/battle_test/`](docs/battle_test/WHITEPAPER.md).
+(`interface/ollama.py`) is the live additive swap; MCP is the promotion path for exposing the
+ActionGraph across a process boundary.
 
 ## Layout
 
@@ -159,14 +196,13 @@ model or infrastructure, never the locked physics. Latest demo (`llama3:8b`, N=1
 | `sentaince/kernel/`    | read-only shim that *locates* the frozen kernel |
 | `experiments/`         | the A/B crucible runners (exp1–exp7 + the domain crucibles) |
 | `tests/`               | the 99-test deterministic suite (69 C1–C7 + 30 domain/adapter) |
-| `battle/` · `body/` · `docker/` · `demo/` | Track A.2 containerized battle-test (demonstration) |
+| `exocortex/`           | the deployable body: hooks, memory, deploy tooling, gauges, testbed |
+| `battle/` · `body/` · `docker/` · `demo/` | containerized battle-test (labeled demonstration) |
 | `exocortex/chatgpt_mcp.py` | read-only ChatGPT Apps / OpenAI remote-MCP adapter for earned memory |
 | `vendor/kernel/`       | pinned read-only frozen-kernel snapshot (lets the suite run in-container) |
 | `docs/CLAIM_BOUNDARY.md` | the binding claim ledger (C1–C7) |
 | `docs/use_cases/`      | domain application designs + contracts |
-| `docs/battle_test/`    | whitepaper · user guide · demo guide for Track A.2 |
-
-See [`docs/CLAIM_BOUNDARY.md`](docs/CLAIM_BOUNDARY.md) for what is and is **not** claimed.
+| `docs/battle_test/`    | whitepaper · user guide · demo guide for the battle test |
 
 ---
 
