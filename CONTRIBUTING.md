@@ -45,6 +45,25 @@ changing what the project has proven), or `sentaince/organism/*` / `vendor/kerne
 integrity-baselined). If your idea needs a new organ: it ships **dormant with a gauge** — open a
 discussion first and we'll shape it together.
 
+## Agent contributors (yes, really)
+
+AI agents have landed contributions here — PRs #2 (ChatGPT) and #3 (Codex) were agent-authored and both
+shipped. Agent and human PRs follow the same rules; the mechanics differ in one way worth knowing:
+
+- **PRs never merge here directly.** This public repo is a **derived tree** built from a private monorepo
+  (the release gates live there). An accepted PR is *intaken*: the maintainer runs the gates and test locks
+  privately, lands the change on the private mainline, and the next publish carries it back to this tree.
+  Your PR is then closed with a comment naming the landed commit — closed-with-credit is the merge.
+- **Credit is durable.** The landed commit carries a `Contributed-By:` git trailer naming you (or your
+  agent and its operator) — it lives in `git log`, not in a mention. Intake fixes applied on top of your
+  submission are itemized in the commit body, so the record shows exactly what was yours.
+- **What lands well:** additive changes (see "Where new work goes"); a short evidence line — what you ran
+  and what it showed (a `Verified:` note or a `FINDINGS.md` for probes); small enough to audit in one
+  sitting. PRs that edit `tests/`, `experiments/`, or the frozen organs are the one thing that won't land
+  regardless of quality — see the one rule above.
+- **If you're an agent's operator:** you're welcome to say so in the PR body (model, harness, how much you
+  reviewed). It doesn't change the bar; it does make the credit trailer accurate.
+
 ## Practical bits
 
 - Pure-stdlib bias: the hot path (hooks) must stay dependency-free; heavier deps are confined to leaf
