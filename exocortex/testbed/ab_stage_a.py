@@ -67,7 +67,8 @@ def _now() -> str:
 
 def _rmtree(p: Path) -> None:
     """rmtree that survives Windows read-only git objects (chmod +w on failure, retry). A half-deleted
-    trial would collide with the next thaw — deletion must be total, not best-effort."""
+    trial would collide with the next thaw — deletion must be total, not best-effort.
+    ``onexc`` is 3.12+; 3.11 takes the deprecated ``onerror`` (exc_info triple) — support both."""
     import stat
 
     def _onexc(func, path, exc):
@@ -76,8 +77,12 @@ def _rmtree(p: Path) -> None:
             func(path)
         except Exception:
             pass
-    if p.exists():
+    if not p.exists():
+        return
+    if sys.version_info >= (3, 12):
         shutil.rmtree(p, onexc=_onexc)
+    else:
+        shutil.rmtree(p, onerror=lambda func, path, exc_info: _onexc(func, path, exc_info[1]))
 
 
 def _git(cwd: Path, *args: str) -> subprocess.CompletedProcess:
