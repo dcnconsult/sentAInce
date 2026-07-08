@@ -63,8 +63,39 @@ They are never paywalled and never reachable from the web. What SentAInce sells 
 the *optimization and management* layer — the autopilot — never the *protection*. In a market that overclaims
 safety, the vendor that refuses to monetize it is the trustworthy one. That is both the ethic and the moat.
 
+## Where this grows — the vision, with its gates showing
+
+A body that guards one repo is the seed, not the plant. The arc we're building toward is a **single
+memory discipline for your whole desk** — and because this project publishes designs before code, every
+step below carries its real status. A status tag is a promise about evidence, not a mood:
+**SHIPPED** means it runs today · **DORMANT** means built, measured modest, off by default ·
+**IN DESIGN** means actively being shaped, decisions not yet on the record ·
+**PROPOSED** means designed on the record, not yet built.
+
+| The step | Status today | What it waits on |
+|---|---|---|
+| One organism, many hosts — Claude Code and Cursor drive the same body; ChatGPT reads the same earned memory (read-only) | **SHIPPED** | — |
+| One organism, many repos on your machine — each with its own colony, audit chain, dashboards | **SHIPPED** | — |
+| Executive function — a read-only Governor that surfaces work that fell through the cracks | **SHIPPED** (suggests only) | — |
+| **Cross-repo federation** — what your research repo learned, your coding repo can consult; one discipline across coding, research, and personal knowledge | **PROPOSED** ([ADR-014](ADR.md)) | a consequence-preserving design for *whose* success earns *which* repo's trust — federation must not launder popularity back in |
+| **Governed fleets** — the audit chain, tamper-evident memory, and policy-bound gates plugged into emerging agent-governance standards, so companies adopt agent memory *with* corporate standards | **IN DESIGN** | an interoperability card + transport work (additive; zero change to the organism); the tamper-evidence hardening is [ADR-017/018](ADR.md), PROPOSED |
+| Deeper tamper-evidence — the mutable memory itself commits digests into the hash-chained record | **PROPOSED** ([ADR-017/018](ADR.md)) | build + gauge; ships dormant first, like everything |
+
+Two things make this vision credible rather than aspirational. First, the pattern above has already run
+to completion several times: idea → gauge → verdict → ship-or-park is how every organ in the anatomy
+table got its status, including the ones we switched **off**. Second, the discipline is symmetric — when
+our own instruments say a feature's prize is modest, we say so in the same table where we celebrate the
+wins. A roadmap you can trust is one that has parked things publicly.
+
+**The part you can help with today:** the memory subsystem ships with read-only gauges anyone can run on
+their own accrued corpus. This project's biggest open question isn't a feature — it's *how these
+dynamics behave across many people's real work*, a question a single maintainer's repos cannot answer
+alone. Run the gauges, post the numbers (nulls are as welcome as wins), and you're contributing to the
+science, not just the software.
+
 ---
 
-**See also:** [`CLAIMS.md`](CLAIMS.md) (the binding evidence ledger) · [`ADR.md`](ADR.md) (the twelve
-architecture decisions) · [`../README.md`](../README.md) · the testbed dashboards under
+**See also:** [`CLAIMS.md`](CLAIMS.md) (the binding evidence ledger) · [`ADR.md`](ADR.md) (the
+architecture decisions — eighteen and counting, each on the record) · [`../README.md`](../README.md) ·
+[`QUICKSTART.md`](QUICKSTART.md) · the testbed dashboards under
 [`../exocortex/testbed/`](../exocortex/testbed/README.md).
