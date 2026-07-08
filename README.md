@@ -8,8 +8,11 @@ refuses catalogued lethal actions** — even when the model itself is compromise
 **only remembers what actually worked**. It runs entirely on your machine, installs in minutes, stays
 out of your way, and uninstalls with one command. **Safety is never for sale.**
 
+[![CI](https://github.com/dcnconsult/sentAInce/actions/workflows/ci.yml/badge.svg)](https://github.com/dcnconsult/sentAInce/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/sentaince?color=3776AB)](https://pypi.org/project/sentaince/)
+[![Downloads](https://img.shields.io/pypi/dm/sentaince?color=306998)](https://pypi.org/project/sentaince/)
+[![Python](https://img.shields.io/pypi/pyversions/sentaince)](https://pypi.org/project/sentaince/)
 ![License](https://img.shields.io/badge/license-Apache--2.0-1E6F5C)
-![Python](https://img.shields.io/badge/python-3.11%2B-3776AB)
 ![Evidence lock](https://img.shields.io/badge/evidence--lock-99%20passing-2ea44f)
 ![Safety](https://img.shields.io/badge/safety-never%20paywalled-164F42)
 ![Local-first](https://img.shields.io/badge/runs-100%25%20local-555)
@@ -52,6 +55,8 @@ dashboard — is in [`docs/QUICKSTART.md`](docs/QUICKSTART.md). The operator's r
 
 **Just curious first?** Watch the safety reflex refuse a prompt-injected lethal command, from a fresh
 clone, no setup beyond pip:
+
+![The somatic veto refusing a prompt-injected `kill -9 1` — labeled demonstration, reproduce it yourself](docs/assets/demo_somatic_veto.gif)
 
 ```bash
 python -m pip install -e ".[dev]"
