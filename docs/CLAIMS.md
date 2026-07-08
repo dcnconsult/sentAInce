@@ -139,6 +139,14 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
 - **G.A.R.D. is partly aspirational.** Respect (HDC abstain) is *available* (active in the epistemic/full
   somatic mode; the committed default is `observe`); the Φ⁶ Governance pacemaker and
   harmonic Alliance entrainment are **vendored substrate, not yet wired** (Ticket 4).
+- **Colony tamper-evidence is proposed, not built (ADR-017).** An LtHash multiset digest of each colony's edge
+  set, committed into the ADR-009 chain at consolidation epochs, would make ADR-009's *"injected τ snaps the
+  chain"* true for direct `colony_<label>.json` edits — which today it is **not** (the colony sits in neither
+  the chain nor the DNA lock). **Design only: no code, no gauge, no measurement.** The guarantee is
+  snapshot tamper-*evidence* after a trust-on-first-use baseline, **conditional on** the chain tail being
+  anchored (ADR-018); it does **not** prevent tampering, replay the deposit trajectory, or detect
+  "mass-preserving reweights" (a −1 null — no conserved τ-mass exists). Ships DORMANT when built, behind an
+  ADR-016 pin re-baseline.
 
 ## What this system is NOT (claim discipline)
 - Not a safety guarantee beyond the C1–C7 topology + container immutability — defense in depth, no single

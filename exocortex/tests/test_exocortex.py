@@ -838,3 +838,76 @@ def test_deploy_hook_matcher_covers_powershell():
     assert blk["PostToolUse"][0]["matcher"] == "Bash|PowerShell"
     assert blk["PostToolUseFailure"][0]["matcher"] == "Bash|PowerShell"
     assert blk["PreToolUse"][0]["matcher"] == "*"                  # the permission authority is unchanged
+
+
+# ----------------------------- SessionState lock (BUG_SESSIONSTATE_RACE fix) -----------------------------
+# The advisory lock is cross-PROCESS (msvcrt/fcntl on the sidecar file); two threads opening their own
+# handles contend exactly like two hook processes do, so threads are a valid in-suite proxy.
+def test_state_lock_concurrent_writers_both_land(tmp_path, monkeypatch):
+    """THE NAMED PROMOTION GATE (BUG_SESSIONSTATE_RACE.md, named test 1): two simulated concurrent hook
+    invocations on one session must BOTH land their trail nodes. Pre-fix this exact interleave was a
+    DETERMINISTIC loss — B loads while A's mutation is unsaved, A saves, B saves over it — and the next
+    deposit laid a fused τ edge the session never walked (the 1/205 replay-gate divergence)."""
+    import threading
+    import time as _t
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(tmp_path))
+    sid = "race"
+    SessionState(session_id=sid).save()
+    a_inside = threading.Event()
+    a_release = threading.Event()
+
+    def hook_a():   # loads, mutates, then LINGERS before saving — the pre-fix loss window, held open
+        with SessionState.locked(sid) as st:
+            st.push_node("bash:ls")
+            a_inside.set()
+            a_release.wait(timeout=5)
+            st.save()
+
+    def hook_b():   # arrives mid-window; must BLOCK on the lock, then load a state containing A's node
+        a_inside.wait(timeout=5)
+        with SessionState.locked(sid) as st:
+            st.push_node("bash:cd")
+            st.save()
+
+    ta = threading.Thread(target=hook_a)
+    tb = threading.Thread(target=hook_b)
+    ta.start(); tb.start()
+    a_inside.wait(timeout=5)
+    _t.sleep(0.15)             # give B real time to (wrongly) slip inside the window
+    a_release.set()
+    ta.join(timeout=10); tb.join(timeout=10)
+    trail = SessionState.load(sid).trail
+    assert "bash:ls" in trail and "bash:cd" in trail   # pre-fix: bash:ls was silently dropped
+
+
+def test_track_node_parallel_hooks_no_loss(tmp_path, monkeypatch):
+    """A parallel PreToolUse burst through the REAL hook path (_track_node): every node lands. This is
+    the live shape of the bug — Claude Code routinely issues parallel tool calls, one hook process each."""
+    import threading
+    from exocortex.hook import _track_node
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(tmp_path))
+    sid = "burst"
+    SessionState(session_id=sid).save()
+    threads = [threading.Thread(target=_track_node, args=(sid, "Bash", f"tool{i} arg"))
+               for i in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=10)
+    trail = SessionState.load(sid).trail
+    missing = [f"bash:tool{i}" for i in range(8) if f"bash:tool{i}" not in trail]
+    assert not missing, f"dropped trail nodes (the race): {missing}"
+
+
+def test_state_lock_fail_open_under_contention(tmp_path, monkeypatch):
+    """The lock keeps the hook's prime directive — NEVER wedge the agent. A contended acquire times out
+    and proceeds UNLOCKED (same ethos as integrity.append_lock), still yielding a usable state."""
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(tmp_path))
+    sid = "contend"
+    SessionState(session_id=sid).save()
+    with SessionState.locked(sid) as st:                       # hold the lock…
+        with SessionState.locked(sid, timeout=0.05) as st2:    # …contender times out fast → fail-open
+            assert st2.session_id == sid                       # still yields a loaded state, no deadlock
+            st2.push_node("bash:echo")
+            st2.save()
+        st.save()                                              # last-write-wins IS possible here, by design

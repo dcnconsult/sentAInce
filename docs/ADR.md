@@ -571,11 +571,145 @@ freeze **forward from `2acf273`**.
   + a recorded re-baseline) or be dropped. The gate is not weakened by being passed once.
 - The `meta ⊆ tau` invariant now holds on disk at every consolidate, not only after the next `load()`.
 
+**Re-baseline record — `2acf273 → 62b93ab` (2026-07-08).** The SessionState race fix
+(`fix(exocortex): lock SessionState load-modify-save`, BUG_SESSIONSTATE_RACE in the lab evidence ledger)
+routes every `hook.py` load-modify-save through `SessionState.locked()` — the second control-plane change
+since R3, admitted per this ADR's bar: concurrency hygiene only; **ADR-001 unaffected** (no τ added or
+moved — deposits remain exit-0-only; the fix makes the recorded trail *more* faithful to what the session
+actually walked, closing a ~0.5%-of-deposits fused-edge corruption channel confirmed by audit replay);
+suite 244/244 including a deterministic negative control (the unlocked interleave provably loses a node);
+frozen DNA untouched (`hook.py`/`state.py` are not in `LOCKED_GLOBS`). The pin enforces the freeze forward
+from `62b93ab`.
+
+---
+
+## ADR-017 — Colony snapshot LtHash digest (tamper-evidence for the mutable procedural layer)
+
+**Status:** PROPOSED (2026-07-06). A *decision-lifecycle* tag — like ADR-016's ADOPTED — **not** a new
+organ-evidence status; the GLOSSARY organ set (LOCKED / LIVE / DORMANT / SUBSTRATE / MARGINAL) is unchanged.
+The primitive is **UNBUILT**: no code, no gauge, no evidence claimed. When built it ships **DORMANT**,
+gauge-first, behind the ADR-016 pin re-baseline (see Consequences).
+
+**Context.** ADR-009 promises the mutable exocortex layer is *"protected by … the audit chain"* and that
+*"any silent edit to a past decision (or injected τ) snaps the chain."* The code does not honor that promise
+for the colony. The colony — the consequence-sourced pheromone (τ) that is the crown-jewel procedural memory —
+persists to `colony_<label>.json` and is committed to **neither** the hash-chained audit **nor** the DNA
+kernel-lock: `deposit()` *"touch[es] only colony.json, never the audit"* (`colony.py:19`). The chain records
+the *deciding events* (hook records via `audit.append`), never the τ store itself. So a direct out-of-band
+edit to `colony_<label>.json` — injected or hand-reweighted τ that never passed through a hook — snaps
+nothing. For that attack, ADR-009's protection claim is presently false.
+
+A research note proposed closing this with a homomorphic multiset hash (originally ECMH) over the edge set,
+committed per epoch. The primitive transfers; two of the note's framings do not survive the code.
+
+**Rejected motivation (the −1 null, recorded honestly).** The note justified the primitive as *detecting
+mass-preserving reweights*. There is **no conserved τ-mass and no mass-preserving reweight anywhere in the
+live colony.** The only τ mutators are multiplicative decay (`τ *= DECAY`, which *shrinks* mass — `colony.py:169,214`),
+additive deposit (`:174`), prune (`:177,215`), and cap (`:216`); τ-mass is a *measured, non-constant* quantity
+the staleness gauge expects to fall. The digest is adopted for tamper-evidence of the recorded multiset, **not**
+to police a conservation invariant that does not exist. Should τ-normalization ever be introduced, revisit
+this as a conditional future threat — not before.
+
+**Decision.** Commit an **LtHash (lattice/additive homomorphic) digest** of each colony's edge multiset into
+the ADR-009 chain at each consolidation epoch. LtHash, not ECMH: no elliptic-curve library exists in the free
+tier and `numpy>=1.24` is the sole runtime dependency (ADR-007's numpy-only lane); LtHash is a numpy `uint16`
+additive hash over stdlib `hashlib` — **zero new dependency** — and slots *behind* `exocortex.integrity` (the
+"ONE chain implementation" discipline, `journal.py:13`), never as a second chain.
+
+- **Element (per class):** `element = canonical(edge_key, τ_q, stable_meta)`.
+  - `τ_q` is **Decimal fixed-point from the JSON string form** — `int(Decimal(str(τ)).quantize(Decimal("0.000001"),
+    ROUND_HALF_UP) * 10**6)` — reproducible across platforms without binary-float drift (mirroring the
+    CRLF-normalization discipline at `integrity.py:168`).
+  - `stable_meta` normalizes the F3 provenance with defaults (`model=""`, `ts=0`) and includes only fields
+    already persisted on that edge (older colonies carry no `meta`). **No consolidation timestamp** enters any
+    element — the digest must change only when colony *content* changes.
+  - **No `prev`** in the element: folding a chain-prev per element restores order-dependence and defeats the
+    multiset property. Chain linkage is supplied once, by the audit record's existing `prev`/`hash`.
+- **Lane expansion (LtHash16):** the 1024 `uint16` lanes come from **counter-expanded BLAKE2b** —
+  `blake2b(LE32(i) ‖ element, person=b"exocortex-lthash")` for `i=0..31`, concatenated to 2048 bytes, decoded
+  little-endian. (*Not* `blake2b(digest_size=2048)` — BLAKE2b's output maxes at 64 bytes. `hashlib.shake_256(element).digest(2048)`
+  is an equivalent one-call stdlib XOF.)
+- **Digest:** `digest[class] = Σ_edges vec(element) mod 2^16` — componentwise numpy `uint16` addition, which
+  wraps by construction. Order-independent and homomorphic: adding an edge adds its vector, removing subtracts
+  it. Worked example: `[65535,2,10] + [2,5,65535] = [1,7,9] = [2,5,65535] + [65535,2,10]`.
+- **Commit point:** at `consolidate()` (PreCompact) — the natural low-frequency, deposit-free checkpoint
+  (`colony.py:207-210`) — emit a chained record via the existing `audit.append`: `{event:"ColonyDigest", class,
+  digest:<hex>, deposits, consolidations, n_edges, tau_sum, ts}`. **Not per deposit:** global decay touches
+  every edge each deposit, so per-deposit commit is hot-path-heavy and gains no incrementality. The homomorphic
+  property is kept for **order-independence + truncation/reorder-robustness + one commit per epoch** — not for
+  per-deposit increments.
+- **Estate-wide digest (optional, not free):** compose per-class digests as `LtHash({(class, digest_class)})`
+  (or salt each class digest with its label) — a raw sum of per-class vectors could collide structurally when
+  two classes share edge content.
+- **Verification = snapshot consistency:** recompute `LtHash(current colony_<label>.json)` and compare to the
+  most recent chained `ColonyDigest` for that class. A mismatch is an out-of-band edit since the last epoch →
+  tamper evident. Trajectory-replay of deposits is **not** attempted (τ evolution depends on
+  decay/timing/eligibility).
+- **Activation is trust-on-first-use:** the first `ColonyDigest` attests only the state at first commitment.
+  Procedure: (1) declare a trusted baseline moment; (2) recompute + commit the first digest; (3) thereafter,
+  direct out-of-band edits are detectable.
+
+**What this does not protect.** Pre-baseline tampering (the TOFU limit). Edits made *between* epochs, until the
+next verification. An attacker who rewrites **both** the colony **and** the audit tail — which is exactly why
+this guarantee is *conditional on ADR-018* anchoring the chain head. The full historical deposit trajectory
+(only current-snapshot integrity is attested). The *semantic* correctness or fairness of τ — only that the
+recorded multiset was not altered out of band.
+
+**Consequences.**
+- ADR-009's claim becomes *true* for the colony: a direct `colony_<label>.json` edit now leaves evidence in
+  the tamper-evident chain, at consolidation granularity, without hashing the whole store on the deposit hot path.
+- **Governance cost (forecast for the implementation ADR).** Wiring the commit into `colony.consolidate()`
+  edits `colony.py` — a **P1-pinned** file — turning `test_the_p1_pin_holds` red (tuner suite; the 99-lock
+  does not catch it) and **blocking `/sentaince-publish-release`**. It must clear the ADR-016 bar: a safety
+  argument that **ADR-001 is unaffected** (the digest is observational — it *reads* τ, it never deposits or
+  credits it), the 99-lock green, frozen DNA untouched, and a **recorded** baseline re-base (this ADR + the pin
+  docstring). Route the primitive and verifier to sibling modules (`exocortex/lthash.py`, `exocortex/integrity.py`)
+  so only the minimal `consolidate()` commit call lands in the pinned file.
+- Ships **DORMANT** behind a Genome flag when built, gauge-first (ADR-002/003): measure per-epoch cost and the
+  false-positive rate on legitimate consolidations before any `warn`/`enforce` posture.
+- Depends on **ADR-018** for truncation-robustness; without an anchored tail, an attacker can erase the
+  `ColonyDigest` records along with the rest of the tail.
+
+---
+
+## ADR-018 — Strict audit-chain tail anchor and checkpointing
+
+**Status:** PROPOSED (2026-07-06). Decision-lifecycle tag (see ADR-017); **UNBUILT**, no evidence claimed.
+Ships **DORMANT**, opt-in, when built.
+
+**Context.** `verify_audit` (`integrity.py:134-160`) recomputes the chain over its suffix and catches two
+tamper classes — a payload edit (self-hash mismatch, `:153`) and a reorder/delete/insert (broken `prev` link,
+`:156`). Two completeness gaps remain, and ADR-017's snapshot guarantee inherits both:
+1. **Tail truncation is undetected.** Deleting the last N records leaves an internally consistent chain;
+   nothing anchors the head externally (no checkpoint, no signed tail, no witness). An attacker can roll the
+   chain — and any `ColonyDigest` evidence in it — back to an earlier honest state.
+2. **Hash-stripped records are silently tolerated.** Records lacking a `hash` are treated as a *pre-chain
+   prefix* and skipped (`integrity.py:150, 136-137`). After genesis, an adversary can strip `hash` fields to
+   slip un-chained records past verification.
+
+**Decision.** Two measures, both stdlib, both fail-open on write / strict on read (the ADR-009 posture):
+1. **Tail anchor / checkpoint.** Periodically export the current chain head (`tail_hash`) to a location
+   outside the append path — minimally a pinned checkpoint file; on the commercial control plane an Ed25519
+   signature (the `tuner/protocol.py` precedent, commercial-only lazy import). Verification cross-checks the
+   live head against the last anchor; a head that predates the anchor is truncation-evident.
+2. **Strict verification mode.** Add a `strict` flag to `verify_audit`: once any chained record has been seen,
+   a subsequent record without a valid `hash` is a **break**, not a skippable prefix. Ships opt-in
+   (`warn`/`enforce`), preserving the lenient default for genuine pre-chain histories.
+
+**Consequences.**
+- ADR-017's colony digest becomes truncation-robust: erasing the tail is now detectable, so the digest
+  evidence cannot be silently rolled back.
+- The lenient "pre-chain prefix" allowance survives as the default (real legacy audits predate the chain);
+  strict mode is the production posture, gauge-first.
+- Independently useful beyond ADR-017: it hardens *every* consumer of the ADR-009 chain — `audit.py`,
+  `ledger.py`, and `cerebral/journal.py` — none of which touches a P1-pinned file, so unlike ADR-017 this can
+  land without a pin re-baseline.
+
 ---
 
 ## The through-line
 
-These sixteen decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
+These eighteen decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
 consequence, nothing unproven reaches the user's hot path or the committed defaults, and the organism's own
 integrity is a mathematical invariant — not a secret.**
 Consequence-sourcing (ADR-001) is the law; the σ economy (ADR-004) and suggest-then-verify (ADR-008) protect
@@ -591,7 +725,11 @@ is a service boundary plus signatures, never obfuscation; and the completion of 
 plainly — retrieval never earns τ (ADR-001) and **authority never earns τ** (ADR-013), so even a human in
 the loop credits only verified outcomes, with cross-repo federation (ADR-014) reserved as an open,
 consequence-preserving design space; and the reasoning discipline (ADR-015) carries the same valence up into
-how agents *deliberate* — a rendered −1/0/+1 verdict is a legible claim, never a consequence. The boundary of
+how agents *deliberate* — a rendered −1/0/+1 verdict is a legible claim, never a consequence; and the integrity layer keeps maturing **on the record** — the control-plane pin
+re-baselined as a governance gate, not a monument (ADR-016), the mutable colony's own snapshots made
+tamper-evident so ADR-009's protection of the τ store is finally true and not merely asserted (ADR-017), and
+the chain's tail strictly anchored against truncation (ADR-018) — so the earned procedural memory answers to
+the same audit posture as the frozen kernel. The boundary of
 what these decisions do and do **not** buy is in
 [CLAIMS.md](CLAIMS.md) ("What this system is NOT") and [CLAIM_BOUNDARY.md](CLAIM_BOUNDARY.md). For the organs
 themselves, see the Exocortex docs ([CORE.md](../exocortex/docs/CORE.md),

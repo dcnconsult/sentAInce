@@ -175,36 +175,39 @@ def _cursor_lazy_classify(session: str, data: dict) -> None:
         return
     try:
         gen = str(data.get("generation_id") or "")
-        st = SessionState.load(session)
-        if gen and gen == st.classified_generation:
-            return                                   # this turn was already classified (a UserPromptSubmit fired)
-        if not gen and st.goal_class != "_default":
-            return                                   # no generation id, but already on a real class → leave it
-        from exocortex import adapter
-        prompt = prompt_from_cursor_transcript(adapter.cursor_transcript_path(data))
-        if not prompt:
-            return                                   # can't recover the prompt → the existing _default path stands
-        label = _classify_cue(prompt)
-        st.goal_class = label
-        st.trail = [f"cue:{label}"]                  # seed the cue root so the first consequence forms an edge
-        st.injected_exons = []
-        st.action_buffer = []
-        st.classified_generation = gen
-        st.save()
+        with SessionState.locked(session) as st:     # BUG_SESSIONSTATE_RACE: lock the load-modify-save
+            if gen and gen == st.classified_generation:
+                return                               # this turn was already classified (a UserPromptSubmit fired)
+            if not gen and st.goal_class != "_default":
+                return                               # no generation id, but already on a real class → leave it
+            from exocortex import adapter
+            prompt = prompt_from_cursor_transcript(adapter.cursor_transcript_path(data))
+            if not prompt:
+                return                               # can't recover the prompt → the existing _default path stands
+            label = _classify_cue(prompt)
+            st.goal_class = label
+            st.trail = [f"cue:{label}"]              # seed the cue root so the first consequence forms an edge
+            st.injected_exons = []
+            st.action_buffer = []
+            st.classified_generation = gen
+            st.save()
     except Exception:
         pass   # a hook must never crash the agent
 
 
-def _track_node(session: str, tool: str, payload: str, st: "SessionState | None" = None) -> None:
+def _track_node(session: str, tool: str, payload: str) -> None:
     """Lay the verb-altitude node onto the colony's decision-trail (the path being walked toward the
-    next consequence). Best-effort; the colony is the memory subsystem, orthogonal to somatic/epistemic."""
+    next consequence). Best-effort; the colony is the memory subsystem, orthogonal to somatic/epistemic.
+    Always locks its own load→push→save (BUG_SESSIONSTATE_RACE: parallel PreToolUse hooks raced the
+    unlocked save and dropped nodes → fused τ edges); never accepts a pre-loaded state — a stale
+    unlocked read saved under the lock would clobber concurrent writers all the same."""
     if not colony_enabled():
         return
     try:
         from exocortex.colony import verb_node
-        st = st if st is not None else SessionState.load(session)
-        st.push_node(verb_node(tool, payload))
-        st.save()
+        with SessionState.locked(session) as st:
+            st.push_node(verb_node(tool, payload))
+            st.save()
     except Exception:
         pass   # a hook must never crash the agent
 
@@ -220,9 +223,9 @@ def _buffer_action(session: str, tool: str, data: dict) -> None:
         txt = action_text_of(tool, data)
         if not txt:
             return
-        st = SessionState.load(session)
-        st.action_buffer = (list(getattr(st, "action_buffer", [])) + [txt[:2000]])[-50:]
-        st.save()
+        with SessionState.locked(session) as st:     # BUG_SESSIONSTATE_RACE: lock the load-modify-save
+            st.action_buffer = (list(getattr(st, "action_buffer", [])) + [txt[:2000]])[-50:]
+            st.save()
     except Exception:
         pass   # a hook must never crash the agent
 
@@ -316,7 +319,9 @@ def handle_pretooluse(data: dict, m: Mode):
         reason=(out["hookSpecificOutput"]["permissionDecisionReason"] if out else ""),
     )
     audit.append(rec)
-    _track_node(session, "Bash", cmd, st)   # extend the trail with the command node (reuse loaded st)
+    _track_node(session, "Bash", cmd)   # extend the trail with the command node — loads FRESH under the
+    #                                     state lock (the old reuse of the st read above was the race:
+    #                                     save-after-stale-load dropped concurrent hooks' nodes)
     _buffer_action(session, "Bash", data)   # wiki attribution: the command the model ran (gated)
     return out
 
@@ -335,80 +340,83 @@ def handle_consequence(data: dict, m: Mode, outcome: str):
         snippet = str(data.get("error"))[:240]
     session = str(data.get("session_id", "session"))
     key = command_key(cmd)
-    st = SessionState.load(session)
-    st.debit(outcome)
-    st.record(key, outcome)
-    # F3 provenance: resolve the head model-id for the deposit stamp from the transcript TAIL (the hook stdin
-    # has no model field). An explicit EXOCORTEX_MODEL wins; otherwise fill it from the transcript so BOTH the
-    # procedural and declarative deposits below stamp it (the hook process is ephemeral → env mutation is
-    # contained to this one event). Only on a verified exit 0, where a deposit will actually happen.
-    if outcome == "ok" and not os.environ.get("EXOCORTEX_MODEL"):
-        _m = model_from_transcript(data.get("transcript_path", ""))
-        if _m:
-            os.environ["EXOCORTEX_MODEL"] = _m
-    # Colony: a Bash consequence closes the current trail-segment. Deposit pheromone on the path into the
-    # CURRENT goal-class's colony ONLY on a verified exit 0 (the reflex-memory law — symmetric to the
-    # strategy-lock scar); drop it on failure. Re-root the trail at the cue (pivot P-A): on success also
-    # keep the command node so multi-command workflows chain; on failure keep only the cue (drop the
-    # failed tail). The cue root means even a single successful command forms an edge.
-    seg_len = 0                                              # #edges this consequence deposited (3D telemetry)
-    if colony_enabled():
-        try:
-            from exocortex.colony import Colony, edges, verb_node
-            from exocortex.endocrine import levers
-            cue = f"cue:{getattr(st, 'goal_class', '_default')}"
-            if outcome == "ok":
-                es = edges(st.trail)
-                seg_len = len(es)                           # the flail-then-succeed segment length (live)
-                if es:
-                    col = Colony.load(st.goal_class)
-                    prune, _cap = levers(st.tier())         # allostatic prune floor (endocrine; off→static)
-                    col.deposit(es, _deposit_weight(st), prune=prune,   # session-quality discount + 3D trace
-                                ts=time.time(), model=os.environ.get("EXOCORTEX_MODEL", ""))  # F3 provenance stamp
-                    col.save()
-                    st.session_deposits = getattr(st, "session_deposits", 0) + 1
-                st.trail = [cue, verb_node(tool, cmd)]     # D3: `bash:`/`ps:` per the actual command tool
-            else:
-                st.trail = [cue]
-        except Exception:
-            pass   # a hook must never crash the agent
-    # Declarative wiki (Ticket 1; gated, dormant by default): the SAME exit-0 consequence credits the wiki
-    # notes the model actually USED this segment (content echo in the action buffer) — never merely injected.
-    wiki_injected = wiki_used = 0
-    if declarative_enabled() and outcome == "ok":
-        try:
-            from exocortex.wiki.attribute import deposit_attributed
-            from exocortex.wiki.store import load_graph
-            injected = list(getattr(st, "injected_exons", []))
-            wiki_injected = len(injected)
-            graph = load_graph(declarative_vault(), label=st.goal_class)
-            if graph is not None and graph.nodes:
-                action = " \n".join(getattr(st, "action_buffer", []))
-                used = deposit_attributed(graph, injected, action, 0,
-                                          cue=f"cue:{st.goal_class}", label=st.goal_class)
-                wiki_used = len(used)
-                if used:
-                    st.wiki_active = used   # the proposer's spreading-activation seed for the next turn
-        except Exception:
-            pass
-    # Hippocampus verify (Ticket 2; gated, BOTH outcomes): a provisional bridge is WALKED when both endpoints
-    # were attributed this segment → exit-0 crystallizes the a→d edge, repeated no-pay walks scar it.
-    if bridge_enabled() and declarative_enabled():
-        try:
-            from exocortex.wiki.attribute import attribute_used
-            from exocortex.wiki.bridge import load_bridges, save_bridges, verify
-            from exocortex.wiki.store import load_graph
-            gb = load_graph(declarative_vault(), label=st.goal_class)
-            if gb is not None and gb.nodes:
-                walked = attribute_used(gb, list(getattr(st, "injected_exons", [])),
-                                        " \n".join(getattr(st, "action_buffer", [])))
-                bridges = load_bridges()
-                verify(gb, bridges, walked, 0 if outcome == "ok" else 1, label=st.goal_class)
-                save_bridges(bridges)
-        except Exception:
-            pass
-    st.action_buffer = []   # the consequence closes the segment (mirrors the colony trail re-root)
-    st.save()
+    # BUG_SESSIONSTATE_RACE: the whole consequence bookkeeping is one load-modify-save on the session
+    # state (debit/record + trail re-root + wiki attribution surfaces) — hold the state lock across it
+    # so a concurrent hook (parallel Bash+PowerShell consequences) can't drop a history entry/deposit.
+    with SessionState.locked(session) as st:
+        st.debit(outcome)
+        st.record(key, outcome)
+        # F3 provenance: resolve the head model-id for the deposit stamp from the transcript TAIL (the hook stdin
+        # has no model field). An explicit EXOCORTEX_MODEL wins; otherwise fill it from the transcript so BOTH the
+        # procedural and declarative deposits below stamp it (the hook process is ephemeral → env mutation is
+        # contained to this one event). Only on a verified exit 0, where a deposit will actually happen.
+        if outcome == "ok" and not os.environ.get("EXOCORTEX_MODEL"):
+            _m = model_from_transcript(data.get("transcript_path", ""))
+            if _m:
+                os.environ["EXOCORTEX_MODEL"] = _m
+        # Colony: a Bash consequence closes the current trail-segment. Deposit pheromone on the path into the
+        # CURRENT goal-class's colony ONLY on a verified exit 0 (the reflex-memory law — symmetric to the
+        # strategy-lock scar); drop it on failure. Re-root the trail at the cue (pivot P-A): on success also
+        # keep the command node so multi-command workflows chain; on failure keep only the cue (drop the
+        # failed tail). The cue root means even a single successful command forms an edge.
+        seg_len = 0                                          # #edges this consequence deposited (3D telemetry)
+        if colony_enabled():
+            try:
+                from exocortex.colony import Colony, edges, verb_node
+                from exocortex.endocrine import levers
+                cue = f"cue:{getattr(st, 'goal_class', '_default')}"
+                if outcome == "ok":
+                    es = edges(st.trail)
+                    seg_len = len(es)                       # the flail-then-succeed segment length (live)
+                    if es:
+                        col = Colony.load(st.goal_class)
+                        prune, _cap = levers(st.tier())     # allostatic prune floor (endocrine; off→static)
+                        col.deposit(es, _deposit_weight(st), prune=prune,   # session-quality discount + 3D trace
+                                    ts=time.time(), model=os.environ.get("EXOCORTEX_MODEL", ""))  # F3 provenance stamp
+                        col.save()
+                        st.session_deposits = getattr(st, "session_deposits", 0) + 1
+                    st.trail = [cue, verb_node(tool, cmd)]  # D3: `bash:`/`ps:` per the actual command tool
+                else:
+                    st.trail = [cue]
+            except Exception:
+                pass   # a hook must never crash the agent
+        # Declarative wiki (Ticket 1; gated, dormant by default): the SAME exit-0 consequence credits the wiki
+        # notes the model actually USED this segment (content echo in the action buffer) — never merely injected.
+        wiki_injected = wiki_used = 0
+        if declarative_enabled() and outcome == "ok":
+            try:
+                from exocortex.wiki.attribute import deposit_attributed
+                from exocortex.wiki.store import load_graph
+                injected = list(getattr(st, "injected_exons", []))
+                wiki_injected = len(injected)
+                graph = load_graph(declarative_vault(), label=st.goal_class)
+                if graph is not None and graph.nodes:
+                    action = " \n".join(getattr(st, "action_buffer", []))
+                    used = deposit_attributed(graph, injected, action, 0,
+                                              cue=f"cue:{st.goal_class}", label=st.goal_class)
+                    wiki_used = len(used)
+                    if used:
+                        st.wiki_active = used   # the proposer's spreading-activation seed for the next turn
+            except Exception:
+                pass
+        # Hippocampus verify (Ticket 2; gated, BOTH outcomes): a provisional bridge is WALKED when both endpoints
+        # were attributed this segment → exit-0 crystallizes the a→d edge, repeated no-pay walks scar it.
+        if bridge_enabled() and declarative_enabled():
+            try:
+                from exocortex.wiki.attribute import attribute_used
+                from exocortex.wiki.bridge import load_bridges, save_bridges, verify
+                from exocortex.wiki.store import load_graph
+                gb = load_graph(declarative_vault(), label=st.goal_class)
+                if gb is not None and gb.nodes:
+                    walked = attribute_used(gb, list(getattr(st, "injected_exons", [])),
+                                            " \n".join(getattr(st, "action_buffer", [])))
+                    bridges = load_bridges()
+                    verify(gb, bridges, walked, 0 if outcome == "ok" else 1, label=st.goal_class)
+                    save_bridges(bridges)
+            except Exception:
+                pass
+        st.action_buffer = []   # the consequence closes the segment (mirrors the colony trail re-root)
+        st.save()
     audit.append(audit.record(
         session=session, event=("PostToolUse" if outcome == "ok" else "PostToolUseFailure"),
         mode=m.value, tool=tool, command=cmd, command_key=key,
@@ -422,68 +430,70 @@ def handle_consequence(data: dict, m: Mode, outcome: str):
 def handle_userpromptsubmit(data: dict, m: Mode):
     session = str(data.get("session_id", "session"))
     prompt = str(data.get("prompt", ""))
-    st = SessionState.load(session)
+    # BUG_SESSIONSTATE_RACE: hold the state lock across the turn re-seed (goal_class/trail/attribution
+    # surfaces) so a straggler PostToolUse from the previous turn can't clobber the fresh segment.
+    with SessionState.locked(session) as st:
 
-    # Cue-classifier (pivot P-B): assign this prompt to a DISCOVERED goal-class. The label keys the
-    # per-class colony AND seeds the trail's `cue:` root (pivot P-A) — so even a one-command turn forms
-    # an edge and every deposit binds to its class.
-    label = "_default"
-    if colony_enabled():
-        label = _classify_cue(prompt)
-    st.goal_class = label
-    st.trail = [f"cue:{label}"]
-    st.injected_exons = []      # the new turn's wiki attribution surface (set below if we splice)
-    st.action_buffer = []       # fresh segment
+        # Cue-classifier (pivot P-B): assign this prompt to a DISCOVERED goal-class. The label keys the
+        # per-class colony AND seeds the trail's `cue:` root (pivot P-A) — so even a one-command turn forms
+        # an edge and every deposit binds to its class.
+        label = "_default"
+        if colony_enabled():
+            label = _classify_cue(prompt)
+        st.goal_class = label
+        st.trail = [f"cue:{label}"]
+        st.injected_exons = []      # the new turn's wiki attribution surface (set below if we splice)
+        st.action_buffer = []       # fresh segment
 
-    blocks = []
-    if m in (Mode.EPISTEMIC, Mode.FULL):
-        from exocortex.interocept import interoceptive_block
-        b = interoceptive_block(st)
-        if b:
-            blocks.append(b)
-    # Splice the MATCHING class's converged memory via the verified channel. Trigger on the re-splice
-    # flag (first prompt / post-compaction wake) OR a task-class SWITCH (surface the right skill when the
-    # work changes). Abstains automatically on a novel/unconverged class (its colony splice is empty).
-    if colony_enabled() and colony_splice_enabled() and (st.resplice or label != st.last_spliced_class):
-        try:
-            from exocortex.colony import Colony
-            splice = Colony.load(label).splice()
-            if splice:
-                blocks.append(splice)
-                st.last_spliced_class = label
-        except Exception:
-            pass
-    # Declarative wiki (Ticket 1; gated, dormant by default): propose candidates (structural + lexical +
-    # muscle-memory; numpy-free), let the Transcriptome filter by earned τ, inject — and record the
-    # injected exon ids as this turn's attribution surface. Abstains silently on a cold/empty wiki.
-    if declarative_enabled():
-        try:
-            from exocortex.wiki.propose import propose
-            from exocortex.wiki.splice import splice_with_ids
-            from exocortex.wiki.store import load_graph
-            graph = load_graph(declarative_vault(), label=label)
-            if graph is not None and graph.nodes:
-                cands = propose(graph, prompt=prompt, active_context=list(getattr(st, "wiki_active", [])))
-                wiki, injected = splice_with_ids(graph, cands)
-                st.injected_exons = injected
-                if wiki:
-                    blocks.append(wiki)
-                # Hippocampus offer (Ticket 2; gated): surface provisional bridges whose source the proposer
-                # raised, and add BOTH endpoints to the attribution surface so a walk (A & D both used in one
-                # exit-0) is detectable. Provisional — crystallizes only on that exit-0.
-                if bridge_enabled():
-                    from exocortex.wiki.bridge import load_bridges, offer, save_bridges
-                    bridges = load_bridges()
-                    bpay, endpoints = offer(graph, bridges, cands)
-                    if bpay:
-                        blocks.append(bpay)
-                        st.injected_exons = list(dict.fromkeys(injected + endpoints))
-                        save_bridges(bridges)
-        except Exception:
-            pass
-    st.resplice = False
-    st.classified_generation = str(data.get("generation_id") or "")   # Cursor: mark this turn classified (lazy-init skip)
-    st.save()
+        blocks = []
+        if m in (Mode.EPISTEMIC, Mode.FULL):
+            from exocortex.interocept import interoceptive_block
+            b = interoceptive_block(st)
+            if b:
+                blocks.append(b)
+        # Splice the MATCHING class's converged memory via the verified channel. Trigger on the re-splice
+        # flag (first prompt / post-compaction wake) OR a task-class SWITCH (surface the right skill when the
+        # work changes). Abstains automatically on a novel/unconverged class (its colony splice is empty).
+        if colony_enabled() and colony_splice_enabled() and (st.resplice or label != st.last_spliced_class):
+            try:
+                from exocortex.colony import Colony
+                splice = Colony.load(label).splice()
+                if splice:
+                    blocks.append(splice)
+                    st.last_spliced_class = label
+            except Exception:
+                pass
+        # Declarative wiki (Ticket 1; gated, dormant by default): propose candidates (structural + lexical +
+        # muscle-memory; numpy-free), let the Transcriptome filter by earned τ, inject — and record the
+        # injected exon ids as this turn's attribution surface. Abstains silently on a cold/empty wiki.
+        if declarative_enabled():
+            try:
+                from exocortex.wiki.propose import propose
+                from exocortex.wiki.splice import splice_with_ids
+                from exocortex.wiki.store import load_graph
+                graph = load_graph(declarative_vault(), label=label)
+                if graph is not None and graph.nodes:
+                    cands = propose(graph, prompt=prompt, active_context=list(getattr(st, "wiki_active", [])))
+                    wiki, injected = splice_with_ids(graph, cands)
+                    st.injected_exons = injected
+                    if wiki:
+                        blocks.append(wiki)
+                    # Hippocampus offer (Ticket 2; gated): surface provisional bridges whose source the proposer
+                    # raised, and add BOTH endpoints to the attribution surface so a walk (A & D both used in one
+                    # exit-0) is detectable. Provisional — crystallizes only on that exit-0.
+                    if bridge_enabled():
+                        from exocortex.wiki.bridge import load_bridges, offer, save_bridges
+                        bridges = load_bridges()
+                        bpay, endpoints = offer(graph, bridges, cands)
+                        if bpay:
+                            blocks.append(bpay)
+                            st.injected_exons = list(dict.fromkeys(injected + endpoints))
+                            save_bridges(bridges)
+            except Exception:
+                pass
+        st.resplice = False
+        st.classified_generation = str(data.get("generation_id") or "")   # Cursor: mark this turn classified (lazy-init skip)
+        st.save()
 
     out = _inject("UserPromptSubmit", "\n\n".join(blocks)) if blocks else None
     audit.append(audit.record(
@@ -506,14 +516,15 @@ def handle_precompact(data: dict, m: Mode):
         try:
             from exocortex.colony import Colony
             from exocortex.endocrine import levers
-            st = SessionState.load(session)
-            prune, cap = levers(st.tier())   # allostatic sleep: a stressed session sleeps leaner (endocrine)
+            prune, cap = levers(SessionState.load(session).tier())   # read-only peek (no save → no race)
             for col in Colony.all():    # consolidate EVERY discovered class's colony
                 col.consolidate(prune=prune, cap=cap)
                 col.save()
                 consolidated += 1
-            st.resplice = True          # wake → re-inject the matching class's map on the next prompt
-            st.save()
+            # BUG_SESSIONSTATE_RACE: lock only the flag write — not the whole consolidation sweep above
+            with SessionState.locked(session) as st:
+                st.resplice = True      # wake → re-inject the matching class's map on the next prompt
+                st.save()
         except Exception:
             consolidated = 0            # fail open — never block compaction
     # Hippocampus bridge (Ticket 2; gated, dormant): sleep is when geometry PROPOSES provisional A→D edges

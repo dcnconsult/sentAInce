@@ -6,6 +6,7 @@ signal (a command-key that keeps FAILING with no intervening success).
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 from dataclasses import dataclass, field
@@ -120,6 +121,25 @@ class SessionState:
     def _path(self) -> Path:
         safe = "".join(c if (c.isalnum() or c in "-_") else "_" for c in self.session_id) or "session"
         return state_dir() / f"state_{safe}.json"
+
+    @classmethod
+    @contextlib.contextmanager
+    def locked(cls, session_id: str, timeout: float = 2.0):
+        """Exclusive load-modify-save critical section for this session's state file.
+
+        BUG_SESSIONSTATE_RACE (2026-07-08): concurrent PreToolUse hook processes raced the unlocked
+        ``load() → mutate → save()`` — last-write-wins silently dropped a trail node, and the next
+        deposit laid a fused τ edge the session never walked (confirmed by the Compaction Audit
+        replay gate, 1/205 deposits). Same discipline as the audit chain's ``integrity.append_lock``
+        (sidecar ``<path>.lock``): hold the lock across the WHOLE read-modify-write, FAIL-OPEN on
+        timeout — a rare lost node under pathological contention beats a wedged hook.
+
+        Usage: ``with SessionState.locked(sid) as st: …mutate…; st.save()`` — the caller still
+        decides whether to save (early returns inside the block leave the file untouched)."""
+        from .integrity import append_lock
+        path = cls(session_id=session_id)._path()
+        with append_lock(path, timeout=timeout):
+            yield cls.load(session_id)
 
     def save(self) -> None:
         self._path().write_text(json.dumps({
