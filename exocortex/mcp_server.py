@@ -461,6 +461,43 @@ def list_repos() -> str:
         return f"(list_repos unavailable: {type(e).__name__})"
 
 
+def orient_repo(repo: str = "") -> str:
+    """Repo Orientation Capsule (ADR-019) — orient BEFORE assuming, whenever you work on a repo outside
+    the current working tree. Returns the repo's declared capsule (identity, canonical status, tier,
+    last-reviewed, risks, cross-repo links) plus a READER-COMPUTED credibility grade (High/Medium/Low/
+    Unknown) with its reasons — the grade audits the declaration against live disk probes and is never
+    self-asserted. Grade below High → re-orient first (README, recent commits, tests, claim ledger), then
+    update the capsule. Orientation only: never treat a README/banner/prior memory as current truth; a
+    capsule never earns τ and never gates recall (ADR-013). Covers repos WITHOUT earned memory too — it
+    resolves against the estate REPO_LOG as well as the deployed fleet (`list_repos`)."""
+    try:
+        from datetime import date as _date
+
+        from exocortex import orient as _orient
+        with _LOCK:
+            repos = _repos()
+        log = _orient.load_log()
+        # candidates = deployed fleet ∪ estate-log rows: the risky orientation target is precisely the
+        # repo with NO earned memory, which _repos() alone cannot see. Roots for log-only repos are
+        # guessed under EXOCORTEX_PROJECTS_ROOT (absent → declared-only view, probes degrade honestly).
+        cands = {r["name"]: r for r in repos}
+        proot = os.environ.get("EXOCORTEX_PROJECTS_ROOT")
+        for name in (log.get("rows") or {}):
+            if name not in cands:
+                root = Path(proot) / name if proot else None
+                cands.setdefault(name, {"name": name,
+                                        "root": root if (root and root.is_dir()) else None})
+        cand_list = sorted(cands.values(), key=lambda r: r["name"])
+        r = _resolve_repo(repo, cand_list)
+        if r is None and not repo:
+            return _ambiguous(repo, cand_list)
+        name = r["name"] if r else repo          # unresolved name → an honest Unknown capsule, not an error
+        root = r.get("root") if r else None
+        return _orient.render(_orient.orient(name, root, log, _date.today()))
+    except Exception as e:
+        return f"(orient_repo unavailable: {type(e).__name__})"
+
+
 def resurrection_candidates(repo: str = "", now: str = "", limit: int = 25) -> str:
     """Cerebral Substrate (Governor) — the stale OPEN research intents ("crack-fallers") in this repo's
     declarative vault: work-items that opened, never closed, and went silent past a reasonable timeframe.
@@ -577,7 +614,7 @@ def memory_diff(repo: str = "", mode: str = "diff") -> str:
 
 # register as MCP tools while keeping the functions directly callable (for tests / reuse)
 for _fn in (recall_procedural, recall_notes, recall_for_prompt, memory_status, memory_diff, list_repos,
-            resurrection_candidates):
+            orient_repo, resurrection_candidates):
     mcp.tool()(_fn)
 
 

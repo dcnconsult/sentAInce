@@ -117,8 +117,9 @@ class CueClassifier:
 
     def save(self) -> None:
         try:
-            self._path().write_text(json.dumps(
-                {"n": self.n, "df": self.df, "clusters": self.clusters}), encoding="utf-8")
+            from .fsutil import atomic_write_text
+            atomic_write_text(self._path(), json.dumps(   # ADR-020 W1: a reader never sees a torn store
+                {"n": self.n, "df": self.df, "clusters": self.clusters}))
         except Exception:
             pass   # a hook must never crash the agent
 

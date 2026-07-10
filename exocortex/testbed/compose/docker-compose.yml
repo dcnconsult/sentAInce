@@ -33,6 +33,9 @@ services:
     container_name: exocortex-exporter
     environment:
       - EXOCORTEX_CONTROL_TOKEN=${EXOCORTEX_CONTROL_TOKEN:-}
+      # in-container estate root so orientation (ADR-019) finds /projects/REPO_LOG.md — the scan root
+      # itself arrives as the --scan-root flag, which the orient module cannot see
+      - EXOCORTEX_PROJECTS_ROOT=/projects
     command:
       - --scan-root=/projects
       - --registry=/etc/exocortex/repos.json

@@ -60,6 +60,11 @@ NEVER_PUBLIC = [
     # raw resurrection-gauge labels: real private-vault intent text + maintainer name (summary RESULTS.md ships)
     "results/resurrection_gauge_v1/labels_completed.json",
     "results/resurrection_gauge_v1/labels_template.json",
+    # guide-accrue A/B study corpus (PARKED 0, PI-ratified 2026-07-08): 160 raw session transcripts +
+    # ab_snap/ — a full GOLDEN SNAPSHOT of the repo (including copies of this manifest and the gates,
+    # whose own IP-marker prose trips the disclosure gate). Private working data, not public evidence;
+    # no public claim rests on it.
+    "results/guide_accrue_ab_v1/",
     # ---- forward-looking IP: these describe UNFILED novel methods (whitespace/frontier candidates,
     # the FI-ledger, the model-independence arc) that the docs THEMSELVES flag "filing opportunities
     # before any disclosure" / "keep local until counsel clears". Code IS disclosure — and so is prose.

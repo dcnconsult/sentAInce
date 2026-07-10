@@ -360,6 +360,7 @@ def handle_consequence(data: dict, m: Mode, outcome: str):
         # keep the command node so multi-command workflows chain; on failure keep only the cue (drop the
         # failed tail). The cue root means even a single successful command forms an edge.
         seg_len = 0                                          # #edges this consequence deposited (3D telemetry)
+        lock_failopen = int(getattr(st, "_lock_failopen", False))   # W4: session-lock acquisition result
         if colony_enabled():
             try:
                 from exocortex.colony import Colony, edges, verb_node
@@ -369,11 +370,15 @@ def handle_consequence(data: dict, m: Mode, outcome: str):
                     es = edges(st.trail)
                     seg_len = len(es)                       # the flail-then-succeed segment length (live)
                     if es:
-                        col = Colony.load(st.goal_class)
                         prune, _cap = levers(st.tier())     # allostatic prune floor (endocrine; off→static)
-                        col.deposit(es, _deposit_weight(st), prune=prune,   # session-quality discount + 3D trace
-                                    ts=time.time(), model=os.environ.get("EXOCORTEX_MODEL", ""))  # F3 provenance stamp
-                        col.save()
+                        # ADR-020 W3: the colony RMW gets its OWN cross-process lock — the session lock
+                        # (held here) is per-session; two sessions share a class's colony file. Lock
+                        # order law: session before colony, never the reverse.
+                        with Colony.locked(st.goal_class) as col:
+                            col.deposit(es, _deposit_weight(st), prune=prune,   # session-quality discount + 3D trace
+                                        ts=time.time(), model=os.environ.get("EXOCORTEX_MODEL", ""))  # F3 provenance stamp
+                            col.save()
+                        lock_failopen += int(col._lock_failopen)   # W4: colony-lock acquisition result
                         st.session_deposits = getattr(st, "session_deposits", 0) + 1
                     st.trail = [cue, verb_node(tool, cmd)]  # D3: `bash:`/`ps:` per the actual command tool
                 else:
@@ -423,6 +428,7 @@ def handle_consequence(data: dict, m: Mode, outcome: str):
         energy=st.energy, tier=st.tier(), strategy_lock=st.consecutive_failures(key),
         outcome=outcome, output=snippet, seg_len=seg_len,
         wiki_injected=wiki_injected, wiki_used=wiki_used,
+        lock_failopen=lock_failopen,   # W4: fail-open lock acquisitions during this consequence
     ))
     return None
 
@@ -517,9 +523,14 @@ def handle_precompact(data: dict, m: Mode):
             from exocortex.colony import Colony
             from exocortex.endocrine import levers
             prune, cap = levers(SessionState.load(session).tier())   # read-only peek (no save → no race)
-            for col in Colony.all():    # consolidate EVERY discovered class's colony
-                col.consolidate(prune=prune, cap=cap)
-                col.save()
+            # ADR-020 W3: consolidate is a cross-process RMW — discover the classes, then re-load and
+            # sweep EACH under its own colony lock so a concurrent deposit isn't silently overwritten
+            # (one class at a time; every colony lock released before the session flag-write below,
+            # per the session-before-colony order law).
+            for label in [c.label for c in Colony.all()]:
+                with Colony.locked(label) as col:
+                    col.consolidate(prune=prune, cap=cap)
+                    col.save()
                 consolidated += 1
             # BUG_SESSIONSTATE_RACE: lock only the flag write — not the whole consolidation sweep above
             with SessionState.locked(session) as st:

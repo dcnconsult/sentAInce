@@ -14,7 +14,7 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
 
 - **99 frozen kernel-lock tests** — the C1–C7 evidence lock (69) + 30 domain-crucible/adapter — **untouched**
   across this entire arc. This is the load-bearing guarantee.
-- **237 Exocortex/organism tests** + **39 battle-test** + **37 cerebral-substrate** tests, all green (one
+- **289 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** tests, all green (one
   exocortex test — the alert-engine backtest over a live audit store — auto-skips on storeless clones). The
   lock and the organ tests are separate suites; organ work never edits the lock.
 
@@ -35,6 +35,15 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
   at the read boundary (a permanent invariant). Gauge: `exocortex/gauge/credit_hygiene_gauge.py` (which also
   vindicated ADR-004: failed approaches have **plasticity 0.667** → a permanent σ-scar would freeze a
   re-learnable route, so any failure signal must be a decaying τ⁻, never a scar).
+- **Write-integrity (ADR-020).** The store layer is fail-closed: atomic replace (a reader never sees a
+  torn store), quarantine-not-clobber (an unreadable store is moved aside byte-exact and never written
+  back over — the τ-wipe amplifier is dead), and a cross-process colony lock on every
+  load→deposit→save. Measured: the unlocked two-process deposit race loses **21/50 deposits (42%)**;
+  under `Colony.locked`, **0/50** — deterministic multi-process tests
+  (`exocortex/tests/test_write_integrity.py`, 10 tests). The residual fail-open-timeout window is
+  instrumented (`lock_failopen` audit lane), not assumed away: `gauge/lock_contention_gauge.py`
+  states the −1 condition; the single-writer daemon stays PARKED until it fires. Provenance: the
+  cursor_testbed Codex-probe corruption artifact (2026-07-09).
 - **Attribution precision (declarative).** Content-echo credits only notes the model actually USED. Synthetic
   gauge + the harness sim + a **real flagship run** agree that **`min_overlap=2 → precision 1.00`**; at
   `min_overlap=1` precision is well below 1.0 (synthetic gauge **0.79**; planted sim/flagship **0.50** — the

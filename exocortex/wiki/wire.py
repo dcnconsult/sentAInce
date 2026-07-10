@@ -55,11 +55,20 @@ def on_consequence(
         es = edges(trail)
         if not es:                                         # need ≥2 distinct used notes to form an edge
             return False
-        col = ensure_colony(graph, label)
-        col.deposit(es, float(weight),                     # ONE call: decay-all + reinforce + prune
-                    ts=time.time(), model=os.environ.get("EXOCORTEX_MODEL", ""))   # F3 provenance stamp
         if save:
-            col.save()
+            # ADR-020 W3: the persisted deposit is a cross-process RMW on colony_<label>.json —
+            # re-load under the class's colony lock, deposit, save, and rebind the graph's τ-lane
+            # cache to the just-persisted state (a stale cached colony must never clobber a
+            # concurrent writer's edges).
+            with Colony.locked(label) as col:
+                col.deposit(es, float(weight),             # ONE call: decay-all + reinforce + prune
+                            ts=time.time(), model=os.environ.get("EXOCORTEX_MODEL", ""))   # F3 provenance stamp
+                col.save()
+            graph.colony = col
+        else:
+            col = ensure_colony(graph, label)              # cache-only deposit (caller persists later)
+            col.deposit(es, float(weight),
+                        ts=time.time(), model=os.environ.get("EXOCORTEX_MODEL", ""))
         return True
     except Exception:
         return False                                       # fail-open: never raise into the hook

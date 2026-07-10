@@ -15,6 +15,7 @@ from pathlib import Path
 from sentaince.organism.metabolism import MetabolicLedger
 
 from .config import ENERGY, STRATEGY_LOCK_THRESHOLD, state_dir
+from .fsutil import atomic_write_text, load_store_json
 
 _HISTORY_CAP = 80
 _TRAIL_CAP = 24   # the colony's per-session decision-trail: nodes since the last Bash consequence
@@ -64,6 +65,9 @@ class SessionState:
     #                                               edits) — scanned for used-note echo, reset per consequence
     wiki_active: list = field(default_factory=list)      # notes used at the last consequence — the
     #                                               proposer's spreading-activation seed for the next turn
+    # ---- write-integrity flags (ADR-020; never persisted — save() builds its dict explicitly) ----
+    _load_degraded: bool = field(default=False, repr=False)   # W2: store unreadable at load → save() refuses
+    _lock_failopen: bool = field(default=False, repr=False)   # W4: locked() couldn't acquire → telemetry
 
     # ---- colony decision-trail (consequence-segmented) ----
     def push_node(self, node: str) -> None:
@@ -138,11 +142,15 @@ class SessionState:
         decides whether to save (early returns inside the block leave the file untouched)."""
         from .integrity import append_lock
         path = cls(session_id=session_id)._path()
-        with append_lock(path, timeout=timeout):
-            yield cls.load(session_id)
+        with append_lock(path, timeout=timeout) as got:
+            st = cls.load(session_id)
+            st._lock_failopen = not got     # W4: surfaced into the consequence audit row
+            yield st
 
     def save(self) -> None:
-        self._path().write_text(json.dumps({
+        if self._load_degraded:
+            return   # ADR-020 W2: never write back over a store we failed to read
+        atomic_write_text(self._path(), json.dumps({   # ADR-020 W1: a reader never sees a torn store
             "session_id": self.session_id, "energy": self.energy, "history": self.history,
             "trail": self.trail, "resplice": self.resplice,
             "goal_class": self.goal_class, "last_spliced_class": self.last_spliced_class,
@@ -150,15 +158,15 @@ class SessionState:
             "session_deposits": self.session_deposits,
             "injected_exons": self.injected_exons, "action_buffer": self.action_buffer,
             "wiki_active": self.wiki_active,
-        }), encoding="utf-8")
+        }))
 
     @classmethod
     def load(cls, session_id: str) -> "SessionState":
         st = cls(session_id=session_id)
-        p = st._path()
-        if p.exists():
+        d, degraded = load_store_json(st._path())   # ADR-020 W2: unreadable → quarantined + audited
+        st._load_degraded = degraded
+        if isinstance(d, dict):
             try:
-                d = json.loads(p.read_text(encoding="utf-8"))
                 st.energy = float(d.get("energy", ENERGY.e0))
                 st.history = list(d.get("history", []))
                 st.trail = list(d.get("trail", []))
@@ -171,5 +179,5 @@ class SessionState:
                 st.action_buffer = list(d.get("action_buffer", []))
                 st.wiki_active = list(d.get("wiki_active", []))
             except Exception:
-                pass
+                st._load_degraded = True   # partially parsed → refuse write-back (same law as a torn read)
         return st

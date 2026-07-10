@@ -713,9 +713,122 @@ tamper classes — a payload edit (self-hash mismatch, `:153`) and a reorder/del
 
 ---
 
+## ADR-019 — Repo Orientation Capsule: cross-repo orientation is checked, graded metadata — never assumed truth
+
+**Status:** ADOPTED (2026-07-08). Operating rule + a read-side slice (built with this ADR): the standing
+law is [ORIENTATION_DISCIPLINE.md](ORIENTATION_DISCIPLINE.md); the mechanism is `exocortex/orient.py`, the
+`orient_repo` MCP tool, a `deploy install` capsule stamp, and the exporter estate view. P1-pin-safe by
+construction: `hook.py` / `colony.py` byte-unchanged.
+
+**Context.** When an agent works *outside* the current working tree it orients from whatever it finds
+first — a README, a "PRODUCTION-READY" banner, a stale memory — and the estate audit (REPO_LOG.md, 30
+repos, hand-graded) is read by **no code at all**, while the machine layer (registry, exporter, MCP
+`_repos()`) knows only `name`+`root`. The failure mode is acting on a superseded or over-claiming repo as
+if it were canonical; the estate's own audit found repos whose narrative volume *inverts* their evidence.
+
+**Decision — the distributed-hybrid shape.**
+1. **The capsule is a claim; the grade is the reader's audit of that claim.** Each repo may carry a
+   declared capsule (`.claude/exocortex/capsule.json` — identity, canonical status, maturity/strength/
+   tier, claim-boundary pointer, last-reviewed, risks, links; skeleton stamped by `deploy install`). The
+   credibility grade — **High / Medium / Low / Unknown** — is *always computed at read time* from live
+   probes (git presence, real mtime, tests) plus the drift between declaration and disk. A capsule
+   carries **no grade field**; a self-asserted grade would rebuild the README problem this ADR exists to
+   fix. The rubric's *shape* is pinned (deterministic, first-match, reasons always attached); the
+   thresholds are calibration, not doctrine (the ADR-006 precedent).
+2. **The estate REPO_LOG.md is seed + fallback, never a third artifact.** The one-shot `--seed` CLI
+   derives initial capsules from its rows; repos with no capsule fall back to their log row; neither
+   source reachable → Unknown, honestly noted (a public/portable install carries no estate data — the
+   log is located only via `EXOCORTEX_REPO_LOG` / `EXOCORTEX_PROJECTS_ROOT`, never a hardcoded path).
+3. **Ten first-class link-edge names**, pinned: `supersedes`, `superseded_by`, `feeds_into`,
+   `depends_on`, `shares_artifact_with`, `forked_from`, `public_mirror_of`, `private_canonical_of`,
+   `deployment_target_of`, `evidence_source_for`. The estate view checks the mirrored pairs for
+   **symmetry** (a one-sided `superseded_by` is a hygiene flag, never a veto).
+4. **The standing rule:** before assuming or acting on an out-of-tree repo, load its capsule
+   (`orient_repo`) and check the grade; below High, the first task is **re-orient** (README, recent
+   commits, tests, claim ledger) and then update the capsule — never "continue work."
+
+**The boundary (what this ADR is *not*).** A capsule is metadata *about* repos, never memory *content*:
+it surfaces no routes, no notes, no τ, and it never gates recall — ADR-013 territory (a rendered status
+is a legible claim, not a consequence; orientation never earns τ). This ADR owns the link-edge *names*
+only; letting the link graph scope estate-level *recall* is exactly ADR-014's parked question and stays
+parked. **Leaves open:** threshold values, per-repo review dates in REPO_LOG, capsule placement (state-dir
+vs committed) — and every write path beyond the explicit seeder (the MCP tool and exporter never write).
+
+**Consequences.**
+- The decoupling closes: the hand audit becomes machine-consumable (seed/fallback) and the machine layer
+  becomes editorially aware (grade, canonical status, links) without either duplicating the other — drift
+  between them is *measured* and feeds the grade, instead of rotting silently.
+- Orientation works fleet-wide, not just where memory was earned: `orient_repo` resolves against the
+  estate log ∪ the deployed fleet, so the riskiest target — a repo with no earned memory — is exactly the
+  one that still gets a graded capsule.
+- The product shape survives without the PI: a customer estate has no REPO_LOG.md, and the same mechanism
+  runs on capsules alone (grades cap lower without an estate audit — which is the honest answer).
+
+---
+
+## ADR-020 — Write-integrity: fail-open for the agent, fail-closed for the memory store
+
+**Status:** ADOPTED (2026-07-09). Shipped with this ADR: `exocortex/fsutil.py` (atomic replace +
+guarded store read), the quarantine/refusal discipline in `colony.py`/`state.py`, `Colony.locked`,
+and the `lock_failopen` audit lane + `gauge/lock_contention_gauge.py`. Kernel-lock untouched (organ
+tissue only; `LOCKED_GLOBS` unaffected).
+
+**Context.** The Codex provider probe (cursor_testbed, `evidence_source_for` → this repo) corrupted
+its exocortex store live under subagent fan-out: 3 rows torn mid-write + 53 hash-chain breaks in the
+quarantined artifact (`audit_codex.stage1-corrupt.20260709.jsonl`) — unlocked parallel appends from
+concurrent hook processes, worse with flagship models simply because they drive more parallel tool
+calls. Auditing this tree against the same class: the audit chain (D7) and session state
+(BUG_SESSIONSTATE_RACE) were already locked, but the **colony τ-store** RMW was protected only by
+accident (the per-session lock — useless across sessions, and the PreCompact consolidation sweep held
+no lock at all), every store used truncate-then-write (a reader could see a torn file), and
+`Colony.load`'s silent-empty fallback turned one torn read into a **full τ-wipe** on the next save.
+Measured: the unlocked two-process deposit race loses **21 of 50 deposits (42%)**; under the lock, 0.
+
+**Decision — three mechanisms and one instrument, one law.**
+1. **W1 — atomic replace.** Every hot-path store write (`colony_*.json`, `state_*.json`, `cues.json`,
+   `embed_cues.json`) goes through `fsutil.atomic_write_text` (same-dir tmp + `os.replace`): a reader
+   sees the old bytes or the new bytes, never a mixture. Append-only files (audit, ledger) keep their
+   locks instead — an append can't be replace-written.
+2. **W2 — never write back over a store you failed to read.** `fsutil.load_store_json` distinguishes
+   **contention** (an IO error — retry, refuse writes this load, leave the file alone) from
+   **corruption** (bytes read but unparseable after retries — quarantine to `*.corrupt-<date>`, one
+   `StoreQuarantine` audit row, refuse writes). The quarantine preserves the wreck byte-exact for
+   forensics; a `save()` on a degraded load is a silent no-op. The τ-wipe amplifier is dead.
+3. **W3 — the colony file gets its own cross-process lock.** `Colony.locked(label)` (the
+   `SessionState.locked` discipline, sidecar lock via `integrity.append_lock`) wraps every colony RMW:
+   the deposit, the consolidation sweep (one class at a time), and the declarative-tissue writers.
+   Lock-order law, pinned: **session before colony, never the reverse**; never two colony locks at
+   once. Readers (splice, MCP recall) stay lock-free — W1 guarantees they can't see a tear, and
+   retrieval must never block on writers (ADR-001).
+4. **W4 — measure the residue; the daemon stays parked.** Locks remain FAIL-OPEN on timeout (a hook
+   must never wedge the agent — the D7 ethos), but every fail-open acquisition now lands in the
+   consequence audit row as `lock_failopen` (omit-when-zero). `gauge/lock_contention_gauge.py` reads
+   the rate back; the **single-writer daemon** ("parallel write tool") is explicitly PARKED until the
+   gauge shows fail-open ≥1% of consequences at real traffic — gauge-first (ADR-002), evidence before
+   mechanism.
+
+**The boundary (what this ADR is *not*).** This is availability-vs-integrity plumbing, not memory
+semantics: no change to what earns τ, when deposits happen, or what recall returns — a byte-identical
+store produces byte-identical behavior. The asymmetry is the point: the *agent* path stays fail-open
+(hooks never block, locks time out), the *store* path is now fail-closed (no write without a verified
+read). **Leaves open:** the single-writer daemon's shape (only if W4 ever fires), fsync policy on the
+audit append, and whether quarantined stores deserve an automated resurrection pass.
+
+**Consequences.**
+- The corruption class the Codex probe demonstrated is closed by construction, not by rarity: torn
+  reads are impossible (W1), a corrupt legacy store can no longer erase earned memory (W2), and the
+  lost-update race is gone (W3, deterministic two-process test).
+- The one residual window — fail-open under pathological contention — is now *measured* instead of
+  assumed away; the gauge's verdict line states the −1 condition for W1–W3-sufficiency explicitly.
+- The cross-provider lesson transfers: the testbed fixed its audit half, we had fixed our state half —
+  the union (audit + state + colony + telemetry) is what actually closes the class, and it is now the
+  documented contract any new provider integration inherits.
+
+---
+
 ## The through-line
 
-These eighteen decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
+These twenty decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
 consequence, nothing unproven reaches the user's hot path or the committed defaults, and the organism's own
 integrity is a mathematical invariant — not a secret.**
 Consequence-sourcing (ADR-001) is the law; the σ economy (ADR-004) and suggest-then-verify (ADR-008) protect
@@ -735,8 +848,12 @@ how agents *deliberate* — a rendered −1/0/+1 verdict is a legible claim, nev
 re-baselined as a governance gate, not a monument (ADR-016), the mutable colony's own snapshots made
 tamper-evident so ADR-009's protection of the τ store is finally true and not merely asserted (ADR-017), and
 the chain's tail strictly anchored against truncation (ADR-018) — so the earned procedural memory answers to
-the same audit posture as the frozen kernel. The boundary of
-what these decisions do and do **not** buy is in
+the same audit posture as the frozen kernel; and orientation across the estate obeys the same skepticism —
+a repo's own story is a graded, audited claim, never assumed truth and never pheromone (ADR-019); and the
+stores that hold all of this earned memory are themselves guarded by the same asymmetry — the agent path
+fails open, the store path fails closed: no torn reads, no write over an unverified read, no unlocked
+read-modify-write, and the one residual window instrumented rather than assumed away (ADR-020). The
+boundary of what these decisions do and do **not** buy is in
 [CLAIMS.md](CLAIMS.md) ("What this system is NOT") and [CLAIM_BOUNDARY.md](CLAIM_BOUNDARY.md). For the organs
 themselves, see the Exocortex docs ([CORE.md](../exocortex/docs/CORE.md),
 [WHITEPAPER.md](../exocortex/docs/WHITEPAPER.md)); for the somatic floor, the

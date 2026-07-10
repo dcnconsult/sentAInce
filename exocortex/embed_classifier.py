@@ -108,8 +108,9 @@ class EmbeddingCueClassifier:
 
     def save(self) -> None:
         try:
-            self._path().write_text(json.dumps({"dim": self.dim, "classes": self.classes}),
-                                    encoding="utf-8")
+            from .fsutil import atomic_write_text
+            atomic_write_text(self._path(),   # ADR-020 W1: a reader never sees a torn store
+                              json.dumps({"dim": self.dim, "classes": self.classes}))
         except Exception:
             pass
 

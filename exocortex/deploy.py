@@ -329,6 +329,21 @@ def _uninstall_bootstrap(t: Path) -> bool:
     return removed
 
 
+# ---- artifact 5: the orientation capsule skeleton (ADR-019) ----
+def _stamp_capsule(t: Path) -> bool:
+    """Stamp an EMPTY orientation-capsule skeleton into the state dir if none exists (never overwrites —
+    a hand-maintained capsule outranks any re-deploy). The capsule is the repo's DECLARED orientation
+    claim; the credibility grade is always computed by the reader (`exocortex.orient`), never stored
+    here. Lives in the gitignored state dir like the rest of the accrued/declared per-repo state."""
+    from exocortex.orient import capsule_path, skeleton
+    cp = capsule_path(t)
+    if cp.exists():
+        return False
+    cp.parent.mkdir(parents=True, exist_ok=True)
+    cp.write_text(json.dumps(skeleton(t.resolve().name), indent=2) + "\n", encoding="utf-8")
+    return True
+
+
 # ---- public ops ----
 def install(target: str, *, mode="observe", integrity="enforce", audit_chain=True,
             declarative="off", vault=None, ingest=None, wsl=False, colony=True,
@@ -356,7 +371,9 @@ def install(target: str, *, mode="observe", integrity="enforce", audit_chain=Tru
                         "commands are audited but NOT vetoed (PowerShell-aware gating is deferred; "
                         "run under --wsl for a Bash-only surface). See exocortex/README.md 'Honest scope'.")
     _state_dir(t).mkdir(parents=True, exist_ok=True)
+    capsule_stamped = _stamp_capsule(t)
     return {"ok": True, "target": str(t), "ignore_added": ig, "provider": provider,
+            "capsule_stamped": capsule_stamped,
             "bootstrap": bootstrap,
             "config": f"{integrity}/{mode}/{declarative}" + (f" vault={vault}" if vault else "")
                       + (f" ingest={ingest}" if ingest else ""),
@@ -405,6 +422,7 @@ def status(target: str) -> dict:
                   "declarative": cfg.get("declarative", {}).get("mode"),
                   "ingest": cfg.get("declarative", {}).get("ingest")},
         "state_dir_present": _state_dir(t).exists(), "audit_records": n_audit,
+        "capsule_present": (_state_dir(t) / "capsule.json").exists(),
     }
 
 

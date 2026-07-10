@@ -238,9 +238,13 @@ def verify(graph: WikiGraph, bridges: dict, used, exit_code: int, *, label: str 
                     b.status = SCARRED
                     n_scar += 1
         if crystal:
-            col = getattr(graph, "colony", None) or Colony.load(label)
-            col.deposit(crystal, float(weight))             # the bridge becomes a real, earned colony edge
-            col.save()
+            # ADR-020 W3: cross-process RMW → re-load under the colony lock (a stale graph cache must
+            # never clobber a concurrent writer), deposit, save, rebind the cache.
+            with Colony.locked(label) as col:
+                col.deposit(crystal, float(weight))         # the bridge becomes a real, earned colony edge
+                col.save()
+            if getattr(graph, "colony", None) is not None:
+                graph.colony = col
         return n_cryst, n_scar
     except Exception:
         return 0, 0

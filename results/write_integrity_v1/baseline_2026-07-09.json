@@ -1,0 +1,30 @@
+{
+  "gauge": "lock_contention_v1",
+  "per_state_dir": [
+    {
+      "state_dir": ".claude\\exocortex",
+      "audit_lines": 7132,
+      "torn_lines": 5,
+      "consequence_rows": 1546,
+      "lock_failopen_rows": 0,
+      "lock_failopen_sum": 0,
+      "lock_failopen_rate": 0.0,
+      "quarantine_rows": 0,
+      "corrupt_files": [],
+      "chain": {
+        "ok": false,
+        "records": 7127,
+        "chained": 6225,
+        "message": "chain link broken at chained-index 1252 (reorder/delete/insert)",
+        "first_break": 1252
+      }
+    }
+  ],
+  "summary": {
+    "consequence_rows": 1546,
+    "lock_failopen_rows": 0,
+    "torn_lines": 5,
+    "failopen_rate": 0.0,
+    "verdict": "+1 for W1-W3 sufficiency at observed traffic \u2014 fail-open rate 0.00% < 1%; the single-writer daemon stays PARKED"
+  }
+}

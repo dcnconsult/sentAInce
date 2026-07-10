@@ -20,6 +20,7 @@ accrues across sessions. STATS/observe-safe: deposits touch only ``colony.json``
 """
 from __future__ import annotations
 
+import contextlib
 import glob
 import json
 import os
@@ -28,6 +29,7 @@ import time
 from dataclasses import dataclass, field
 
 from .config import state_dir
+from .fsutil import atomic_write_text, load_store_json
 from .genome import GENOME
 
 # Thermodynamic constants — sourced from the Genome (exocortex_config.json) so they can be re-tuned for
@@ -146,6 +148,9 @@ class Colony:
     meta: dict = field(default_factory=dict)  # F3 per-edge provenance: "src\tdst" -> {"ts": float, "model": str}
     consolidations: int = 0                   # circadian sleeps applied (Q1: attributes deposit-free τ decay)
     last_consolidated: float = 0.0            # epoch of the latest consolidate (same convention as meta.ts)
+    # ---- write-integrity flags (ADR-020; never persisted — save() builds its dict explicitly) ----
+    _load_degraded: bool = field(default=False, repr=False)   # W2: store unreadable at load → save() refuses
+    _lock_failopen: bool = field(default=False, repr=False)   # W4: locked() couldn't acquire → telemetry
 
     # ---- the ant mechanism ----
     def deposit(self, es: list, weight: float = 1.0, prune: float | None = None,
@@ -270,32 +275,42 @@ class Colony:
 
     def save(self) -> None:
         try:
+            if getattr(self, "_load_degraded", False):
+                return   # ADR-020 W2: never write back over a store we failed to read (the τ-wipe
+            #              amplifier — the quarantine was already audited at load time)
             d = {"label": self.label, "tau": self.tau, "deposits": self.deposits}
             if self.meta:                    # F3: omit the lane entirely when empty → pre-F3 colonies stay byte-identical
                 d["meta"] = self.meta
             if self.consolidations:          # Q1: omit-when-zero keeps never-consolidated stores byte-identical
                 d["consolidations"] = self.consolidations
                 d["last_consolidated"] = self.last_consolidated
-            self._path().write_text(json.dumps(d), encoding="utf-8")
+            atomic_write_text(self._path(), json.dumps(d))   # ADR-020 W1: a reader never sees a torn store
         except Exception:
             pass   # a hook must never crash the agent
+
+    def _populate(self, d: dict, label: str = "_default") -> bool:
+        """Fill this instance from a parsed store dict. False (and write-refusal) on malformed fields —
+        writing back a PARTIALLY parsed colony loses the unparsed remainder (same law as a torn read)."""
+        try:
+            self.label = str(d.get("label", label))
+            self.tau = {str(k): float(v) for k, v in dict(d.get("tau", {})).items()}
+            self.deposits = int(d.get("deposits", 0))
+            self.meta = {str(k): dict(v) for k, v in dict(d.get("meta", {})).items()}
+            self.consolidations = int(d.get("consolidations", 0))
+            self.last_consolidated = float(d.get("last_consolidated", 0.0))
+            self.tau, self.meta = _strip_self_edges(self.tau, self.meta)   # W5: enforce no self-edges on read
+            return True
+        except Exception:
+            self._load_degraded = True
+            return False
 
     @classmethod
     def load(cls, label: str = "_default") -> "Colony":
         col = cls(label=label)
-        p = col._path()
-        if p.exists():
-            try:
-                d = json.loads(p.read_text(encoding="utf-8"))
-                col.label = str(d.get("label", label))
-                col.tau = {str(k): float(v) for k, v in dict(d.get("tau", {})).items()}
-                col.deposits = int(d.get("deposits", 0))
-                col.meta = {str(k): dict(v) for k, v in dict(d.get("meta", {})).items()}
-                col.consolidations = int(d.get("consolidations", 0))
-                col.last_consolidated = float(d.get("last_consolidated", 0.0))
-                col.tau, col.meta = _strip_self_edges(col.tau, col.meta)   # W5: enforce no self-edges on read
-            except Exception:
-                pass
+        d, degraded = load_store_json(col._path())   # ADR-020 W2: unreadable → quarantined + audited
+        col._load_degraded = degraded
+        if isinstance(d, dict):
+            col._populate(d, label)
         return col
 
     @classmethod
@@ -303,17 +318,33 @@ class Colony:
         """Every discovered class's colony (for the PreCompact consolidation sweep)."""
         out = []
         for f in glob.glob(str(state_dir() / "colony_*.json")):
-            col = cls()
-            try:
-                d = json.loads(open(f, encoding="utf-8").read())
-                col.label = str(d.get("label", "_default"))
-                col.tau = {str(k): float(v) for k, v in dict(d.get("tau", {})).items()}
-                col.deposits = int(d.get("deposits", 0))
-                col.meta = {str(k): dict(v) for k, v in dict(d.get("meta", {})).items()}
-                col.consolidations = int(d.get("consolidations", 0))
-                col.last_consolidated = float(d.get("last_consolidated", 0.0))
-                col.tau, col.meta = _strip_self_edges(col.tau, col.meta)   # W5: enforce no self-edges on read
-                out.append(col)
-            except Exception:
+            d, _ = load_store_json(f)   # degraded → skipped this sweep (quarantined, never clobbered)
+            if not isinstance(d, dict):
                 continue
+            col = cls()
+            if col._populate(d):
+                out.append(col)
         return out
+
+    @classmethod
+    @contextlib.contextmanager
+    def locked(cls, label: str = "_default", timeout: float = 2.0):
+        """Exclusive load-modify-save critical section for this CLASS's colony file (ADR-020 W3).
+
+        The deposit and the PreCompact consolidation sweep are cross-PROCESS read-modify-writes on
+        ``colony_<label>.json`` — the session lock never protected them (two sessions share a class's
+        colony, and the sweep held no lock at all: a deposit landing mid-sweep was silently
+        overwritten). Same sidecar-lock discipline as the audit chain / ``SessionState.locked``, and
+        the same lock-ORDER law: **session before colony, never the reverse** (the deposit path
+        acquires this inside ``SessionState.locked``; the sweep takes colony locks one class at a
+        time, all released before the session flag-write). FAIL-OPEN on timeout — a hook must never
+        wedge the agent; the acquisition result is surfaced as ``_lock_failopen`` on the yielded
+        instance for the W4 contention telemetry.
+
+        Usage: ``with Colony.locked(label) as col: col.deposit(...); col.save()``"""
+        from .integrity import append_lock
+        path = cls(label=label)._path()
+        with append_lock(path, timeout=timeout) as got:
+            col = cls.load(label)
+            col._lock_failopen = not got
+            yield col

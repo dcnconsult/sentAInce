@@ -109,12 +109,18 @@ DEFAULTS = {
         # The wiki proposer + bootstrap exploration (NEXT_PHASE_PLAN §6, Ticket 1). The splice injects
         # only τ-bearing notes (the crown jewel), which DEADLOCKS a fresh wiki: a note can't earn τ until
         # it's used, can't be used until injected, can't be injected until it has τ. The exploration budget
-        # breaks it the ant-colony way — inject up to `explore_budget` SUB-FLOOR candidates per splice,
+        # breaks it the ant-colony way — trial up to `explore_budget` SUB-FLOOR NOTES per splice,
         # clearly flagged UNVERIFIED, and let a closed exit-0 chain award them their first τ. Ships DORMANT
         # (0 → the verified status quo: splice stays pure, abstains on a cold wiki). Endocrine seam (later,
         # gauge-first, mirrors endocrine.levers): when wired, the budget scales with the metabolic tier
         # (SATED → explore more / "dream"; HYPOXIA → 0 / tunnel-vision). A flat int until then.
-        "explore_budget": 0,            # # of sub-floor exploratory exons per splice (0 = off/dormant)
+        # UNITS ARE NOTES, NOT BLOCKS (sizing fix, 2026-07-09): the lab's delivery-budget probe
+        # (sentAInce-lab DELIVERY_BUDGET_PROBE.md) proved a block-unit budget starves multi-block notes —
+        # budget=2 injected 2 of the conventions note's 8 blocks, 0/6 full deliveries; budget=8 → 6/6.
+        # An admitted note now delivers all its proposed blocks atomically; `explore_block_cap` is the
+        # explicit total-blocks byte bound (the one place a note may still truncate, loudly).
+        "explore_budget": 0,            # # of sub-floor exploratory NOTES per splice (0 = off/dormant)
+        "explore_block_cap": 32,        # total explore BLOCKS per splice — bounds payload bytes
         "max_exons": 20,                # splice injection ceiling (verified tissue)
         "proposer_k": 24,               # candidate cap the proposer returns before τ/σ filtering
         "link_hops": 1,                 # structural spreading-activation depth from the active context

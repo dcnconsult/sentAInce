@@ -53,11 +53,14 @@ def record(*, session: str, event: str, mode: str, tool: str = "", command: str 
            epistemic_decision: str = "", action: str = "",
            energy: float | None = None, tier: str = "", strategy_lock: int = 0,
            injected: bool = False, outcome: str = "", reason: str = "", output: str = "",
-           seg_len: int = 0, wiki_injected: int = 0, wiki_used: int = 0) -> dict:
+           seg_len: int = 0, wiki_injected: int = 0, wiki_used: int = 0,
+           lock_failopen: int = 0) -> dict:
     """Build a flat audit record (the compliance + functional fields, spec §5). ``output`` is a
     truncated snippet of the observed stdout/stderr — lets judges verify ACTUAL execution vs a claim.
     ``seg_len`` = #edges in the colony segment a Bash consequence deposited (organ 3D telemetry: the live
-    flail-then-succeed length distribution that decides when to flip ``eligibility_trace.mode`` on)."""
+    flail-then-succeed length distribution that decides when to flip ``eligibility_trace.mode`` on).
+    ``lock_failopen`` = fail-open store-lock acquisitions during this event (ADR-020 W4: the contention
+    telemetry that decides whether the parked single-writer daemon is ever needed; omitted when 0)."""
     return {
         "session": session, "event": event, "mode": mode, "tool": tool,
         "command": command, "command_key": command_key, "signature": signature,
@@ -69,4 +72,6 @@ def record(*, session: str, event: str, mode: str, tool: str = "", command: str 
         # declarative wiki attribution telemetry (only stamped when the organ ran this consequence) —
         # lets a planted-token testbed run score real precision, and Grafana plot the live credit rate.
         **({"wiki_injected": wiki_injected, "wiki_used": wiki_used} if (wiki_injected or wiki_used) else {}),
+        # ADR-020 W4 contention telemetry (omit-when-zero keeps uncontended rows byte-identical)
+        **({"lock_failopen": lock_failopen} if lock_failopen else {}),
     }

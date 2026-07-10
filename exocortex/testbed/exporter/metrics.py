@@ -67,6 +67,7 @@ OFFLINE_GAUGE_VERDICTS = {
 TUNABLE_SCHEMA = [
     {"key": "declarative.mode",                  "kind": "enum",  "choices": ["off", "live"]},
     {"key": "declarative.explore_budget",        "kind": "int",   "min": 0,   "max": 50},
+    {"key": "declarative.explore_block_cap",     "kind": "int",   "min": 0,   "max": 200},
     {"key": "eligibility_trace.mode",            "kind": "enum",  "choices": ["off", "trace"]},
     {"key": "eligibility_trace.gamma",           "kind": "float", "min": 0.0, "max": 1.0},
     {"key": "endocrine.mode",                    "kind": "enum",  "choices": ["off", "tier"]},
@@ -589,8 +590,37 @@ def apply_config(root: Path, key, value) -> tuple[int, dict]:
     return 200, {"ok": True, "key": key, "value": coerced, "path": str(cfg)}
 
 
+def _orientation_view(r: dict, log: dict) -> dict:
+    """The ADR-019 orientation slice for one repo: DECLARED capsule fields + the READER-computed
+    credibility grade (never stored, never web-writable — capsule.json is deliberately absent from
+    TUNABLE_SCHEMA). Fail-open to {} — orientation must never break the metrics path."""
+    try:
+        from datetime import date
+
+        from exocortex import orient as _orient
+        v = _orient.orient(r["name"], r.get("root"), log, date.today())
+        d = v["declared"]
+        return {
+            "canonical_status": d.get("canonical_status"), "tier": d.get("tier"),
+            "maturity": d.get("maturity"), "last_reviewed": str(d.get("last_reviewed") or ""),
+            "links": [{"edge": e, "target": t} for _, e, t in d.get("links", [])],
+            "grade": v["grade"], "grade_reasons": v["reasons"],
+            "capsule_present": bool(v["probe"].get("capsule_present")),
+        }
+    except Exception:
+        return {}
+
+
 def repos_api(repos: list[dict]) -> dict:
-    """The control page's data: each repo's current tunable values + read-only frozen safety values."""
+    """The control page's data: each repo's current tunable values + read-only frozen safety values +
+    the ADR-019 orientation capsule view (declared claim, reader-computed grade). Estate-level
+    ``link_flags`` surface one-sided cross-repo link declarations (the graph disagreeing with itself)."""
+    try:
+        from exocortex import orient as _orient
+        log = _orient.load_log()
+        link_flags = _orient.symmetry_flags(_orient.estate_links(repos, log))
+    except Exception:
+        log, link_flags = {}, []
     out = []
     for r in repos:
         genome = load_genome_for(r.get("config_path"))
@@ -600,8 +630,10 @@ def repos_api(repos: list[dict]) -> dict:
             "has_config": Path(r["config_path"]).is_file(),
             "tunable": {e["key"]: _get_nested(genome, e["key"]) for e in TUNABLE_SCHEMA},
             "frozen": {k: _get_nested(genome, k) for k in FROZEN_KEYS},
+            "orientation": _orientation_view(r, log),
         })
-    return {"schema": TUNABLE_SCHEMA, "frozen_keys": FROZEN_KEYS, "repos": out}
+    return {"schema": TUNABLE_SCHEMA, "frozen_keys": FROZEN_KEYS, "repos": out,
+            "link_flags": link_flags}
 
 
 def repo_vitals(state_dir: Path, genome: dict) -> dict:
@@ -730,7 +762,8 @@ const ORGANS={
 };
 const HINTS={
  'declarative.mode':'The notebook: off, or live (notes injected + credited on success).',
- 'declarative.explore_budget':'How many un-earned notes to trial per session (breaks the cold-start deadlock).',
+ 'declarative.explore_budget':'How many un-earned notes to trial per session (breaks the cold-start deadlock). A trialled note delivers whole — never partially.',
+ 'declarative.explore_block_cap':'Byte bound on exploration: total blocks a splice may inject across trialled notes.',
  'thermodynamics.decay':'How fast unused habits fade — applied on every success AND every sleep (0.9 = −10%).',
  'thermodynamics.prune_floor':'The forgetting threshold: habits weaker than this are dropped.',
  'thermodynamics.max_edges_per_class':'Leanness cap: the strongest N routes a habit-class keeps after sleep.',

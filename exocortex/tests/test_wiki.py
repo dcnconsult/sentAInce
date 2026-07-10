@@ -237,18 +237,50 @@ def test_exploration_dormant_by_default():
 
 
 def test_exploration_breaks_cold_start_deadlock():
-    """With a budget, sub-floor candidates inject as flagged UNVERIFIED tissue so they can earn first τ."""
+    """With a budget, sub-floor candidates inject as flagged UNVERIFIED tissue so they can earn first τ.
+    The budget counts NOTES (documents): budget=1 admits doc_a whole and leaves doc_b out entirely."""
     g = WikiGraph()
-    ns = digest_document("doc.md", "First block.\n\nSecond block.\n\nThird block.")
-    for n in ns:
+    ns_a = digest_document("doc_a.md", "First block.\n\nSecond block.\n\nThird block.")
+    ns_b = digest_document("doc_b.md", "Other note.")
+    for n in ns_a + ns_b:
         g.add(n)
     g.colony = Colony(label="_t")                       # zero τ everywhere (a fresh wiki)
-    cands = [n.id for n in ns]
-    payload = splice_payload(g, cands, explore=2)
+    cands = [n.id for n in ns_a + ns_b]
+    payload = splice_payload(g, cands, explore=1)
     assert "UNVERIFIED" in payload
-    assert payload.count("explore ·") == 2, "explore budget not honored"
-    assert "First block." in payload and "Second block." in payload  # front of proposer order
-    assert "Third block." not in payload                              # beyond the budget
+    assert payload.count("explore ·") == 3, "admitted note must deliver ALL its blocks"
+    assert "First block." in payload and "Second block." in payload and "Third block." in payload
+    assert "Other note." not in payload                 # second NOTE is beyond the budget
+
+
+def test_exploration_note_atomic_never_partial():
+    """The delivery-budget sizing law (sentAInce-lab DELIVERY_BUDGET_PROBE.md): a multi-block note is
+    never split by the budget — pre-fix, budget=2 BLOCKS delivered 2 of 8 blocks of the conventions
+    note and the task could not succeed. budget=1 NOTE must deliver every proposed block."""
+    g = WikiGraph()
+    text = "\n\n".join(f"Convention {i}: rule body {i}." for i in range(8))
+    ns = digest_document("project_conventions.md", text)
+    assert len(ns) == 8
+    for n in ns:
+        g.add(n)
+    g.colony = Colony(label="_t")
+    payload = splice_payload(g, [n.id for n in ns], explore=1)
+    assert payload.count("explore ·") == 8, "partial-note starvation regressed"
+    for i in range(8):
+        assert f"Convention {i}:" in payload
+
+
+def test_exploration_block_cap_bounds_payload(monkeypatch):
+    """`explore_block_cap` is the stated byte bound — the ONE place a note may still truncate."""
+    from exocortex.wiki import splice as sp
+    monkeypatch.setattr(sp, "EXPLORE_BLOCK_CAP", 5)
+    g = WikiGraph()
+    ns = digest_document("big.md", "\n\n".join(f"Block {i}." for i in range(9)))
+    for n in ns:
+        g.add(n)
+    g.colony = Colony(label="_t")
+    payload = splice_payload(g, [n.id for n in ns], explore=1)
+    assert payload.count("explore ·") == 5, "block cap must bound total explore blocks"
 
 
 def test_exploration_skips_scarred_and_verified():
