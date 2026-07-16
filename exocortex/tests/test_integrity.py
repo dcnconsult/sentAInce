@@ -114,10 +114,14 @@ def test_sessionstart_apoptosis(tmp_path, monkeypatch):
         hook.handle_sessionstart({"session_id": "viol"}, Mode.OBSERVE)
     assert e.value.code == 1
 
-    # warn → records the violation but does NOT exit
+    # warn → records the violation but does NOT exit. Since 2026-07-16 SessionStart also returns the
+    # vitals line (the organism's one user-facing channel) — and in warn it SAYS so, which is the point:
+    # a degraded posture the user can see beats a silent one.
     monkeypatch.setenv("EXOCORTEX_INTEGRITY", "warn")
-    assert hook.handle_sessionstart({"session_id": "warn"}, Mode.OBSERVE) is None
+    out = hook.handle_sessionstart({"session_id": "warn"}, Mode.OBSERVE)
+    assert "systemMessage" in out and "integrity=warn" in out["systemMessage"]
 
-    # a clean kernel → normal startup, no exit
+    # a clean kernel → normal startup, no exit, vitals emitted
     monkeypatch.setattr(integrity, "verify_kernel", lambda *a, **k: {"ok": True})
-    assert hook.handle_sessionstart({"session_id": "ok"}, Mode.OBSERVE) is None
+    out = hook.handle_sessionstart({"session_id": "ok"}, Mode.OBSERVE)
+    assert "systemMessage" in out and "sentaince" in out["systemMessage"]

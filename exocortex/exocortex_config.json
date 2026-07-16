@@ -11,8 +11,9 @@
     "min_deposits_to_splice": 2
   },
 
+  "_epistemic_classifier_comment": "LEXICAL is the shipped default; semantic is OPT-IN via `pip install sentaince[embed]` + mode=semantic (or EXOCORTEX_EMBED=1). sentence-transformers is an EXTRA, not a runtime dep, so a plain install cannot honour a semantic default (available() is False -> the hook silently falls back to lexical). Measured (issue #4): semantic costs ~10s on EVERY prompt vs 0.15s lexical -- each hook is a fresh process, so the model reloads per prompt; a fully-warm second run still cost 9.8s. This is NOT the cold->warm promotion rule (issue #4 option B), which stays gauge-gated on #11. KEEP THIS BLOCK EQUAL TO exocortex/genome.py DEFAULTS -- this file mirrors the genome, and two sources of default truth drift silently.",
   "epistemic_classifier": {
-    "mode": "semantic",
+    "mode": "lexical",
     "model": "all-MiniLM-L6-v2",
     "abstain_threshold_cosine": 0.45,
     "match_margin": 0.0

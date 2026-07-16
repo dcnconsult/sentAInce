@@ -51,10 +51,19 @@ refuse confident nonsense.
   **0.96 → 1.00** (`results/bridge_gauge_v1/`, [CLAIMS.md](CLAIMS.md)).
 - **Enable:** the gate is a kernel primitive — always active wherever geometry routes (bridge/wiki). Its
   exposed tuning knobs are `declarative.bridge.abstain_conf` (`0.14`) and `abstain_margin` (`0.03`).
-- **Distinct knob — recall router abstain:** the colony's MiniLM cue-classifier has its *own* margin-gated
+- **Distinct knob — recall router abstain:** the colony's cue-classifier has its *own* margin-gated
   novelty-abstain (a new/unconverged class injects nothing), tuned by `epistemic_classifier.mode`
-  (`semantic` default / `lexical` fallback) and `abstain_threshold_cosine` (`0.45`). Don't conflate the two:
+  (`lexical` default / `semantic` opt-in) and `abstain_threshold_cosine` (`0.45`). Don't conflate the two:
   the 0-well is HDC geometry; the classifier abstain is centroid-cosine.
+- **Why lexical is the default (and semantic is one key away).** §15 measured the MiniLM/`semantic`
+  classifier's class separation *better* on paraphrases, and that finding stands — the `0.45` threshold
+  above is its result. But `sentence-transformers` is an **extra**, not a runtime dependency, so a plain
+  `pip install sentaince` cannot honour a `semantic` default: the hook falls back to lexical anyway. And
+  where the model *is* present, it costs a **measured ~10s on every prompt vs 0.15s lexical** — each hook
+  is a fresh process, so the model reloads per turn (this is a permanent tax, not a cold-start artifact).
+  A default set by whatever happens to be in your venv is not a default. To opt in:
+  `pip install sentaince[embed]` and set `"epistemic_classifier": {"mode": "semantic"}` (or
+  `EXOCORTEX_EMBED=1`).
 
 ## 3. Ant colony — procedural memory · **LIVE**
 
@@ -218,7 +227,7 @@ quiet → close-together, not resume-each). It *surfaces*; you resume/close.
 |---|---|---|---|
 | Somatic C1–C7 gate | LOCKED | `somatic_gate.mode` | `observe` → `somatic` / `full` |
 | Epistemic 0-well gate | LIVE | (kernel primitive) `declarative.bridge.abstain_conf` | `0.14` |
-| — recall classifier abstain | LIVE | `epistemic_classifier.mode` / `.abstain_threshold_cosine` | `semantic` / `0.45` |
+| — recall classifier abstain | LIVE | `epistemic_classifier.mode` / `.abstain_threshold_cosine` | `lexical` / `0.45` |
 | Ant colony | LIVE | `EXOCORTEX_COLONY` (env off-switch) | on → `0` disables |
 | Slime-mold prune | LIVE | `thermodynamics.prune_floor` / `.decay` | `0.05` / `0.9` |
 | Transcriptome splice | LIVE | `thermodynamics.min_deposits_to_splice`; `EXOCORTEX_COLONY_SPLICE` | `2`; on → `0` disables |

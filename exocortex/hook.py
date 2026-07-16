@@ -23,7 +23,8 @@ if _ROOT not in sys.path:
 
 from exocortex.config import (Mode, mode, lethal_failsafe,                  # noqa: E402
                               colony_enabled, colony_splice_enabled, embed_enabled,
-                              declarative_enabled, declarative_vault, bridge_enabled, integrity_mode)
+                              declarative_enabled, declarative_vault, bridge_enabled, integrity_mode,
+                              state_dir)
 from exocortex import audit                                 # noqa: E402
 from exocortex.state import SessionState, command_key       # noqa: E402
 
@@ -585,7 +586,42 @@ def handle_sessionstart(data: dict, m: Mode):
     st.save()
     audit.append(audit.record(session=session, event="SessionStart", mode=m.value,
                               energy=st.energy, tier=st.tier()))
-    return None
+    return _vitals(m)
+
+
+def _vitals(m: Mode) -> dict | None:
+    """The one line that answers "is this thing on?" — the organism's ONLY channel to the human.
+
+    Every other output we emit is model-facing: `additionalContext` goes to the model (verified), and
+    `permissionDecisionReason` is rendered only on deny/ask — on allow it is discarded. So the sole
+    user-visible event was a refusal, at a MEASURED veto_rate of 0.0009 (1 per 1115 tool calls). A
+    working install and a broken install therefore produced identical observations — and the docs sold
+    that silence as correctness. This is the fix: speak once per session, on an earned fact.
+
+    Deliberately NOT chatty (PI 2026-07-16: "rare + earned, default ON"). No agent-behavior change, no
+    tau, no ADR-001 exposure — this only changes what the HUMAN sees. Never raises: vitals are a
+    courtesy, and the hook's fail-open outranks them.
+
+    `systemMessage` is a TOP-LEVEL key (sibling of hookSpecificOutput). Empirically on 2.1.211: accepted
+    (outcome=success, no stderr) and NOT delivered to the model (planted-token capture — the control
+    token in additionalContext was echoed back by the model; this one never was). User-side RENDERING is
+    doc-claimed and unverifiable headlessly (`-p` has no UI); if it turns out inert, this degrades to a
+    no-op and the voice belongs in the `sentaince status` CLI instead.
+    """
+    try:
+        bits = [f"mode={m.value}"]
+        try:
+            from exocortex.colony import Colony
+            n = sum(len(Colony.load(p.stem.replace("colony_", "", 1)).tau)
+                    for p in state_dir().glob("colony_*.json"))
+            bits.append(f"{n} routes earned" if n else "no routes yet — earning starts on your first exit 0")
+        except Exception:
+            pass
+        if integrity_mode() != "off":
+            bits.append(f"integrity={integrity_mode()}")
+        return {"systemMessage": "🧬 sentaince: " + " · ".join(bits)}
+    except Exception:
+        return None                          # a courtesy must never wedge a session
 
 
 def main() -> None:

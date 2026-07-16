@@ -61,6 +61,7 @@ _BASH_EVENTS = ("PostToolUse", "PostToolUseFailure")   # only commands debit ene
 _COMMAND_MATCHER = "Bash|PowerShell"   # D3: consequence observation covers BOTH command tools (the audit
 #                                        showed PowerShell fully dark — 10/0 pre/post on a Windows host)
 _PLAIN_EVENTS = ("UserPromptSubmit", "SessionStart", "PreCompact")   # PreCompact = the colony splice
+_HOOK_TIMEOUT = 120   # s; the host default (30s) killed UserPromptSubmit on cold starts — output discarded
 
 
 def _to_wsl(p) -> str:
@@ -87,7 +88,8 @@ def _settings(audit_path: Path, state_dir: Path, mode: str, wsl: bool = False,
 
     def cmd(ev):
         return {"type": "command",
-                "command": f"{invoke} {ev} --mode {mode} --audit {a} --state {s}{colony_arg}"}
+                "command": f"{invoke} {ev} --mode {mode} --audit {a} --state {s}{colony_arg}",
+                "timeout": _HOOK_TIMEOUT}
     block = {"PreToolUse": [{"matcher": "*", "hooks": [cmd("PreToolUse")]}]}
     for ev in _BASH_EVENTS:
         block[ev] = [{"matcher": _COMMAND_MATCHER, "hooks": [cmd(ev)]}]

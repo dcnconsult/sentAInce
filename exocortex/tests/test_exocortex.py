@@ -736,8 +736,8 @@ def test_genome_defaults_present():
     g = load_genome()
     assert g["thermodynamics"]["prune_floor"] == 0.05
     assert g["thermodynamics"]["max_edges_per_class"] == 32
-    assert g["epistemic_classifier"]["mode"] == "semantic"          # embedding is the live default
-    assert g["epistemic_classifier"]["abstain_threshold_cosine"] == 0.45
+    assert g["epistemic_classifier"]["mode"] == "lexical"           # semantic is OPT-IN (see below)
+    assert g["epistemic_classifier"]["abstain_threshold_cosine"] == 0.45   # §15's result, unchanged
 
 
 def test_genome_file_override_and_fallback(tmp_path, monkeypatch):
@@ -769,12 +769,35 @@ def test_genome_somatic_alias():
         del os.environ["EXOCORTEX_CONFIG"]
 
 
-def test_embed_is_default_classifier(monkeypatch):
+def test_lexical_is_the_default_classifier_and_semantic_is_opt_in(monkeypatch):
+    """DEFAULT REVERSED 2026-07-16 (was: semantic). Recorded, not silent.
+
+    §15 measured semantic's class separation superior on realistic AND adversarial paraphrases. That
+    finding STANDS — `abstain_threshold_cosine=0.45` is still its result, and semantic is still one
+    config key away. What the gauge did not measure was COST, and a gauge that measured accuracy alone
+    cannot settle a default:
+
+      * MEASURED on the hot path (issue #4, this box): **~10.15s on EVERY prompt vs 0.15s lexical**
+        (81x). NOT a cold-start artifact — each hook is a fresh process, so `embed_classifier._MODEL`'s
+        "process-singleton" never survives; a fully-warm second run still cost 9.8s. The host-timeout
+        KILL is separately fixed (833c198, timeout=120) — this is the residual permanent tax.
+      * `sentence-transformers` is an EXTRA, not a runtime dep, so a plain `pip install sentaince`
+        CANNOT honour a semantic default: `available()` is False and the hook silently falls back to
+        lexical. The old default therefore meant "use MiniLM iff it happens to be in your venv" —
+        unreachable for most users, and an unrequested 10s/prompt tax for anyone who has torch
+        installed for unrelated work. A default decided by unrelated venv contents is not a default.
+
+    This is NOT issue #4 option B (cold->lexical / warm->semantic promotion), which stays gauge-gated on
+    issue #11: this is a static declared default, not a dynamic switch. Opting in is now possible for the
+    first time: `pip install sentaince[embed]` (the extra did not exist before this change).
+    """
     monkeypatch.delenv("EXOCORTEX_EMBED", raising=False)
     from exocortex.config import embed_enabled
-    assert embed_enabled() is True                                # genome mode=semantic → embedding default
+    assert embed_enabled() is False                              # genome mode=lexical → no model on the hot path
+    monkeypatch.setenv("EXOCORTEX_EMBED", "1")
+    assert embed_enabled() is True                               # env override wins → semantic is one flag away
     monkeypatch.setenv("EXOCORTEX_EMBED", "0")
-    assert embed_enabled() is False                              # env override wins
+    assert embed_enabled() is False
 
 
 # ----------------------- HDC memory-palace gauge (frozen-kernel mechanism-gate, P-D) -----------------------
@@ -911,3 +934,47 @@ def test_state_lock_fail_open_under_contention(tmp_path, monkeypatch):
             st2.push_node("bash:echo")
             st2.save()
         st.save()                                              # last-write-wins IS possible here, by design
+
+
+# ----------------------- Tier 1: the vitals line — the organism's ONE user-facing channel -----------------------
+def test_sessionstart_emits_user_facing_vitals(tmp_path, monkeypatch):
+    """Before 2026-07-16 the organism had NO channel to the human: `additionalContext` goes to the model,
+    and `permissionDecisionReason` renders only on deny/ask (on allow it is discarded, hook.py). So the
+    only user-visible event was a refusal at a MEASURED veto_rate of 0.0009 — 1 per 1115 tool calls. A
+    working install and a broken install produced identical observations, and the docs sold that silence
+    as correctness. SessionStart now answers "is this thing on?".
+
+    `systemMessage` is a TOP-LEVEL key (sibling of hookSpecificOutput). Empirically on Claude Code 2.1.211
+    (planted-token capture): accepted (outcome=success, no stderr) and NOT delivered to the model — the
+    control token planted in additionalContext WAS echoed back by the model, this one never was. User-side
+    rendering is doc-claimed and cannot be verified headlessly (`-p` has no UI).
+    """
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(tmp_path / "state"))
+    from exocortex import hook
+    from exocortex.config import Mode
+    out = hook.handle_sessionstart({"session_id": "vit"}, Mode.OBSERVE)
+    assert isinstance(out, dict) and "systemMessage" in out
+    assert "hookSpecificOutput" not in out          # systemMessage is top-level, not nested
+    assert "mode=observe" in out["systemMessage"]
+
+
+def test_cold_vitals_explain_the_silence_instead_of_leaving_it_ambiguous(tmp_path, monkeypatch):
+    """The case that matters most: a brand-new install with an empty colony. The old behaviour was
+    silence, which is indistinguishable from a broken install — the exact trap QUICKSTART used to sell as
+    "cold-start silence is correct behavior". Say it out loud instead."""
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(tmp_path / "empty"))
+    from exocortex import hook
+    from exocortex.config import Mode
+    msg = hook.handle_sessionstart({"session_id": "cold"}, Mode.OBSERVE)["systemMessage"]
+    assert "no routes yet" in msg and "exit 0" in msg
+
+
+def test_vitals_never_wedge_the_session(tmp_path, monkeypatch):
+    """"The organism never wedges your session" outranks every feature we ship (QUICKSTART). Vitals are a
+    courtesy: if anything about them breaks, SessionStart must still succeed and still seed state."""
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(tmp_path / "state"))
+    from exocortex import hook
+    from exocortex.config import Mode
+    monkeypatch.setattr(hook, "state_dir", lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    out = hook.handle_sessionstart({"session_id": "broken"}, Mode.OBSERVE)   # must not raise
+    assert out is None or "systemMessage" in out

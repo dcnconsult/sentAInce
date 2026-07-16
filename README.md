@@ -30,6 +30,38 @@ out of your way, and uninstalls with one command. **Safety is never for sale.**
 | 💪 **Give your agent a memory that earns trust** | [The one law](#the-one-law) | 2 min read |
 | 🔬 **See the evidence before you believe anything** | [The evidence lock](#the-evidence-lock--seven-experiments-c1c7) | as long as you like |
 
+## See it work — 30 seconds, no install, no daemon
+
+Watch the safety reflex refuse a prompt-injected lethal command:
+
+![The somatic veto refusing a prompt-injected `kill -9 1` — labeled demonstration, reproduce it yourself](docs/assets/demo_somatic_veto.gif)
+
+Reproduce it yourself from a fresh clone — this is a *labeled demonstration*, so don't take the GIF's
+word for it:
+
+```bash
+python -m pip install -e ".[dev]"
+python experiments/exp1_autoimmune.py      # a compromised model proposes a lethal action; the gate refuses
+python -m pytest -q tests                  # the full 99-test evidence lock, deterministic
+```
+
+## What's new in 0.1.5
+
+The honesty release. If you tried SentAInce before and it seemed to do nothing — **that was a bug, and
+it was ours**. Full detail in the [changelog](CHANGELOG.md).
+
+- **🩹 It was dead on arrival for `pip` users.** Install defaulted to verifying a kernel-lock baseline
+  whose files aren't in the wheel, so **every session start exited 1, silently**, and memory never woke.
+  Fixed and confirmed in a clean install. If you bounced off this project earlier, this is why.
+- **⚡ ~80× faster prompts.** The semantic classifier reloaded MiniLM *on every prompt* (each hook is a
+  fresh process). **10.15 s → 0.125 s.** The accuracy option is still there — now actually installable,
+  via `pip install sentaince[embed]`.
+- **🗣️ It can finally talk to you.** The organism had no channel to the human at all — its one visible
+  event fires about once per 1,100 tool calls, so "working" and "broken" looked identical. Session start
+  now tells you it's alive, and says plainly when it hasn't earned anything yet.
+- **🧭 See all your repos at once.** `python -m exocortex.orient --estate` grades every repo on live
+  evidence — git, tests, real mtime, and the drift between what a repo claims and what the disk shows.
+
 ## Five minutes to a safer agent
 
 Works with **Claude Code** and **Cursor**. No account. No telemetry. Nothing leaves your machine.
@@ -53,16 +85,22 @@ The full walkthrough — what you'll see in the first session, how the memory st
 dashboard — is in [`docs/QUICKSTART.md`](docs/QUICKSTART.md). The operator's runbook is
 [`docs/DEPLOY_TO_A_PROJECT.md`](docs/DEPLOY_TO_A_PROJECT.md).
 
-**Just curious first?** Watch the safety reflex refuse a prompt-injected lethal command, from a fresh
-clone, no setup beyond pip:
+### Working across more than one repo
 
-![The somatic veto refusing a prompt-injected `kill -9 1` — labeled demonstration, reproduce it yourself](docs/assets/demo_somatic_veto.gif)
+Memory is earned per-repo and never crosses between them. But *orientation* — what a repo is, how
+current its own claims are — travels. Point it at the folder your projects live in:
 
 ```bash
-python -m pip install -e ".[dev]"
-python experiments/exp1_autoimmune.py      # a compromised model proposes a lethal action; the gate refuses
-python -m pytest -q tests                  # the full 99-test evidence lock, deterministic
+python -m exocortex.orient --estate --projects-root /path/to/your/projects
 ```
+
+You get every repo side by side with a **credibility grade** — High / Medium / Low / Unknown —
+computed at read time from live probes (git, tests, real mtime) and the drift between what a repo
+*declares* and what the disk *shows*. A capsule carries no grade of its own: a repo cannot vouch for
+itself, which is the whole point. Below High, the rule is re-orient before you act on it.
+
+File-based, stdlib-only, read-only. No database, no daemon, nothing to run. See
+[`docs/ORIENTATION_DISCIPLINE.md`](docs/ORIENTATION_DISCIPLINE.md).
 
 ## The one law
 

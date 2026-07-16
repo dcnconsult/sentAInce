@@ -14,7 +14,7 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
 
 - **99 frozen kernel-lock tests** — the C1–C7 evidence lock (69) + 30 domain-crucible/adapter — **untouched**
   across this entire arc. This is the load-bearing guarantee.
-- **289 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** tests, all green (one
+- **308 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** tests, all green (one
   exocortex test — the alert-engine backtest over a live audit store — auto-skips on storeless clones). The
   lock and the organ tests are separate suites; organ work never edits the lock.
 

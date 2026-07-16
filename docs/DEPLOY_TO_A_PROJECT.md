@@ -9,10 +9,10 @@ and [ADR-009](ADR.md) for why integrity is language-agnostic, not a compiled bin
 
 ## One-command install / uninstall (recommended)
 
-`exocortex/deploy.py` performs the three artifacts below idempotently and — critically — **reverses them
+`exocortex/deploy.py` performs the five artifacts below idempotently and — critically — **reverses them
 surgically**, so testing on a daily-driver repo is safe (uninstall is as simple as install):
 ```bash
-# hardened default posture (integrity enforce + audit chain, somatic observe, declarative off):
+# default posture (integrity OFF + audit chain, somatic observe, declarative off):
 python -m exocortex.deploy install   <target>
 # choose the host (default claude → .claude/settings.json; cursor → .cursor/hooks.json; both):
 python -m exocortex.deploy install   <target> --provider cursor      # or: --provider both
@@ -37,13 +37,13 @@ artifacts below document *what the tool does*; reach for them only to customize.
 | Gate | How to check |
 |---|---|
 | Code repo local-only (and patent clock clean) | `git remote -v` → none; no public push |
-| Frozen-DNA baseline current | `python -m exocortex.integrity --verify` → `ok=True` |
+| Frozen-DNA baseline current | `python -m exocortex.integrity --verify` → `ok=True` (**full checkout only** — a `pip install` has no `vendor/kernel/`, so this reports 56 missing by construction, not tampering) |
 | Code repo working tree clean | `git status --short` empty |
 | Target is a git repo | `<target>/.git` exists |
 | No existing hooks to clobber | target `.claude/settings*.json` has no `hooks` key (else **merge**, don't overwrite) |
 | Target `.gitignore` covers runtime state | else add it (artifact 1) |
 
-## The four artifacts (all gitignored or marker-delimited / non-destructive)
+## The five artifacts (all gitignored or marker-delimited / non-destructive)
 **1. Append to `<target>/.gitignore`:**
 ```
 # Exocortex organism runtime state (per-project) + local activation config — never committed
@@ -51,13 +51,22 @@ artifacts below document *what the tool does*; reach for them only to customize.
 /exocortex_config.json
 ```
 
-**2. `<target>/exocortex_config.json`** (gitignored; the genome finds it via `CLAUDE_PROJECT_DIR`). Hardened
-posture — integrity **enforce** + audit chain ON (the new layer under test); somatic **observe** initially
-(record, don't block — escalate to `somatic`/`full` after a clean soak); declarative **off** unless the repo
-is small (the scale rule below):
+**2. `<target>/exocortex_config.json`** (gitignored; the genome finds it via `CLAUDE_PROJECT_DIR`). Default
+posture — integrity **off** + audit chain ON; somatic **observe** initially (record, don't block — escalate
+to `somatic`/`full` after a clean soak); declarative **off** unless the repo is small (the scale rule below):
+
+> **Why integrity ships `off` (fixed 2026-07-16 — it used to ship `enforce`, and that was a bug).**
+> The kernel-lock baseline covers `vendor/kernel/**`, which is **not in the PyPI wheel** (`pyproject`
+> ships `sentaince`/`exocortex`/`cerebral` only). So 56 of the baseline's 66 entries are structurally
+> absent for a `pip install`, `verify_kernel()` returns `ok=False`, and `enforce` fires the apoptosis —
+> **`exit 1` on every SessionStart**, which is not caught by the fail-open. Confirmed in a clean venv:
+> SessionStart `1 → 0` and memory only splices after the fix. **`enforce` is for a full checkout that
+> actually carries `vendor/kernel/`** — opt in there with `--integrity enforce`. This restores the
+> Genome's own default and its stated reason: *"Ships DORMANT so a stale baseline never bricks dev."*
+
 ```json
 {
-  "integrity": { "mode": "enforce", "audit_chain": true },
+  "integrity": { "mode": "off", "audit_chain": true },
   "somatic_gate": { "mode": "observe" },
   "declarative": { "mode": "off" }
 }
@@ -83,6 +92,15 @@ the earned memory (provider `claude` → a marker-delimited block in `<target>/A
 your content; provider `cursor` → `.cursor/rules/exocortex-bootstrap.mdc`, `alwaysApply`). Uninstall
 removes exactly our block/file. Why it exists: cold semantic routing **abstains on novel phrasing by
 design**, so an unbriefed agent concludes "the memory is empty." The contract closes that gap.
+
+**5. The recall skill** (provider `claude`/`both`) — deploy installs
+`<target>/.claude/skills/sentaince-recall/SKILL.md`, a model-invocable skill teaching the recall
+workflow (`memory_status` → `recall_for_prompt(cls=…)` → `recall_notes`) and the law (earned
+suggestion never authority; an abstention on a novel task is a correct answer; recall never writes).
+The contract (artifact 4) states the law once per repo; the skill surfaces it *at task time* — two
+independent host integrations observed models use the memory tools markedly better with a skill
+present. Ownership is marker-based: a same-named skill you wrote yourself is never overwritten
+(deploy warns and skips), and uninstall removes only our marked file, pruning the empty dirs.
 
 ## Bootstrap your agent (what the contract says — copy-paste if you skipped deploy)
 

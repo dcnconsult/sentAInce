@@ -29,7 +29,7 @@ PUBLIC_INCLUDE = [
     # CI / release automation (ships so the public repo builds + publishes itself)
     ".github/",
     # top-level project files
-    "README.md", "LICENSE", "NOTICE", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "pyproject.toml", "pyrightconfig.json", ".gitignore",
+    "README.md", "LICENSE", "NOTICE", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "CHANGELOG.md", "pyproject.toml", "pyrightconfig.json", ".gitignore",
     # the AGNTCY/OASF agent-directory record (machine-readable card for the MCP memory server)
     "oasf-record.json",
 ]

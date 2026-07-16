@@ -219,6 +219,53 @@ def test_estate_links_unions_capsules_and_log(tmp_path, monkeypatch):
 
 
 # ----------------------------------------------------------------------------- seeder (the one write path)
+# ----------------------------------------------------------------------------- estate: side-by-side view
+def test_estate_repos_unions_deployed_fleet_with_log_only_rows(tmp_path, monkeypatch):
+    """The union is the point: the riskiest orientation target is the repo with NO earned memory, which
+    a deployed-fleet scan alone cannot see."""
+    _write_log(tmp_path, monkeypatch)
+    _repo(tmp_path, "Alpha", deployed=True)        # deployed AND in the log
+    _repo(tmp_path, "Undeclared", deployed=True)   # deployed, not in the log
+    # "Liar" is in the log with no directory at all — log-only, root guessed.
+    names = [r["name"] for r in orient.estate_repos(tmp_path, orient.load_log())]
+    assert "Alpha" in names and "Undeclared" in names and "Liar" in names
+
+
+def test_estate_view_is_name_ordered_not_graded_ordered(tmp_path, monkeypatch):
+    """The COMMERCIAL BOUNDARY, pinned: the free view shows every organism side by side; ranking the
+    estate by what-needs-attention is the paid rollup (`tuner/estate.py`). If a future edit sorts by
+    grade, this test fails on purpose — that sort is the paid feature."""
+    _write_log(tmp_path, monkeypatch)
+    _repo(tmp_path, "Zulu", deployed=True, mtime=date(2026, 7, 7))     # would grade above...
+    _repo(tmp_path, "Alpha", git=False, deployed=True)                 # ...this Low one
+    out = orient.render_estate(orient.estate(tmp_path, orient.load_log(), TODAY))
+    assert out.index("Alpha") < out.index("Zulu")
+
+
+def test_estate_reports_link_hygiene_flags_without_vetoing(tmp_path, monkeypatch):
+    one_sided = _LOG_FIXTURE.replace("- `BravoOld` superseded_by `Alpha` — mirrored pair, no flag\n", "")
+    _write_log(tmp_path, monkeypatch, one_sided)
+    _repo(tmp_path, "Alpha", deployed=True)
+    view = orient.estate(tmp_path, orient.load_log(), TODAY)
+    assert any("counterpart missing" in f for f in view["flags"])
+    assert "never a veto" in orient.render_estate(view)
+
+
+def test_estate_without_estate_log_says_so_and_does_not_invent_a_grade(tmp_path, monkeypatch):
+    """A portable/public install carries no REPO_LOG. Grades cap lower — ADR-019 calls that the honest
+    answer, not a defect — and the view must SAY it rather than manufacture freshness."""
+    monkeypatch.delenv("EXOCORTEX_REPO_LOG", raising=False)
+    monkeypatch.delenv("EXOCORTEX_PROJECTS_ROOT", raising=False)
+    _repo(tmp_path, "Solo", deployed=True)
+    view = orient.estate(tmp_path, {}, TODAY)
+    out = orient.render_estate(view)
+    assert "REPO_LOG not reachable" in out and "honest answer" in out
+    # an unreviewed repo cannot self-assert High — no declaration, so no freshness to claim
+    assert [v["grade"] for v in view["views"]] == ["Unknown"]
+    grades_line = next(ln for ln in out.splitlines() if ln.strip().startswith("grades:"))
+    assert "High" not in grades_line
+
+
 def test_seed_writes_only_deployed_repos_and_is_idempotent(tmp_path, monkeypatch):
     _write_log(tmp_path, monkeypatch)
     _repo(tmp_path, "Alpha", deployed=True)

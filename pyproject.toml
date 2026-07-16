@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sentaince"
-version = "0.1.4"
+version = "0.1.5"
 description = "Phase II embodiment of the FreqOS organism — a synthetic immune system (auto-immune interlock)."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -15,6 +15,13 @@ dev = ["pytest>=7.4"]
 # The read-only memory MCP server (exocortex/mcp_server.py) — lets Claude Desktop / Code / Cursor RETRIEVE
 # the organism's earned memory over MCP. Not needed for the hooks, the organs, or the test lock.
 mcp = ["mcp>=1.2"]
+# The SEMANTIC cue-classifier (exocortex/embed_classifier.py). Opt-in and heavy: it pulls torch, and it
+# costs ~10s on EVERY UserPromptSubmit vs 0.15s lexical (issue #4 — each hook is a fresh process, so the
+# model reloads per prompt; this is not a cold-start artifact). §15 measured its class separation better
+# on paraphrases, so it is offered — but you choose to pay for it. Absent → the hook falls back to the
+# lexical classifier automatically. Enable with `"epistemic_classifier": {"mode": "semantic"}` in the
+# target's exocortex_config.json, or EXOCORTEX_EMBED=1.
+embed = ["sentence-transformers>=2"]
 # Optional live-console vitals for the battle-test runner (battle/). The runner falls back to plain
 # text if absent, so this is never required to run M0 or the battle seam tests.
 demo = ["rich>=13.0"]

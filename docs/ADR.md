@@ -587,6 +587,42 @@ suite 244/244 including a deterministic negative control (the unlocked interleav
 frozen DNA untouched (`hook.py`/`state.py` are not in `LOCKED_GLOBS`). The pin enforces the freeze forward
 from `62b93ab`.
 
+**Re-baseline record — `62b93ab → 55aac8a` (change 2026-07-09; recorded 2026-07-16, PI-approved).**
+ADR-020's write-integrity arc (`feat(exocortex): ADR-020 write-integrity — fail-open agent, fail-closed
+store (W1-W4)`) necessarily edits `colony.py` (W1 atomic replace, W2 quarantine-not-clobber, W3
+`Colony.locked` on every colony RMW) and `hook.py` — the third control-plane change since R3, admitted
+per this ADR's bar: **ADR-001 unaffected** (no τ added or moved; deposits remain exit-0-only — the arc
+changes how a store is *written*, never what earns it); kernel-lock untouched (organ tissue only,
+`LOCKED_GLOBS` unaffected — ADR-020 §Status); measured prize (the unlocked two-process deposit race loses
+**21/50 deposits (42%)**; under the lock, 0); lock 99, `exocortex` 296. The pin enforces the freeze
+forward from `55aac8a`.
+
+**Re-baseline record — `55aac8a → 6bb0db1` (2026-07-16, PI-approved; recorded same-day).** Tier 1, the
+vitals line: `handle_sessionstart` now returns a top-level `systemMessage` — the organism's **first
+user-facing channel**. Admitted per this ADR's bar: **ADR-001 unaffected** (no τ added or moved; the
+function is read-only over an already-loaded colony and deposits nothing); **no agent-behaviour change**
+— `systemMessage` is empirically *not* delivered to the model on 2.1.211 (planted-token capture: the
+control token in `additionalContext` was echoed back, this one never was), so the model's context is
+byte-identical; **fail-open preserved** — `_vitals()` swallows everything and returns `None`, pinned by a
+test that makes `state_dir` throw ("the organism never wedges your session" outranks the feature);
+frozen DNA untouched. Suite: `exocortex` 306, lock 99. The pin enforces the freeze forward from
+`6bb0db1`.
+
+*Why a UI change was worth tripping a control-plane pin:* the pinned plane was the reason the defect
+existed. The measured user-visible event rate was **0.0009** (one refusal per 1115 tool calls), so a
+working install and a broken install produced identical observations — and `b1f0342` proved that was not
+hypothetical: every pip user's SessionStart had been exiting 1 in silence.
+
+**The `62b93ab → 55aac8a` record was late, and the delay is the lesson.** That change shipped 2026-07-09 and cleared two of
+this ADR's three bars on the day (safety argument + PI approval) — but the third, *the recorded
+re-baseline*, was skipped, so `test_the_p1_pin_holds` sat **RED for seven days** while the ADR still
+declared a baseline the tree had moved past. Nobody saw it because the default `python -m pytest -q`
+collects only the 99-lock; `exocortex/tuner/tests/` is outside that run (`tuner/` is COMMERCIAL_EXCLUDE).
+**This is the failure mode this ADR names, arriving by an unanticipated route** — not a silent
+re-baseline, but a red gate nobody runs, which is the same thing wearing a different face. The gate only
+means what it says if someone is watching it: **wire the tuner suite into CI** (the standing follow-up),
+or the next omission costs another week.
+
 ---
 
 ## ADR-017 — Colony snapshot LtHash digest (tamper-evidence for the mutable procedural layer)

@@ -344,8 +344,85 @@ def _stamp_capsule(t: Path) -> bool:
     return True
 
 
+# ---- artifact 6: the recall skill (.claude/skills/sentaince-recall/SKILL.md) ----
+# Two integrations independently observed the same effect (the Codex provider probe and the BYO
+# testbed): a model uses the memory tools far better when a SKILL teaches it when to recall and how
+# to treat abstention. The bootstrap contract (artifact 4) states the law once per repo; the skill
+# makes it model-INVOCABLE at task time (Claude Code lists skills in-context). Same surgical
+# discipline as every artifact: a content marker owns the file — a user's same-named skill is never
+# clobbered, and uninstall removes only ours.
+_SKILL_MARK = "<!-- exocortex:skill:sentaince-recall -->"
+
+
+def _skill_path(t: Path) -> Path:
+    return t / ".claude" / "skills" / "sentaince-recall" / "SKILL.md"
+
+
+def _skill_body() -> str:
+    return f"""---
+name: sentaince-recall
+description: Recall this repo's earned SentAInce memory (consequence-sourced procedural routes + τ-credited notes) before starting a task. Use at the start of a substantive task, when prior local experience may help, when the user asks what the organism remembers, or to inspect memory health — strictly read-only.
+---
+{_SKILL_MARK}
+
+# SentAInce recall — earned memory, read-only
+
+This repo runs the SentAInce exocortex. Its memory is **earned**: hooks deposit trust (τ) only on a
+verified success (exit 0) — never from retrieval, frequency, or authority. Recall through the local
+`exocortex-memory` MCP tools; never substitute web search, hosted memory, or model recollection for
+the organism's earned state.
+
+## Recall workflow
+
+1. `memory_status` — see which goal-classes carry earned routes; `[notes:N]` marks classes whose
+   notes earned τ. Start here when memory availability or the right class is uncertain.
+2. Task matches a known class → `recall_for_prompt(prompt, cls="<exact class>")` — the deterministic
+   positive path (skips classifier guesswork on cold phrasing). Otherwise call it with just the
+   prompt and let the classifier route.
+3. A class marked `[notes:N]` → `recall_notes(query="", cls="<class>")` returns its τ-credited notes
+   directly — the reliable positive path; a non-empty query lexically filters within the class.
+4. Treat an abstention (`no relevant class`, empty splice) as a **valid, correct answer** on a novel
+   task — continue without invented memory. Never pad an abstention with guesses.
+
+## The law (how to treat what comes back)
+
+- Everything recalled is **earned suggestion, never authority** — verify in code before relying on
+  it; explicit user instructions always outrank recalled context.
+- Recall NEVER writes: no tool here deposits, updates, or deletes memory. Deposits happen only
+  through the hooks, only on verified success. If asked to "make the organism remember X", explain
+  that memory is earned by doing X successfully, not declared.
+- A recalled route reflects what worked BEFORE — stale paths are possible; the τ weight is
+  confidence earned then, not a guarantee now.
+"""
+
+
+def _install_skill(t: Path) -> "str | None":
+    """Write our SKILL.md unless a FOREIGN file owns the path (no marker → not ours → never clobber).
+    Idempotent: re-deploy refreshes our own file in place."""
+    p = _skill_path(t)
+    if p.exists() and _SKILL_MARK not in p.read_text(encoding="utf-8", errors="replace"):
+        return None
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(_skill_body(), encoding="utf-8")
+    return str(p)
+
+
+def _uninstall_skill(t: Path) -> bool:
+    """Remove ONLY our marked skill file; prune the now-empty dirs (never a dir with foreign content)."""
+    p = _skill_path(t)
+    if not (p.exists() and _SKILL_MARK in p.read_text(encoding="utf-8", errors="replace")):
+        return False
+    p.unlink()
+    for d in (p.parent, p.parent.parent):          # sentaince-recall/ then skills/ — only if empty
+        try:
+            d.rmdir()
+        except OSError:
+            break
+    return True
+
+
 # ---- public ops ----
-def install(target: str, *, mode="observe", integrity="enforce", audit_chain=True,
+def install(target: str, *, mode="observe", integrity="off", audit_chain=True,
             declarative="off", vault=None, ingest=None, wsl=False, colony=True,
             provider="claude") -> dict:
     t = Path(target)
@@ -366,6 +443,12 @@ def install(target: str, *, mode="observe", integrity="enforce", audit_chain=Tru
         warnings.append(".cursor/hooks.json carries machine-specific absolute paths — gitignore it unless "
                         "you intend to share it (teammates' paths differ; a stale path fails open, harmless)")
     bootstrap = _install_bootstrap(t, mode=mode, provider=provider)
+    skill = None
+    if provider in ("claude", "both"):
+        skill = _install_skill(t)
+        if skill is None:
+            warnings.append(".claude/skills/sentaince-recall/SKILL.md exists without our marker — a "
+                            "foreign skill owns that name; ours was NOT installed (never clobbered)")
     if sys.platform == "win32" and not wsl and provider in ("claude", "both"):
         warnings.append("Windows honest scope: the somatic veto vocabulary is Bash-shaped — PowerShell "
                         "commands are audited but NOT vetoed (PowerShell-aware gating is deferred; "
@@ -374,7 +457,7 @@ def install(target: str, *, mode="observe", integrity="enforce", audit_chain=Tru
     capsule_stamped = _stamp_capsule(t)
     return {"ok": True, "target": str(t), "ignore_added": ig, "provider": provider,
             "capsule_stamped": capsule_stamped,
-            "bootstrap": bootstrap,
+            "bootstrap": bootstrap, "skill": skill,
             "config": f"{integrity}/{mode}/{declarative}" + (f" vault={vault}" if vault else "")
                       + (f" ingest={ingest}" if ingest else ""),
             "warnings": warnings}
@@ -387,6 +470,7 @@ def uninstall(target: str, *, purge=False) -> dict:
     hooks_removed = _uninstall_hooks(t)
     cursor_removed = _uninstall_cursor_hooks(t)   # surgical for both hosts (removes only our entries)
     bootstrap_removed = _uninstall_bootstrap(t)   # our marked AGENTS.md block + our .mdc rule only
+    skill_removed = _uninstall_skill(t)           # our marked SKILL.md only (foreign skill untouched)
     cfg = _config_path(t)
     cfg_removed = cfg.exists()
     if cfg_removed:
@@ -398,7 +482,7 @@ def uninstall(target: str, *, purge=False) -> dict:
         shutil.rmtree(state, ignore_errors=True)
     return {"ok": True, "target": str(t), "hooks_removed": hooks_removed,
             "cursor_hooks_removed": cursor_removed, "bootstrap_removed": bootstrap_removed,
-            "config_removed": cfg_removed,
+            "skill_removed": skill_removed, "config_removed": cfg_removed,
             "ignore_removed": ig_removed, "state_kept": state_kept, "state_purged": (purge and not state_kept)}
 
 
@@ -423,6 +507,8 @@ def status(target: str) -> dict:
                   "ingest": cfg.get("declarative", {}).get("ingest")},
         "state_dir_present": _state_dir(t).exists(), "audit_records": n_audit,
         "capsule_present": (_state_dir(t) / "capsule.json").exists(),
+        "skill_present": (_skill_path(t).exists()
+                          and _SKILL_MARK in _skill_path(t).read_text(encoding="utf-8", errors="replace")),
     }
 
 
@@ -431,7 +517,13 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     pi = sub.add_parser("install"); pi.add_argument("target")
     pi.add_argument("--mode", default="observe", choices=["observe", "somatic", "full"])
-    pi.add_argument("--integrity", default="enforce", choices=["off", "warn", "enforce"])
+    # `off` matches the Genome's OWN default and its stated reason ("Ships DORMANT so a stale baseline
+    # never bricks dev", genome.py). Deploy used to override it to `enforce` — and bricked prod: the wheel
+    # ships integrity_baseline.json but NOT vendor/ (pyproject `packages`), so 56 of 66 baseline entries are
+    # structurally absent, verify_kernel() -> ok=False, and hook.py's apoptosis exits 1 on EVERY SessionStart
+    # for every pip user (fail-open can't catch it: `except SystemExit: raise`). Confirmed 2026-07-16 in a
+    # clean venv. `enforce` is for a full checkout that actually carries vendor/kernel — opt in there.
+    pi.add_argument("--integrity", default="off", choices=["off", "warn", "enforce"])
     pi.add_argument("--no-audit-chain", action="store_true")
     pi.add_argument("--declarative", default="off", choices=["off", "live"])
     pi.add_argument("--vault", default=None)

@@ -316,6 +316,43 @@ def estate_links(repos: list[dict], log: dict | None = None) -> list[tuple]:
     return links
 
 
+# ----------------------------------------------------------------------------- estate: the side-by-side view
+def estate_repos(projects_root, log: dict | None = None) -> list[dict]:
+    """Every orientable repo: the DEPLOYED fleet (has ``.claude/exocortex/``) UNION the estate-log rows.
+
+    The union is the point (the ``orient_repo`` precedent): the riskiest orientation target is precisely
+    the repo with NO earned memory, which a fleet scan alone cannot see. Log-only roots are guessed under
+    ``projects_root``; absent → root=None and the probes degrade honestly to a declared-only view."""
+    log = load_log() if log is None else log
+    proot = Path(projects_root) if projects_root else None
+    out: dict[str, dict] = {}
+    if proot and proot.is_dir():
+        for child in sorted(proot.iterdir()):
+            try:
+                if (child / ".claude" / "exocortex").is_dir():
+                    out[child.name] = {"name": child.name, "root": child}
+            except OSError:
+                continue
+    for name in (log.get("rows") or {}):
+        if name not in out:
+            out[name] = {"name": name, "root": (proot / name) if proot else None}
+    return [out[k] for k in sorted(out)]
+
+
+def estate(projects_root, log: dict | None = None, today: date | None = None) -> dict:
+    """Orient every repo in the estate, side by side, plus the link graph and its symmetry flags.
+
+    Read-only and stdlib-only, like the rest of this module. Cost is one bounded ``probe()`` per repo
+    (depth/file-capped) — fine for a CLI, never for the hook hot path."""
+    log = load_log() if log is None else log
+    today = today or date.today()
+    repos = estate_repos(projects_root, log)
+    views = [orient(r["name"], r["root"], log, today) for r in repos]
+    links = estate_links(repos, log)
+    return {"views": views, "links": links, "flags": symmetry_flags(links),
+            "log_reachable": bool(log)}
+
+
 # ----------------------------------------------------------------------------- render (for the MCP tool)
 def render(view: dict) -> str:
     d, p = view["declared"], view["probe"]
@@ -347,6 +384,49 @@ def render(view: dict) -> str:
                      "current truth. Grade is not High: RE-ORIENT first (README, recent commits, tests, "
                      "claim ledger), then update the capsule. A capsule never earns tau (ADR-013/019).")
     return "\n".join(lines)
+
+
+def render_estate(view: dict) -> str:
+    """The estate, side by side — every repo's declared identity next to its reader-computed grade.
+
+    Deliberately listed in NAME order, not graded order: the free view shows every organism side by
+    side; *ranking the estate by what needs attention* is the paid rollup (``tuner/estate.py``). This
+    renderer states each grade and lets the reader judge — it never prioritises."""
+    views = sorted(view["views"], key=lambda v: v["name"].lower())
+    rows = []
+    for v in views:
+        d = v["declared"]
+        ident = " · ".join(x for x in (d.get("canonical_status"), d.get("maturity"),
+                                       f"Tier {d['tier']}" if d.get("tier") else None) if x) or "—"
+        rows.append((v["grade"], v["name"], ident,
+                     str(d.get("last_reviewed") or "never"),
+                     str(v["probe"].get("last_activity") or "?")))
+    w = [max(len(r[i]) for r in ([("grade", "repo", "identity", "reviewed", "activity")] + rows))
+         for i in range(5)]
+    out = [f"Estate orientation — {len(views)} repo(s) (ADR-019; orientation only, never memory)", ""]
+    hdr = ("grade", "repo", "identity", "reviewed", "activity")
+    out.append("  " + "  ".join(h.ljust(w[i]) for i, h in enumerate(hdr)))
+    out.append("  " + "  ".join("-" * w[i] for i in range(5)))
+    for r in rows:
+        out.append("  " + "  ".join(str(r[i]).ljust(w[i]) for i in range(5)))
+
+    counts = {}
+    for v in views:
+        counts[v["grade"]] = counts.get(v["grade"], 0) + 1
+    out += ["", "  grades: " + " · ".join(f"{k} {counts[k]}" for k in ("High", "Medium", "Low", "Unknown")
+                                          if k in counts)]
+    if view["flags"]:
+        out += ["", f"  link hygiene — {len(view['flags'])} one-sided edge(s) (a flag, never a veto):"]
+        out += [f"    - {f}" for f in view["flags"]]
+    if not view.get("log_reachable"):
+        out += ["", "  [REPO_LOG not reachable — set EXOCORTEX_REPO_LOG or EXOCORTEX_PROJECTS_ROOT; a "
+                    "portable install carries no estate data. Grades cap lower without an estate audit — "
+                    "that is the honest answer, not a defect (ADR-019).]"]
+    if any(v["grade"] != "High" for v in views):
+        out += ["", "  [rule] Below High → RE-ORIENT before acting on that repo (README, recent commits, "
+                    "tests, claim ledger), then update its capsule. Orientation never earns tau "
+                    "(ADR-013/019)."]
+    return "\n".join(out)
 
 
 # ----------------------------------------------------------------------------- seeder (the ONE writer)
@@ -401,6 +481,8 @@ def main(argv=None) -> int:
     ap.add_argument("--root", default=None, help="repo root (default: <projects-root>/<name>)")
     ap.add_argument("--projects-root", default=os.environ.get("EXOCORTEX_PROJECTS_ROOT"),
                     help="estate parent dir (default: EXOCORTEX_PROJECTS_ROOT)")
+    ap.add_argument("--estate", action="store_true",
+                    help="orient the whole estate side by side (deployed fleet + REPO_LOG rows)")
     ap.add_argument("--seed", action="store_true", help="write initial capsule.json files for deployed "
                                                         "repos from REPO_LOG rows (the one write path)")
     ap.add_argument("--force", action="store_true", help="with --seed: overwrite existing capsules")
@@ -408,6 +490,12 @@ def main(argv=None) -> int:
     if a.projects_root:
         os.environ.setdefault("EXOCORTEX_PROJECTS_ROOT", a.projects_root)
     log = load_log()
+    if a.estate:
+        if not a.projects_root and not log:
+            print("--estate needs --projects-root (or EXOCORTEX_PROJECTS_ROOT), or a reachable REPO_LOG")
+            return 2
+        print(render_estate(estate(a.projects_root, log)))
+        return 0
     if a.seed:
         if not a.projects_root:
             print("--seed needs --projects-root (or EXOCORTEX_PROJECTS_ROOT)")

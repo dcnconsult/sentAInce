@@ -28,8 +28,23 @@ DEFAULTS = {
         "min_deposits_to_splice": 2,    # abstain from splicing a class until it has some repetition
     },
     "epistemic_classifier": {
-        "mode": "semantic",             # semantic (MiniLM embedding) | lexical (TF) — semantic is the default
-        "model": "all-MiniLM-L6-v2",    # the embedding model (sentence-transformers)
+        # semantic (MiniLM embedding) | lexical (TF). LEXICAL is the shipped default — semantic is
+        # OPT-IN via `pip install sentaince[embed]` + mode="semantic" (or EXOCORTEX_EMBED=1).
+        #
+        # Why, since §15 MEASURED semantic's class separation superior (that finding stands, and the
+        # 0.45 threshold below is its result): `sentence-transformers` is an EXTRA, not a runtime dep,
+        # so a plain `pip install sentaince` cannot honour a "semantic" default — `available()` is False
+        # and the hook silently falls through to lexical. The old default therefore meant "use MiniLM iff
+        # it happens to be in your venv": unreachable for most, and an unrequested tax for anyone who has
+        # torch installed for unrelated work. MEASURED on this hot path (issue #4): ~10s on EVERY prompt
+        # vs 0.15s lexical — 65x, and NOT a cold-start artifact (each hook is a fresh process, so
+        # `embed_classifier._MODEL`'s singleton never survives; a fully-warm second run still cost 9.8s).
+        # A gauge that measured accuracy and not cost cannot settle a default. So: declare the dep, make
+        # the cost opt-in, and keep the measured quality available to anyone who wants to pay for it.
+        # The cold->lexical/warm->semantic PROMOTION rule (issue #4 option B) stays gauge-gated on #11 —
+        # this is not that: it is a static, declared default, not a dynamic switch.
+        "mode": "lexical",
+        "model": "all-MiniLM-L6-v2",    # the embedding model (sentence-transformers; extra "embed")
         "abstain_threshold_cosine": 0.45,  # §15-measured: clean on realistic AND adversarial paraphrases
         #                                    (0.65 fragments; 0.30-0.45 is the verified-good range)
         "match_margin": 0.0,            # top1-top2 commit gate (0 = off)

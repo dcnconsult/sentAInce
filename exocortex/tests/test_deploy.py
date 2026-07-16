@@ -137,3 +137,109 @@ def test_bootstrap_contract_cursor_writes_mdc_rule(tmp_path):
     assert "memory_status" in text and "never authority" in text
     deploy.uninstall(str(t))
     assert not mdc.exists()
+
+
+# ---- artifact 6: the recall skill (.claude/skills/sentaince-recall/SKILL.md) ----
+def test_skill_installed_and_uninstall_prunes(tmp_path):
+    t, _ = _seed_target(tmp_path)
+    r = deploy.install(str(t))
+    p = deploy._skill_path(t)
+    assert r["skill"] == str(p) and p.exists()
+    text = p.read_text(encoding="utf-8")
+    assert text.startswith("---\nname: sentaince-recall")     # skill frontmatter intact
+    assert deploy._SKILL_MARK in text                          # ownership marker present
+    assert "earned suggestion, never authority" in text        # the law rides in the skill
+    assert deploy.status(str(t))["skill_present"] is True
+
+    deploy.uninstall(str(t))
+    assert not p.exists()
+    assert not (t / ".claude" / "skills").exists()             # empty skill dirs pruned
+    assert (t / ".claude").exists()                            # shared parent untouched
+    assert deploy.status(str(t))["skill_present"] is False
+
+
+def test_skill_never_clobbers_foreign_and_uninstall_leaves_it(tmp_path):
+    t, _ = _seed_target(tmp_path)
+    p = deploy._skill_path(t)
+    p.parent.mkdir(parents=True)
+    foreign = "---\nname: sentaince-recall\n---\nthe user's own skill\n"
+    p.write_text(foreign, encoding="utf-8")
+
+    r = deploy.install(str(t))
+    assert r["skill"] is None                                  # not installed
+    assert any("foreign skill" in w for w in r["warnings"])    # ...and said so
+    assert p.read_text(encoding="utf-8") == foreign            # byte-untouched
+    assert deploy.status(str(t))["skill_present"] is False     # ours is absent (marker check)
+
+    deploy.uninstall(str(t))
+    assert p.read_text(encoding="utf-8") == foreign            # uninstall leaves foreign file alone
+
+
+def test_skill_reinstall_idempotent_and_cursor_only_skips(tmp_path):
+    t, _ = _seed_target(tmp_path)
+    deploy.install(str(t))
+    first = deploy._skill_path(t).read_text(encoding="utf-8")
+    deploy.install(str(t))                                     # re-deploy refreshes our own file in place
+    assert deploy._skill_path(t).read_text(encoding="utf-8") == first
+
+    t2 = tmp_path / "cursor-only"
+    (t2 / ".git").mkdir(parents=True)
+    r2 = deploy.install(str(t2), provider="cursor")            # skills are a Claude Code surface
+    assert r2["skill"] is None and not deploy._skill_path(t2).exists()
+
+
+# --------------------------- integrity default: the bug that bricked every pip user ---------------------------
+def test_install_does_not_enable_integrity_enforce(tmp_path):
+    """REGRESSION (confirmed live 2026-07-16, clean venv): `deploy install` defaulted to
+    `integrity=enforce` and bricked EVERY pip user's SessionStart.
+
+    The chain: the wheel ships `exocortex/integrity_baseline.json` but NOT `vendor/` (pyproject
+    `packages = [sentaince, exocortex, cerebral]`), while 3 of 4 LOCKED_GLOBS are `vendor/kernel/**` and
+    56 of the baseline's 66 entries live there. In a wheel `integrity._REPO_ROOT` resolves to
+    site-packages, so those 56 are `missing` -> `verify_kernel()` ok=False -> hook.py's apoptosis
+    `sys.exit(1)` on EVERY SessionStart. The fail-open cannot catch it (`except SystemExit: raise`), so
+    state was never seeded, `resplice` never set, and MEMORY NEVER SPLICED. Measured before/after in a
+    clean venv: SessionStart exit 1 -> 0; `state_<sid>.json` absent -> present.
+
+    `off` is not a weakening: it is the Genome's OWN default and its stated reason -- "Ships DORMANT so a
+    stale baseline never bricks dev" (genome.py). Deploy was overriding exactly the protection the genome
+    wrote that comment to provide, and it made three shipped promises false: "watch-only ... changes
+    nothing" (QUICKSTART), "the organism never wedges your session" (QUICKSTART -- the rule that outranks
+    every feature), and "dormant-by-default guardrails" (oasf-record.json).
+
+    `enforce` remains available for a full checkout that actually carries vendor/kernel -- opt in there.
+    """
+    import inspect
+    sig = inspect.signature(deploy.install)
+    assert sig.parameters["integrity"].default == "off", (
+        "deploy.install must not default to a mode that fails closed on a distribution whose baseline "
+        "cannot be satisfied -- see this test's docstring")
+
+    t, _ = _seed_target(tmp_path)
+    deploy.install(str(t))
+    cfg = deploy._load_json(t / "exocortex_config.json")
+    assert cfg["integrity"]["mode"] == "off"
+    assert cfg["integrity"]["audit_chain"] is True     # cheap + fail-open: stays on
+
+
+def test_integrity_enforce_is_still_opt_in_and_honoured(tmp_path):
+    """The rescue must not remove the capability -- only the accidental default."""
+    t, _ = _seed_target(tmp_path)
+    deploy.install(str(t), integrity="enforce")
+    cfg = deploy._load_json(t / "exocortex_config.json")
+    assert cfg["integrity"]["mode"] == "enforce"
+
+
+def test_the_baseline_still_cannot_be_satisfied_without_vendor(tmp_path):
+    """Pins the LANDMINE itself, so anyone tempted to flip the default back sees why it fails.
+
+    If this ever starts passing with ok=True, either vendor/ began shipping or the baseline became
+    distribution-aware -- and the default above can be revisited deliberately, on evidence.
+    """
+    from exocortex import integrity
+    empty = tmp_path / "norepo"
+    (empty / "sentaince" / "organism").mkdir(parents=True)
+    r = integrity.verify_kernel(root=empty)
+    assert r["ok"] is False
+    assert any(p.startswith("vendor/kernel/") for p in r["missing"]), (
+        "expected the vendor/kernel baseline entries to be unsatisfiable without a full checkout")

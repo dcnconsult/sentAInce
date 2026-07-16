@@ -163,7 +163,7 @@ What the system does today, with the verified evidence behind each. Honest statu
 | `thermodynamics.session_discount_rate` | 0.8 | flailing-session deposit discount (↓ harsher) |
 | `thermodynamics.max_edges_per_class` | 32 | per-class leanness ceiling |
 | `thermodynamics.weight_min` | 0.1 | floor on a session-weighted deposit |
-| `epistemic_classifier.mode` | `semantic` | `semantic` (MiniLM) or `lexical` (TF) |
+| `epistemic_classifier.mode` | `lexical` | `lexical` (TF, default) or `semantic` (MiniLM — opt-in: `pip install sentaince[embed]`; ~10s/prompt vs 0.15s) |
 | `epistemic_classifier.abstain_threshold_cosine` | 0.45 | merge vs new-class cutoff (0.30–0.45 verified; 0.65 fragments) |
 | `somatic_gate.mode` | `observe` | `observe`/`somatic`/`full` (`enforce`→`somatic`) |
 | `endocrine.mode` | `off` | `off` (static) or `tier` (allostatic prune/cap by metabolic tier) — dormant |
