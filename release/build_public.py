@@ -91,11 +91,61 @@ def _assert_new_target(out: Path) -> None:
 
 
 def _projection_digest(root: Path, files: list[str]) -> str:
+    """Digest materialized bytes for a projection that has not entered Git yet."""
     digest = hashlib.sha256()
     for rel in sorted(files):
         content_hash = hashlib.sha256((root / rel).read_bytes()).hexdigest()
         digest.update(rel.encode("utf-8") + b"\0" + content_hash.encode("ascii") + b"\0")
     return digest.hexdigest()
+
+
+def _git_index_digest(root: Path, files: list[str]) -> str:
+    """Digest Git's canonical stage-0 paths, modes, and blob IDs.
+
+    A release PR is committed from this representation. Using the index avoids making the receipt
+    depend on a checkout's CRLF/LF presentation while still covering the exact tracked content.
+    """
+    result = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "--stage", "-z"],
+        capture_output=True,
+        timeout=60,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"git ls-files --stage failed (rc={result.returncode}): "
+            f"{result.stderr.decode('utf-8', errors='replace').strip()[:200]}"
+        )
+    entries: dict[str, tuple[str, str]] = {}
+    for raw in result.stdout.split(b"\0"):
+        if not raw:
+            continue
+        metadata, encoded_path = raw.split(b"\t", 1)
+        mode, object_id, stage = metadata.decode("ascii").split()
+        if stage == "0":
+            entries[encoded_path.decode("utf-8", errors="surrogateescape").replace("\\", "/")] = (
+                mode,
+                object_id,
+            )
+    missing = sorted(set(files) - entries.keys())
+    if missing:
+        raise RuntimeError(f"projection paths missing from Git index: {missing[:10]}")
+    digest = hashlib.sha256()
+    for rel in sorted(files):
+        mode, object_id = entries[rel]
+        digest.update(
+            rel.encode("utf-8") + b"\0" + mode.encode("ascii") + b"\0"
+            + object_id.encode("ascii") + b"\0"
+        )
+    return digest.hexdigest()
+
+
+def _git_worktree_matches_index(root: Path) -> bool:
+    result = subprocess.run(
+        ["git", "-C", str(root), "diff", "--quiet", "--"],
+        capture_output=True,
+        timeout=60,
+    )
+    return result.returncode == 0
 
 
 def _version(root: Path) -> str:
@@ -109,12 +159,20 @@ def _utc_now() -> str:
     return now.isoformat(timespec="seconds")
 
 
-def _write_receipt(out: Path, files: list[str], gates: list[dict]) -> dict:
+def _write_receipt(
+    out: Path,
+    files: list[str],
+    gates: list[dict],
+    *,
+    projection_digest: str | None = None,
+    digest_format: str = "worktree-sha256-v1",
+) -> dict:
     receipt = {
         "schema": 1,
         "release_version": _version(out),
         "generated_utc": _utc_now(),
-        "projection_digest": _projection_digest(out, files),
+        "projection_digest": projection_digest or _projection_digest(out, files),
+        "digest_format": digest_format,
         "file_count": len(files),
         "gates": [{"name": gate["gate"], "ok": bool(gate["ok"])} for gate in gates],
     }
@@ -131,15 +189,25 @@ def verify_receipt(root: str | Path) -> dict:
         return {"ok": False, "error": "projection receipt missing"}
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     tracked = sorted(rel for rel in _tracked_files(root) if rel != GENERATED_RECEIPT)
-    actual = _projection_digest(root, tracked)
+    digest_format = receipt.get("digest_format")
+    if digest_format == "git-index-blob-v1":
+        actual = _git_index_digest(root, tracked)
+        clean = _git_worktree_matches_index(root)
+    elif digest_format == "worktree-sha256-v1":
+        actual = _projection_digest(root, tracked)
+        clean = True
+    else:
+        actual = ""
+        clean = False
     ok = (
         receipt.get("schema") == 1
         and receipt.get("file_count") == len(tracked)
         and receipt.get("projection_digest") == actual
+        and clean
         and all(gate.get("ok") is True for gate in receipt.get("gates", []))
     )
     return {"ok": ok, "expected": receipt.get("projection_digest"), "actual": actual,
-            "file_count": len(tracked)}
+            "digest_format": digest_format, "file_count": len(tracked)}
 
 
 def build(out: str | Path, root: str | Path | None = None) -> dict:

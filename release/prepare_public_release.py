@@ -13,7 +13,14 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from release.build_public import GENERATED_RECEIPT, build, iter_public_files
+from release.build_public import (
+    GENERATED_RECEIPT,
+    _git_index_digest,
+    _write_receipt,
+    build,
+    iter_public_files,
+    verify_receipt,
+)
 
 
 def _git(root: Path, *args: str, capture: bool = False) -> str:
@@ -50,12 +57,26 @@ def prepare(public_repo: str, branch: str, checkout: str | Path, message: str) -
         for chunk in _chunks(sorted(projected)):
             _git(checkout, "add", "--", *chunk)
 
+        receipt_files = sorted(projected - {GENERATED_RECEIPT})
+        canonical_digest = _git_index_digest(checkout, receipt_files)
+        result["receipt"] = _write_receipt(
+            checkout,
+            receipt_files,
+            result["gates"],
+            projection_digest=canonical_digest,
+            digest_format="git-index-blob-v1",
+        )
+        _git(checkout, "add", "--", GENERATED_RECEIPT)
+
         indexed = set(_git(checkout, "ls-files", "-z", capture=True).split("\0")) - {""}
         if indexed != projected:
             raise RuntimeError(
                 f"public index differs from projection: missing={sorted(projected-indexed)[:10]} "
                 f"extra={sorted(indexed-projected)[:10]}"
             )
+        verification = verify_receipt(checkout)
+        if not verification["ok"]:
+            raise RuntimeError(f"canonical projection receipt did not verify: {verification}")
         _git(checkout, "commit", "-m", message)
         commit = _git(checkout, "rev-parse", "HEAD", capture=True)
     return {"checkout": str(checkout), "branch": branch, "commit": commit,

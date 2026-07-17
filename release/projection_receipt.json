@@ -1,4 +1,5 @@
 {
+  "digest_format": "git-index-blob-v1",
   "file_count": 330,
   "gates": [
     {
@@ -34,8 +35,8 @@
       "ok": true
     }
   ],
-  "generated_utc": "2026-07-17T04:47:45+00:00",
-  "projection_digest": "a18310670d483359268fe5cb452781ae9c3991e13cb84508103831321fd2dd82",
+  "generated_utc": "2026-07-17T05:07:37+00:00",
+  "projection_digest": "35a408ba6260eeb1265346053a5127ca7dec7a7584e0e509cf079d6d3c5f1aac",
   "release_version": "0.1.5",
   "schema": 1
 }

@@ -482,20 +482,26 @@ def test_projection_receipt_verifies_exact_tracked_set(tmp_path):
     root = tmp_path / "public"
     root.mkdir()
     (root / "release").mkdir()
-    (root / "README.md").write_text("public\n", encoding="utf-8")
-    files = ["README.md"]
+    (root / ".gitattributes").write_text("* text=auto eol=lf\n", encoding="utf-8")
+    (root / "README.md").write_bytes(b"public\r\n")
+    files = [".gitattributes", "README.md"]
+    _git(root, "init", "-q")
+    _git(root, "add", *files)
     receipt = {
         "schema": 1,
         "release_version": "0.0.0",
         "generated_utc": "2026-07-16T00:00:00+00:00",
-        "projection_digest": B._projection_digest(root, files),
-        "file_count": 1,
+        "projection_digest": B._git_index_digest(root, files),
+        "digest_format": "git-index-blob-v1",
+        "file_count": 2,
         "gates": [{"name": "synthetic", "ok": True}],
     }
     (root / B.GENERATED_RECEIPT).write_text(json.dumps(receipt), encoding="utf-8")
-    _git(root, "init", "-q")
-    _git(root, "add", "README.md", B.GENERATED_RECEIPT)
+    _git(root, "add", B.GENERATED_RECEIPT)
     _git(root, "commit", "-q", "-m", "projection")
+    assert B.verify_receipt(root)["ok"] is True
+    # Git's clean filter treats this working-tree CRLF presentation as the same canonical LF blob.
+    (root / "README.md").write_bytes(b"public\r\n")
     assert B.verify_receipt(root)["ok"] is True
     (root / "README.md").write_text("changed\n", encoding="utf-8")
     assert B.verify_receipt(root)["ok"] is False
