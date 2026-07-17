@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sentaince"
-version = "0.1.5"
+version = "0.1.6"
 description = "Phase II embodiment of the FreqOS organism — a synthetic immune system (auto-immune interlock)."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -30,6 +30,10 @@ demo = ["rich>=13.0"]
 # Human-invoked CLIs (PATH-resolved is fine here). Hooks deliberately do NOT use these — they are wired
 # as `"{sys.executable}" -m exocortex.hook` (no PATH dependence at hook-fire time); see exocortex/runner.py.
 [project.scripts]
+# The bare `sentaince` command — the organism's human-facing voice (status/body) and the
+# extension point: unknown subcommands dispatch LAZILY to `sentaince.commands` entry points
+# (never on status/body, never in hooks — a broken plugin can't break the vitals voice).
+sentaince = "exocortex.cli:main"
 sentaince-deploy = "exocortex.deploy:main"
 sentaince-mcp = "exocortex.mcp_server:main"
 sentaince-chatgpt-mcp = "exocortex.chatgpt_mcp:main"

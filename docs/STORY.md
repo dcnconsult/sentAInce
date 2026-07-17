@@ -52,9 +52,15 @@ The observability stack ships **two Grafana dashboards** over the same live data
 - **"Exocortex testbed"** *(one click away)* — the technical instrument panel: raw gauge signals, PromQL,
   per-class convergence, the seg_len heatmap. This is what an operator tunes against.
 
-A browser **control plane** (`:9109/`) lets you tune each repo's organs, grouped by their human counterpart,
-with a plain-language hint on every knob. The 🛡️ immune system is shown there **read-only** and is never
-web-writable — you tune the autopilot, never the brakes.
+Before either of those, the exporter itself (`:9109/` — no Docker needed; `sentaince body` opens it) shows
+**the body**: one small human silhouette per repo, each organ region colored by a live thresholded vital with
+its rule printed beside it (green = healthy, amber = attention, gray = deliberately dormant, dashed outline =
+no data yet — nothing ever fakes green; the rules are [`COLOR_DOCTRINE.md`](COLOR_DOCTRINE.md)). Undeployed
+sibling repos appear asleep with a copy-paste deploy command — deploying stays a CLI act. A browser **control
+plane** (`:9109/control`) lets you tune each repo's organs, grouped by their human counterpart, with a
+plain-language hint on every knob, and edit the [estate file](ESTATE.md) (the file-based multi-repo
+registry). The 🛡️ immune system is shown there **read-only** and is never web-writable — you tune the
+autopilot, never the brakes.
 
 ## Why "safety is never for sale"
 

@@ -45,7 +45,22 @@ python experiments/exp1_autoimmune.py      # a compromised model proposes a leth
 python -m pytest -q tests                  # the full 99-test evidence lock, deterministic
 ```
 
-## What's new in 0.1.5
+## What's new in 0.1.6
+
+The face release. Nothing changed in the immune kernel or the hooks — the organism just became
+something you can *look at*. Full detail in the [changelog](CHANGELOG.md).
+
+- **🧍 The body page.** `sentaince body` opens a dashboard that draws each repo as a human silhouette —
+  organs colored by live vitals, with the exact rule printed beside every color. Dormant organs are
+  gray on purpose; organs with no data yet are outlines. **Nothing ever fakes green.** No Docker needed.
+- **🗣️ `sentaince status`.** The vitals voice line as a real command — works even where the session-start
+  message doesn't render.
+- **🗺️ The estate file.** One documented JSON file (`~/.exocortex/repos.json`) names every repo you
+  watch; undeployed repos show up asleep with a copy-paste deploy command.
+- **🔌 A plugin socket.** Packages can register `sentaince <subcommand>`s via the `sentaince.commands`
+  entry-points group — loaded lazily, so a broken plugin can never break your vitals.
+
+## What was new in 0.1.5
 
 The honesty release. If you tried SentAInce before and it seemed to do nothing — **that was a bug, and
 it was ours**. Full detail in the [changelog](CHANGELOG.md).
