@@ -5,9 +5,10 @@ The human-facing surface that does NOT depend on hook-UI rendering (the SessionS
 promised, enforceable fallback; see hook._vitals).
 
 Subcommands:
-  ``sentaince status [path]``  -> the vitals voice line for a deployed repo (default: cwd)
-  ``sentaince body   [path]``  -> start the exporter (if not already up) and open the body page
-  ``sentaince <other> ...``    -> dispatched to an installed ``sentaince.commands`` entry point
+  ``sentaince status [path]``      -> the vitals voice line for a deployed repo (default: cwd)
+  ``sentaince body   [path]``      -> start the exporter (if not already up) and open the body page
+  ``sentaince why    [path]``      -> render the latest deposits' consequence provenance (read-only)
+  ``sentaince <other> ...``        -> dispatched to an installed ``sentaince.commands`` entry point
 
 Extension point: third-party packages register console subcommands under the entry-points
 group ``sentaince.commands`` (``name = "pkg.module:func"``; the function receives the argv
@@ -87,6 +88,26 @@ def cmd_status(argv: list[str]) -> int:
     return 0
 
 
+def cmd_why(argv: list[str]) -> int:
+    """Render one repo's latest-deposit provenance as Markdown (issue #13). A strict reader —
+    imports the renderer only on demand, so it never touches the hook/vitals path."""
+    root = Path(argv[0] if argv and not argv[0].startswith("-") else ".").resolve()
+    state = root.joinpath(*_STATE)
+    if not state.is_dir():
+        _say(f"🧬 sentaince: not deployed in {root}")
+        return 1
+    last = 3
+    if "--last" in argv:
+        try:
+            last = int(argv[argv.index("--last") + 1])
+        except (IndexError, ValueError):
+            _say("usage: sentaince why [path] [--last N]")
+            return 2
+    from exocortex.provenance import render as _render
+    _say(_render(state / "audit.jsonl", last=last, state_dir=state))
+    return 0
+
+
 def _listening(port: int) -> bool:
     try:
         with socket.create_connection(("127.0.0.1", port), timeout=0.5):
@@ -139,7 +160,7 @@ def _dispatch_plugin(name: str, argv: list[str]) -> int:
     for ep in eps:
         if ep.name == name:
             return int(ep.load()(argv) or 0)
-    known = sorted({"status", "body"} | {ep.name for ep in eps})
+    known = sorted({"status", "body", "why"} | {ep.name for ep in eps})
     _say(f"sentaince: unknown command '{name}'. Known: {', '.join(known)}")
     return 2
 
@@ -150,6 +171,7 @@ def main() -> int:
         _say((__doc__ or "sentaince").strip().split("\n\n")[0])
         _say("\ncommands:\n  status [path]          the vitals voice line\n"
              "  body [path] [--port N] start the exporter + open the body page\n"
+             "  why [path] [--last N]  render the latest deposits' consequence provenance\n"
              "  <plugin> ...           an installed sentaince.commands entry point")
         return 0
     cmd, tail = argv[0], argv[1:]
@@ -157,6 +179,8 @@ def main() -> int:
         return cmd_status(tail)
     if cmd == "body":
         return cmd_body(tail)
+    if cmd == "why":
+        return cmd_why(tail)
     return _dispatch_plugin(cmd, tail)
 
 

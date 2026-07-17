@@ -932,8 +932,10 @@ async function load(){
     '</span><span class=tx>'+r.text+'</span>';
    o.appendChild(row);});
   const f=document.createElement('div');f.className='foot';
-  f.textContent='raw: '+(v.deposits|0)+' deposits · fail rate '+(v.fail_rate??0)+' · seg_len median '+
+  f.innerHTML='raw: '+(v.deposits|0)+' deposits · fail rate '+(v.fail_rate??0)+' · seg_len median '+
    (v.seg_len_median|0)+' · '+((v.colony||{}).classes|0)+' classes';
+  if((v.deposits|0)>0){const w=document.createElement('a');w.href='#';w.textContent=' · why? (latest deposits)';
+   w.style.color='#7aa2f7';w.onclick=(e)=>{e.preventDefault();showWhy(v.repo);};f.appendChild(w);}
   o.appendChild(f);c.appendChild(o);host.appendChild(c);});
  (d.dormant||[]).forEach(r=>{                       // undeployed sibling git repos — asleep, copy-paste onboarding
   const c=document.createElement('div');c.className='card';c.style.opacity='0.75';
@@ -959,6 +961,17 @@ async function load(){
   '<span class=stat><div class=n>'+n+'</div><div class=l>organism'+(n===1?'':'s')+'</div></span>'+
   '<span class=stat><div class=n>'+dep+'</div><div class=l>habits earned (exit 0 only)</div></span>'+
   '<span class=stat><div class=n>'+lethal+'</div><div class=l>lethal attempts refused</div></span>';}
+async function showWhy(repo){
+ let box=document.getElementById('whybox');
+ if(!box){box=document.createElement('div');box.id='whybox';
+  box.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9';
+  box.onclick=(e)=>{if(e.target===box)box.remove();};document.body.appendChild(box);}
+ box.innerHTML='<div style="background:#161a23;border:1px solid #232733;border-radius:10px;max-width:820px;'+
+  'max-height:82vh;overflow:auto;padding:16px 20px"><pre id="whytext" style="white-space:pre-wrap;'+
+  'font:12px/1.5 ui-monospace,Consolas,monospace;color:#d7dae0;margin:0">loading the provenance trail…</pre></div>';
+ try{const t=await (await fetch('/api/provenance/'+encodeURIComponent(repo))).text();
+  document.getElementById('whytext').textContent=t;}
+ catch(e){document.getElementById('whytext').textContent='could not load provenance: '+e;}}
 load();setInterval(load,15000);
 </script></body></html>"""
 
@@ -1148,6 +1161,19 @@ def _make_handler(resolve_repos, read_only: bool = False, token: str = "", resol
                     return self._json(200, estate_view(registry_path))
                 except Exception as e:
                     return self._json(500, {"error": str(e)})
+            if path.startswith("/api/provenance/"):
+                # the consequence-"why" trail for a repo's latest deposits (issue #13; read-only)
+                name = unquote(path[len("/api/provenance/"):])
+                repos = {r["name"]: r for r in resolve_repos()}
+                if name not in repos:
+                    return self._send(404, f"unknown repo '{name}'\n", "text/plain")
+                try:
+                    from exocortex.provenance import render as _prov_render
+                    sd = Path(repos[name]["state_dir"])
+                    md = _prov_render(sd / "audit.jsonl", last=3, state_dir=sd)
+                    return self._send(200, md, "text/plain; charset=utf-8")
+                except Exception as e:
+                    return self._send(500, f"# provenance error: {e}\n", "text/plain")
             if path == "/api/vitals" or path.startswith("/api/vitals/"):
                 try:
                     repos = resolve_repos()

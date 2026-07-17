@@ -5,6 +5,43 @@ What changed, and what it cost us to find out. Claims here must not exceed
 
 Numbers are measured on this project's own hardware unless stated, and negative results are kept.
 
+## [0.1.7] — 2026-07-17
+
+Two community-issue features and a documentation pass that finally gives the body page a face. No change
+to the immune kernel, the C1–C7 lock, or hook behavior — safe upgrade.
+
+### Added
+
+- **`sentaince why` — the organism shows its work** ([#13](https://github.com/dcnconsult/sentAInce/issues/13)).
+  A read-only renderer that reconstructs, for a recent earned habit, the exact route behind it, which past
+  successes still back each step, the notebook credit, and the tamper-proof audit segment **re-verified from
+  disk** (a silently edited record renders `CHAIN BROKEN`). Reachable three ways: `python -m
+  exocortex.provenance`, `sentaince why`, and a **"why?"** link on the body page (`/api/provenance/<repo>`).
+  It never writes anything.
+- **PowerShell-aware somatic recognizer** ([#12](https://github.com/dcnconsult/sentAInce/issues/12)). The
+  lethal-command vocabulary, mirrored into PowerShell idiom (cmdlet, alias, and abbreviation forms, with
+  `-EncodedCommand` unwrapping). Shipped **importable but unwired** by design — the hook routing is under a
+  control-plane pin and lands separately; a test asserts it stays unwired. Closes the honesty gap where
+  Windows PowerShell commands were audited but not yet recognized.
+
+### Docs
+
+- The body page finally has **screenshots** — a working organism (every color the doctrine defines) and a
+  fresh cold-start deploy (all outlines — *nothing fakes green*). The README, QUICKSTART, and STORY now lead
+  with `sentaince body` as the visible payoff instead of routing new users to a Docker dashboard.
+- The `sentaince` command (`status` / `body` / `why`) is documented for the first time; the quickstart uses
+  the friendly console scripts.
+- A real-use example of the **epistemic VERIFY** gate pausing a high-stakes action (README "See it work").
+- Fixed real stale data: Python ≥ 3.10 → 3.11 (matches `pyproject`); the semantic classifier is opt-in, not
+  "the default"; the repo-feeder is shipped, not "planned."
+- Fixed the blank **somatic-veto demo**: the GIF rendered as a title bar over black in browsers (a disposal/
+  transparency encoding fault); replaced with a flattened PNG of the same demonstration.
+
+### Tests
+
+- Organism suite 320 → 357 (12 body/estate/CLI + 5 provenance + 32 PowerShell-recognizer contract tests).
+  The 99-test kernel lock is untouched.
+
 ## [0.1.6] — 2026-07-17
 
 The face release. No change to the immune kernel, the C1–C7 lock, or any hook behavior — this release

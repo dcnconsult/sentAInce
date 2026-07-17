@@ -43,24 +43,39 @@ Honesty *is* the product. Where an organ's own gauge said the prize was modest o
 | Habits are short | routes **median 2 steps** | Real success-streaks are brief, so the organism learns skeletons, not epics. Stated plainly, not hidden. |
 | Parked organs | eligibility / endocrine / uncertainty **OFF** | Their own gauges said modest/null (e.g. uncertainty abstained 0/301; a functional-information gauge came back null, p=0.14). |
 
-## What the dashboard shows (two skins)
+## What the dashboard shows
 
-The observability stack ships **two Grafana dashboards** over the same live data:
+### The body — the first thing you see
+
+Run `sentaince body` and your browser opens on **the body**: one small human silhouette per repo, each
+organ region colored by a live vital. No Docker, nothing leaving your machine.
+
+![The body page — a repo drawn as a human silhouette, organs colored by live vitals with the rule beside each color](assets/body-page.png)
+
+Every color is a **thresholded raw number with its rule printed right beside it** — never a judgment:
+
+- **green** = healthy, **amber** = worth a look, **gray** = an organ deliberately switched off (its own
+  gauge said the prize was modest), and a **dashed outline** = no data yet.
+- So a freshly-deployed repo is mostly outlines, and **nothing ever fakes green**. The full rule for every
+  organ's color is in [`COLOR_DOCTRINE.md`](COLOR_DOCTRINE.md).
+
+Repos you haven't set up yet show up asleep with a copy-paste deploy command (deploying stays a
+deliberate command you run, never something the page does for you). Watching several at once? One file
+names them all — the [estate file](ESTATE.md).
+
+A sister page, the **control plane** (`:9109/control`), lets you tune each organ — grouped by its human
+counterpart, with a plain-language hint on every knob. The 🛡️ immune system is shown there **read-only**
+and is never web-writable: you tune the autopilot, never the brakes.
+
+### Two deeper skins (when you want history)
+
+Bring up the Docker stack and you also get **two Grafana dashboards** over the same live data, with
+history and trends the body page doesn't keep:
 
 - **"SentAInce — The Organism"** *(the home page)* — the story skin. One row per organ, each in the human
-  terms above, with the honest stat printed alongside its live panels. This is what a first-time visitor sees.
+  terms above, with the honest stat printed alongside its live panels.
 - **"Exocortex testbed"** *(one click away)* — the technical instrument panel: raw gauge signals, PromQL,
   per-class convergence, the seg_len heatmap. This is what an operator tunes against.
-
-Before either of those, the exporter itself (`:9109/` — no Docker needed; `sentaince body` opens it) shows
-**the body**: one small human silhouette per repo, each organ region colored by a live thresholded vital with
-its rule printed beside it (green = healthy, amber = attention, gray = deliberately dormant, dashed outline =
-no data yet — nothing ever fakes green; the rules are [`COLOR_DOCTRINE.md`](COLOR_DOCTRINE.md)). Undeployed
-sibling repos appear asleep with a copy-paste deploy command — deploying stays a CLI act. A browser **control
-plane** (`:9109/control`) lets you tune each repo's organs, grouped by their human counterpart, with a
-plain-language hint on every knob, and edit the [estate file](ESTATE.md) (the file-based multi-repo
-registry). The 🛡️ immune system is shown there **read-only** and is never web-writable — you tune the
-autopilot, never the brakes.
 
 ## Why "safety is never for sale"
 
