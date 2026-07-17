@@ -19,7 +19,14 @@ from release import manifest as M
 def _read(root: Path, rel: str) -> "str | None":
     # scan the content that will actually PUBLISH: a variant-mapped path resolves to its .public.md source
     try:
-        return (root / M.variant_source(rel)).read_text(encoding="utf-8", errors="strict")
+        variant = root / M.variant_source(rel)
+        if variant.is_file():
+            source = variant
+        elif not (root / "release" / "denylist_private.py").is_file():
+            source = root / rel            # already-derived public tree: canonical contains the variant
+        else:
+            return None                    # private source missing its scrubbed variant: fail at projection
+        return source.read_text(encoding="utf-8", errors="strict")
     except Exception:
         return None
 
@@ -123,6 +130,55 @@ def gate_license(root: Path, files: list) -> dict:
     return {"gate": "license_present", "ok": ok, "detail": "LICENSE present" if ok else "LICENSE missing"}
 
 
+def gate_clean_public_worktree(root: Path) -> dict:
+    """build_public and the wheel read the WORKING TREE (the file SET comes from git, the CONTENT from
+    disk) — so an uncommitted edit to a tracked public file ships silently. Caught manually at v0.1.5:
+    a WIP scrape job in ``exocortex/testbed/compose/prometheus.yml`` passed all 7 gates and only the
+    skill's manual diff stopped it. This gate makes that check fail-closed: any modified/staged/deleted
+    tracked path that is public — or is a ``PUBLIC_VARIANTS`` variant SOURCE (its content publishes
+    under the canonical name) — blocks the push. Untracked files cannot ship (absent from
+    ``git ls-files``) and are ignored here. Not a git repo / git error = FAIL, never a skip."""
+    import subprocess
+    variant_sources = set(M.PUBLIC_VARIANTS.values())
+    try:
+        r = subprocess.run(["git", "status", "--porcelain"], cwd=root, capture_output=True, timeout=60)
+    except Exception as e:
+        return {"gate": "clean_public_worktree", "ok": False, "detail": f"git unavailable: {e}"}
+    if r.returncode != 0:
+        return {"gate": "clean_public_worktree", "ok": False,
+                "detail": f"git status failed: {r.stderr.decode(errors='replace')[-200:]}"}
+    dirty: list = []
+    for line in r.stdout.decode("utf-8", errors="replace").splitlines():
+        if len(line) < 4:
+            continue
+        code, path = line[:2], line[3:]
+        if code == "??":
+            continue                                   # untracked: not in git ls-files, cannot ship
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1]            # rename: the NEW side is what would ship
+        path = path.strip().strip('"').replace("\\", "/")
+        if M.is_public(path) or path in variant_sources:
+            dirty.append(f"{code.strip()} {path}")
+    return {"gate": "clean_public_worktree", "ok": not dirty, "n": len(dirty),
+            "detail": dirty[:20] if dirty else "worktree clean for all public-shipping paths"}
+
+
+def scan_members_for_tokens(members, tokens) -> list:
+    """Denylist scan over (name, bytes) members — the wheel-content arm of the token gate. The wheel
+    bundles non-``.py`` files under the package roots (compose yaml, docs) straight from the working
+    tree, so member CONTENT needs the same token scan the public tree gets. Binary members skip."""
+    hits: list = []
+    for name, data in members:
+        try:
+            txt = data.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        for tok in tokens:
+            if tok in txt:
+                hits.append(f"{name} :: {tok}")
+    return hits
+
+
 def gate_wheel_purity(root: Path) -> dict:
     """A wheel built from ``root`` must contain the community packages and ZERO ``exocortex/tuner``
     members (ADR-012 — the wheel is publication just like a push). Skipped (ok) when ``root`` has no
@@ -144,14 +200,19 @@ def gate_wheel_purity(root: Path) -> dict:
             whl = sorted(Path(td).glob("*.whl"))
             if not whl:
                 return {"gate": "wheel_purity", "ok": False, "detail": "build produced no wheel"}
-            names = zipfile.ZipFile(whl[-1]).namelist()
-            tuner = [n for n in names if n.startswith("exocortex/tuner")]
-            tops = {n.split("/", 1)[0] for n in names}
-            missing = {"sentaince", "exocortex", "cerebral"} - tops
-            ok = not tuner and not missing
+            # closed before TemporaryDirectory teardown — an open handle blocks the delete on Windows
+            with zipfile.ZipFile(whl[-1]) as zf:
+                names = zf.namelist()
+                tuner = [n for n in names if n.startswith("exocortex/tuner")]
+                tops = {n.split("/", 1)[0] for n in names}
+                missing = {"sentaince", "exocortex", "cerebral"} - tops
+                # the wheel is publication just like a push (ADR-012): member CONTENT gets the token scan
+                token_hits = scan_members_for_tokens(((n, zf.read(n)) for n in names), M.DENYLIST_TOKENS)
+            ok = not tuner and not missing and not token_hits
             return {"gate": "wheel_purity", "ok": ok,
-                    "detail": ("clean wheel: community packages present, zero tuner members" if ok else
-                               f"tuner members: {tuner[:5]}; missing packages: {sorted(missing)}")}
+                    "detail": ("clean wheel: community packages present, zero tuner members, no denylisted tokens" if ok else
+                               f"tuner members: {tuner[:5]}; missing packages: {sorted(missing)}; "
+                               f"token hits: {token_hits[:10]}")}
         except Exception as e:
             return {"gate": "wheel_purity", "ok": False, "detail": f"unbuildable: {type(e).__name__}: {e}"}
 
@@ -167,6 +228,7 @@ def run_gates(root, files: list) -> tuple:
         gate_no_ip_disclosure(root, files),
         gate_secrets(root, files),
         gate_license(root, files),
+        gate_clean_public_worktree(root),
         gate_wheel_purity(root),
     ]
     return all(g["ok"] for g in results), results

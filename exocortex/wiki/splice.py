@@ -16,7 +16,7 @@ Laws encoded here:
     their first τ. Ant-colony exploratory edges, made auditable: exploration is an explicit, bounded,
     labelled channel, never a silent lowering of the floor.
   * Never a partial note. The budget counts NOTES, and an admitted note's proposed blocks inject
-    atomically: the delivery-budget probe (sentAInce-lab, DELIVERY_BUDGET_PROBE.md, 2026-07-08) showed a
+    atomically: the delivery-budget probe (DELIVERY_BUDGET_PROBE, 2026-07-08) showed a
     block-unit budget delivers the first blocks of a multi-block note — truncated tissue that cannot
     satisfy the task, cannot earn τ, and reads as noise to the tuner. Total exploration bytes stay bounded
     by ``explore_block_cap`` blocks (the one stated place a note may still truncate — at the cap, loudly

@@ -1,0 +1,42 @@
+{
+  "digest_format": "git-index-blob-v1",
+  "file_count": 330,
+  "gates": [
+    {
+      "name": "patent_filed",
+      "ok": true
+    },
+    {
+      "name": "no_commercial_or_private",
+      "ok": true
+    },
+    {
+      "name": "no_denylisted_tokens",
+      "ok": true
+    },
+    {
+      "name": "no_ip_disclosure",
+      "ok": true
+    },
+    {
+      "name": "no_secrets",
+      "ok": true
+    },
+    {
+      "name": "license_present",
+      "ok": true
+    },
+    {
+      "name": "clean_public_worktree",
+      "ok": true
+    },
+    {
+      "name": "wheel_purity",
+      "ok": true
+    }
+  ],
+  "generated_utc": "2026-07-17T05:07:37+00:00",
+  "projection_digest": "35a408ba6260eeb1265346053a5127ca7dec7a7584e0e509cf079d6d3c5f1aac",
+  "release_version": "0.1.5",
+  "schema": 1
+}

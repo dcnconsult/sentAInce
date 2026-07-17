@@ -254,7 +254,7 @@ def test_exploration_breaks_cold_start_deadlock():
 
 
 def test_exploration_note_atomic_never_partial():
-    """The delivery-budget sizing law (sentAInce-lab DELIVERY_BUDGET_PROBE.md): a multi-block note is
+    """The delivery-budget sizing law (DELIVERY_BUDGET_PROBE, 2026-07-08): a multi-block note is
     never split by the budget — pre-fix, budget=2 BLOCKS delivered 2 of 8 blocks of the conventions
     note and the task could not succeed. budget=1 NOTE must deliver every proposed block."""
     g = WikiGraph()

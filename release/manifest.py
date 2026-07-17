@@ -57,6 +57,14 @@ NEVER_PUBLIC = [
     "docs/INVESTOR_SUMMARY.md",      # investor materials
     "exocortex_config.json",         # local activation — may point at a private vault
     "release/denylist_private.py",   # the identifying denylist tokens — publishing the list = the leak
+    # local agent/plugin/runtime state is never release input. The generic provider-probe specification
+    # remains public under docs/, but its private implementation lives in a separate repository.
+    ".agents/",
+    ".claude/",
+    ".codex/",
+    ".codex-tmp/",
+    "plugin-data/",
+    "AGENTS.md",
     # raw resurrection-gauge labels: real private-vault intent text + maintainer name (summary RESULTS.md ships)
     "results/resurrection_gauge_v1/labels_completed.json",
     "results/resurrection_gauge_v1/labels_template.json",
@@ -118,7 +126,8 @@ def variant_source(rel: str) -> str:
 
 # ---- always-skip build cruft (independent of the boundary) ------------------------------------------
 SKIP_SUFFIXES = (".pyc", ".pyo", ".log")
-SKIP_DIR_PARTS = frozenset({".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache",
+SKIP_DIR_PARTS = frozenset({".git", ".agents", ".claude", ".codex", ".codex-tmp", "plugin-data",
+                            "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache",
                             "node_modules", ".venv", "venv", ".idea", ".vscode"})
 
 # ---- tokens that must NOT appear anywhere in the public tree (fail-closed) ---------------------------

@@ -12,6 +12,7 @@ dependencies = ["numpy>=1.24"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.4"]
+release = ["build>=1,<2", "pytest>=7.4"]
 # The read-only memory MCP server (exocortex/mcp_server.py) — lets Claude Desktop / Code / Cursor RETRIEVE
 # the organism's earned memory over MCP. Not needed for the hooks, the organs, or the test lock.
 mcp = ["mcp>=1.2"]
@@ -40,7 +41,10 @@ sentaince-exporter = "exocortex.testbed.exporter.metrics:main"
 # public tree where tuner/ is already absent (ADR-011/ADR-012), but the PRIVATE tree must also never
 # produce a leaking wheel. release/prepush_gates.py asserts wheel purity.
 packages = ["sentaince", "exocortex", "cerebral"]
-exclude = ["exocortex/tuner"]
+# exocortex/docs is excluded because hatchling bundles non-.py files under package roots and that dir
+# holds NEVER_PUBLIC planning docs (release/manifest.py) — caught 2026-07-16 by the wheel content scan:
+# a private-tree wheel carried NEXT_PHASE_PLAN.md with denylisted tokens. Docs never belong in a wheel.
+exclude = ["exocortex/tuner", "exocortex/docs"]
 
 [tool.pytest.ini_options]
 # Run from the repo root so both `sentaince` and `experiments` import without an install; `vendor/kernel`

@@ -21,7 +21,8 @@ public repo is **derived** deterministically from the private monorepo — not s
 ```bash
 python -m release.build_public                 # dry-run: what ships + the gate verdict (no writes)
 python -m release.build_public --json          # machine-readable manifest + gates
-python -m release.build_public --out ../SentAInce-public   # materialize the public tree (only if gates pass)
+python -m release.build_public --out <new-target-path>     # target must not already exist
+python -m release.build_public --verify-receipt            # in a generated public checkout
 python -m release.prepush_gates                # (via build_public) the fail-closed checks
 python cerebral/../release/tests/test_release.py            # or: python -m pytest release/tests
 ```
@@ -44,8 +45,13 @@ python cerebral/../release/tests/test_release.py            # or: python -m pyte
 - [x] `CONTRIBUTING.md` added; top-level `README` reviewed for the public tree.
 - [ ] (Optional) SPDX headers pass across source — a mechanical follow-up; the root `LICENSE` already covers it.
 
-## First-push procedure (squashed history — no leak)
-1. `python -m release.build_public --out ../SentAInce-public` (only succeeds once all gates pass).
-2. In the derived tree: `git init && git add -A && git commit -m "Initial public release vX.Y.Z"`.
-3. Create the empty public GitHub repo, `git remote add origin …`, `git push -u origin main`.
-   The private monorepo's history (with `patent/` etc.) is **never** pushed.
+## Governed release procedure
+1. Install the `release` dependency extra in a clean environment.
+2. Run `python -m release.prepare_public_release --public-repo <public-url> --branch <release-branch>
+   --checkout <new-checkout-path>`. The checkout path must not exist.
+3. Inspect the generated commit and projection receipt, push the branch, and open a pull request.
+4. Merge only after the protected aggregate `release-gate` check passes. Direct/force updates to `main`
+   are not part of the release procedure.
+
+The preparer clones `main` into a fresh checkout, stages only explicit projected paths, verifies the exact
+git index, and never deletes or cleans an existing directory. The private monorepo history is never pushed.
