@@ -8,10 +8,12 @@ account, sends telemetry, or phones home — the organism is 100% local, always.
 
 ```bash
 pip install sentaince
-python -m exocortex.deploy install /path/to/your/project
+sentaince-deploy install /path/to/your/project
 ```
 
-For Cursor (or both hosts at once): add `--provider cursor` or `--provider both`.
+(`sentaince-deploy` is the friendly name; `python -m exocortex.deploy install ...` does exactly the same
+thing if you prefer the explicit form.) For Cursor (or both hosts at once): add `--provider cursor` or
+`--provider both`.
 
 What this actually does — three small artifacts, all reversible:
 
@@ -42,10 +44,13 @@ and changes nothing about your agent's behavior. In your first sessions:
   injected at the top of your prompts — the converged route for *that kind of task*, with its trust
   weights. It's advisory context for the agent, never a command.
 
-Two honest notes: on Windows, PowerShell commands are audited but not vetoed (the veto vocabulary is
-Bash-shaped today — it's in the README's honest scope, not hidden in a footnote). And a brand-new
-install has an empty memory — the first sessions are for *earning*, not recalling. Cold-start silence
-is correct behavior, not a bug.
+Two honest notes, in plain terms:
+- **A brand-new install remembers nothing** — the first sessions are for *earning*, not recalling. An
+  empty memory on day one is correct behavior, not a bug (and the body page in step 4 shows it honestly,
+  as outlines rather than green).
+- **On Windows, PowerShell commands are watched but not yet blocked.** The safety veto's list of
+  dangerous commands is written in the Bash shell's dialect today; PowerShell-aware blocking is on the
+  way. Nothing is hidden — this is called out in the README's "honest scope" too.
 
 ## 3. Opt in to the safety veto (when you're ready)
 
@@ -60,9 +65,30 @@ From then on, catalogued lethal command classes are refused *before they run* �
 prompt-injected into proposing them. The gate rests on topology, not on the model's judgment. Every
 hook stays fail-open on errors and timeouts: the organism never wedges your session.
 
-## 4. See it (optional)
+## 4. Look at it — the body page
 
-The local dashboard stack (Docker) shows the organism's vitals in plain language:
+This is the fun part, and it needs no Docker:
+
+```bash
+sentaince body /path/to/your/project
+```
+
+Your browser opens on **the body page**: your repo drawn as a human silhouette, with each organ colored
+by a live vital and the exact rule printed beside it.
+
+![The body page — one silhouette per repo, organs colored by live vitals with the rule beside each color](assets/body-page.png)
+
+- 🫀 the **heart** is stamina, 💪 the **arms** are muscle memory (earned habits), 🛡️ the **chest** is the
+  immune system, 😴 the **head** is sleep, 📖 the **book** is the notebook.
+- **Green** means a stated rule over a stated number — never a guess. **Gray** organs are switched off on
+  purpose. **Dashed outlines** mean "no data yet" — so a fresh repo is mostly outlines, and **nothing
+  ever fakes green**.
+- Click **"why?"** under any repo to see the organism *show its work* — the exact steps behind its latest
+  earned habits, and its tamper-proof record, re-checked in front of you. (Same thing from the terminal:
+  `sentaince why /path/to/your/project`.)
+
+Watching several repos? One file lists them all — see [`ESTATE.md`](ESTATE.md). Want trends over time
+and the full history board? Bring up the Docker stack:
 
 ```bash
 cd exocortex/testbed/compose && docker compose up -d --build   # then open http://localhost:3000
@@ -71,8 +97,8 @@ cd exocortex/testbed/compose && docker compose up -d --build   # then open http:
 ## 5. Leave cleanly (any time)
 
 ```bash
-python -m exocortex.deploy uninstall /path/to/your/project          # keeps your accrued memory
-python -m exocortex.deploy uninstall /path/to/your/project --purge  # removes everything
+sentaince-deploy uninstall /path/to/your/project          # keeps your accrued memory
+sentaince-deploy uninstall /path/to/your/project --purge  # removes everything
 ```
 
 Uninstall is surgical: it removes only the organism's own hook entries and files, never yours.

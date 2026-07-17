@@ -35,7 +35,9 @@ python -m pytest                                                             # t
 You can help meaningfully without going anywhere near the frozen DNA. Great first contributions:
 
 - **Docs** — clarify a runbook step that confused you, fix a stale count, improve a diagram.
-- **Dashboard polish** — Grafana panels, the story-skin wording, the estate view.
+- **Dashboard polish** — the body page (`sentaince body`), Grafana panels, the story-skin wording. Good
+  starting points: the color rules in [`docs/COLOR_DOCTRINE.md`](docs/COLOR_DOCTRINE.md) and the
+  multi-repo [`docs/ESTATE.md`](docs/ESTATE.md).
 - **Packaging & platforms** — install ergonomics, OS quirks, CI matrix, wheel hygiene.
 - **Provider adapters** — new agent hosts for the hook layer (the Cursor adapter is the template).
 - **Examples** — a worked deploy on a real project shape we haven't covered.

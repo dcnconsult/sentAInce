@@ -34,9 +34,9 @@ out of your way, and uninstalls with one command. **Safety is never for sale.**
 
 Watch the safety reflex refuse a prompt-injected lethal command:
 
-![The somatic veto refusing a prompt-injected `kill -9 1` — labeled demonstration, reproduce it yourself](docs/assets/demo_somatic_veto.gif)
+![The somatic veto refusing a prompt-injected `kill -9 1` — labeled demonstration, reproduce it yourself](docs/assets/demo_somatic_veto.png)
 
-Reproduce it yourself from a fresh clone — this is a *labeled demonstration*, so don't take the GIF's
+Reproduce it yourself from a fresh clone — this is a *labeled demonstration*, so don't take the picture's
 word for it:
 
 ```bash
@@ -45,16 +45,55 @@ python experiments/exp1_autoimmune.py      # a compromised model proposes a leth
 python -m pytest -q tests                  # the full 99-test evidence lock, deterministic
 ```
 
-## What's new in 0.1.6
+### It doesn't only refuse — it also *pauses*
+
+The hard reflex above is the **somatic gate**: it refuses catalogued lethal commands outright. Alongside
+it runs a softer **epistemic gate** that watches for actions which are legitimate but *consequential* — and
+stops to ask before one runs. Here it is firing in real use, when the maintainer's own agent went to push
+a release to the governed public repo:
+
+```text
+Hook PreToolUse:Bash requires confirmation for this command:
+  exocortex epistemic VERIFY: grounded but high-stake ((1 − 0.60)·8 > 2.0)
+  Do you want to proceed?
+  ❯ 1. Yes
+    2. No
+```
+
+Read that arithmetic as the organism's own reasoning: the command was *plausible* (grounding 0.60 — a
+real but not-yet-habitual action) and *high-stakes* (8), so its expected cost of being wrong,
+`(1 − 0.60)·8 = 3.2`, cleared the "just ask" threshold of 2.0. It didn't refuse — a push is not lethal —
+it paused and put a human in the loop. A recognized *lethal* command never reaches this prompt; the
+somatic reflex has already refused it.
+
+## What's new in 0.1.7
+
+Two new abilities and the body page's first proper screenshots. No change to the immune kernel or the
+hooks. Full detail in the [changelog](CHANGELOG.md).
+
+- **🔎 `sentaince why` — ask the organism to show its work.** For a recent earned habit it prints the route
+  behind it, which past successes still back it, and re-checks its tamper-proof record in front of you.
+  There's a **"why?"** link on the body page too.
+- **🪟 Better on Windows.** The dangerous-command recognizer now understands PowerShell (cmdlet, alias, and
+  encoded forms) — the groundwork for closing the Windows safety gap the docs have always been honest about.
+- **🧍 The body page, with pictures.** See below — a working organism and a fresh install, side by side.
+
+## What was new in 0.1.6
 
 The face release. Nothing changed in the immune kernel or the hooks — the organism just became
 something you can *look at*. Full detail in the [changelog](CHANGELOG.md).
 
-- **🧍 The body page.** `sentaince body` opens a dashboard that draws each repo as a human silhouette —
-  organs colored by live vitals, with the exact rule printed beside every color. Dormant organs are
-  gray on purpose; organs with no data yet are outlines. **Nothing ever fakes green.** No Docker needed.
+![The SentAInce body page: one human silhouette per repo, each organ colored by a live vital with the rule printed beside it](docs/assets/body-page.png)
+
+- **🧍 The body page.** `sentaince body` opens the dashboard above — each repo drawn as a human
+  silhouette, organs colored by live vitals with the exact rule printed beside every color. Green means
+  a stated rule over a stated number, never a guess. Dormant organs are gray on purpose; organs with no
+  data yet are outlines. **Nothing ever fakes green.** No Docker needed.
 - **🗣️ `sentaince status`.** The vitals voice line as a real command — works even where the session-start
   message doesn't render.
+- **🔎 `sentaince why`.** Ask the organism to *show its work*: for its latest earned habits, it prints the
+  route it reconstructed, which past successes still back it, and re-checks the tamper-proof record — a
+  plain-language audit trail, read-only.
 - **🗺️ The estate file.** One documented JSON file (`~/.exocortex/repos.json`) names every repo you
   watch; undeployed repos show up asleep with a copy-paste deploy command.
 - **🔌 A plugin socket.** Packages can register `sentaince <subcommand>`s via the `sentaince.commands`
@@ -83,10 +122,13 @@ Works with **Claude Code** and **Cursor**. No account. No telemetry. Nothing lea
 
 ```bash
 pip install sentaince
-python -m exocortex.deploy install /path/to/your/project
+sentaince-deploy install /path/to/your/project    # or: python -m exocortex.deploy install ...
+sentaince body /path/to/your/project              # opens the body page in your browser — see it now
 ```
 
-That's it. Your agent's sessions now run through the organism's hooks:
+That second command is the payoff: your browser opens on the silhouette above, and you can watch each
+organ light up as your agent works. It needs no Docker and nothing leaves your machine. Your agent's
+sessions now run through the organism's hooks:
 
 - **Watch-only by default.** It ships observing and auditing — it changes nothing about your agent's
   behavior until *you* opt in to the safety veto. Cautious defaults are a feature, not a limitation.
@@ -95,6 +137,11 @@ That's it. Your agent's sessions now run through the organism's hooks:
 - **Reversible in one command.** `python -m exocortex.deploy uninstall /path/to/your/project` removes it
   surgically; your accrued memory is kept unless you `--purge`. Deleting one config file reverts to
   dormant defaults.
+
+On a fresh install the body page looks like this — every organ an outline, because **nothing is earned
+yet and nothing pretends to be**:
+
+![A freshly-deployed repo: every organ is a dashed outline, "no data yet — earning starts on your first exit 0"](docs/assets/body-page-coldstart.png)
 
 The full walkthrough — what you'll see in the first session, how the memory starts accruing, the live
 dashboard — is in [`docs/QUICKSTART.md`](docs/QUICKSTART.md). The operator's runbook is
@@ -149,8 +196,15 @@ part you came for:
 
 Full mapping (metaphor → CS reality → code → status): [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
 
-**Want the live dashboard?** Bring up the local monitoring stack (Docker) and open your browser — it
-lands on the plain-language **"SentAInce — The Organism"** dashboard:
+**Want the live dashboard?** The quickest view needs no Docker at all — `sentaince body` opens the body
+page (the silhouette at the top of this page) straight in your browser:
+
+```bash
+sentaince body /path/to/your/project     # → http://localhost:9109/  · no Docker, nothing leaves your machine
+```
+
+For the full history stack — trends over time, the Grafana story board, the audit log — bring up the
+local monitoring containers:
 
 ```bash
 cd exocortex/testbed/compose && docker compose up -d --build     # then open http://localhost:3000

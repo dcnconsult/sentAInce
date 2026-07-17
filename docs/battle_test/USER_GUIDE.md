@@ -9,7 +9,7 @@ How to install, test, and run the containerized battle-test of the SentAInce som
 
 | Need | For | Notes |
 |---|---|---|
-| Python ≥ 3.10 + `numpy` | the deterministic core + the runner | `pip install -e .[dev]` from the repo root |
+| Python ≥ 3.11 + `numpy` | the deterministic core + the runner | `pip install -e .[dev]` from the repo root |
 | Docker + Compose | the container demos | verified on Docker 29.5.3 / Compose v5.1.4 |
 | A local **Ollama** (or any OpenAI-compatible endpoint) | the live (`--live`) demos | `ollama serve`; pull a model, e.g. `ollama pull llama3:8b` |
 | `rich` (optional) | prettier console vitals | `pip install -e .[demo]`; falls back to plain text |

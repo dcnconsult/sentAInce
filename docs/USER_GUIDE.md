@@ -16,7 +16,9 @@ can run a command in a terminal, you can follow along.
    Cursor) runs automatically. One command wires them in; one command removes them cleanly (§1–§2).
 2. Out of the box it runs in a **safe, watch-only mode**: it logs what it sees and builds memory, without
    changing anything. You turn stronger features on deliberately, one at a time (§3).
-3. You can **watch it work** on a local dashboard (§6) — no account, nothing leaves your machine.
+3. You can **watch it work** — run `sentaince body /path/to/your/project` and your browser opens on a
+   picture of your repo as a human body, each organ colored by a live vital (§6). No Docker, no account,
+   nothing leaves your machine.
 
 **The one rule to remember:** SentAInce only "learns" a habit when a command *actually succeeds*. It never
 trusts something just because it was seen or repeated. That is what keeps its memory clean — and it's why a
@@ -59,6 +61,11 @@ the substrate, reachable through hooks — **Claude Code by default, or Cursor v
 
 ### 0.1 G.A.R.D. — what is actually wired
 
+> **Just running it? You can skip this section.** It's an honest internals note for people evaluating
+> exactly which research pieces are live versus vendored-but-dormant. The one-line version: the part that
+> makes the organism *refuse to act when it's out of its depth* is live; two more ambitious pieces are
+> shipped in the codebase but deliberately switched off until they earn their place.
+
 The Heart (objective function) is **mixed status** — do not treat it as a shipped whole
 ([`GLOSSARY.md`](GLOSSARY.md) §G.A.R.D.):
 
@@ -78,10 +85,10 @@ containerized layers add dependencies.
 
 | Need | Required for | Notes |
 |---|---|---|
-| **Python ≥ 3.10 + `numpy`** | the locked core, the hook, the colony | `pip install -e .[dev]` from the repo root (`pyproject.toml`: `requires-python >=3.10`, `numpy>=1.24`) |
-| **`sentence-transformers`** (optional, recommended) | the semantic cue-classifier (the default) | without it the hook **fails open** to the lexical classifier — no breakage, just phrasing-based clustering ([`exocortex/docs/USERS_GUIDE.md`](../exocortex/docs/USERS_GUIDE.md) §1) |
-| **Claude Code CLI** | the live hook control plane | the hook contract is verified against Claude Code **2.1.195** (`exocortex/hook.py` docstring) |
-| **Docker + Compose** | the battle-test container stacks, the testbed Grafana | verified on Docker 29.5.3 / Compose v5.1.4 ([`battle_test/USER_GUIDE.md`](battle_test/USER_GUIDE.md) §1) |
+| **Python ≥ 3.11 + `numpy`** | the locked core, the hook, the colony | `pip install -e .[dev]` from the repo root (`pyproject.toml`: `requires-python >=3.11`, `numpy>=1.24`) |
+| **`sentence-transformers`** (optional) | the **opt-in** semantic cue-classifier | the default is the fast **lexical** classifier; semantic is opt-in (`pip install sentaince[embed]` + a config flag) because it reloaded a model on every prompt. See [#4](https://github.com/dcnconsult/sentAInce/issues/4) |
+| **Claude Code CLI** | the live hook control plane | the hook contract was verified against Claude Code **2.1.195** (as of 0.1.x; `exocortex/hook.py` docstring) |
+| **Docker + Compose** | the battle-test container stacks, the testbed Grafana | verified on Docker 29.5.3 / Compose v5.1.4 as of 0.1.x ([`battle_test/USER_GUIDE.md`](battle_test/USER_GUIDE.md) §1). Not needed for `sentaince body` |
 | **Ollama** (or any OpenAI-compatible endpoint) | live battle-test heads, BYO-model testbed | `ollama serve`; pull a model, e.g. `ollama pull llama3:8b` |
 | **`@musistudio/claude-code-router`** (npm) | BYO testbed Route A (ollama → Claude Code) | the Anthropic↔OpenAI translating proxy — see §6 |
 | **`rich`** (optional) | prettier battle-test console vitals | `pip install -e .[demo]`; falls back to plain text |
@@ -98,9 +105,24 @@ safety gap; a production Windows guard needs PowerShell-aware gating (deferred �
 ```bash
 # from the repo root
 pip install -e .[dev]                 # core + pytest
-pip install sentence-transformers     # optional: the semantic classifier (install in the hook's python)
+pip install sentence-transformers     # optional: the opt-in semantic classifier (install in the hook's python)
 python -m pytest -q tests             # smoke-test the lock (see §7)
 ```
+
+### 1.1 The `sentaince` command
+
+A `pip install` gives you one friendly command with four everyday subcommands (each also has an explicit
+`python -m exocortex.…` form if you prefer it):
+
+| Command | What it does |
+|---|---|
+| `sentaince-deploy install <repo>` | wire the organism into a project (`--provider cursor`/`both` for other hosts) |
+| `sentaince status <repo>` | print the one-line vitals — mode, routes earned — even where the session-start message doesn't render |
+| `sentaince body <repo>` | start the exporter (no Docker) and open the **body page** in your browser (§6) |
+| `sentaince why <repo>` | print the consequence trail behind the latest earned habits — the route, the backing successes, and the re-checked tamper-proof record (read-only) |
+
+Third-party packages can add their own `sentaince <subcommand>`s via the `sentaince.commands` entry-points
+group; they load only when invoked, so a broken plugin can never break `status`.
 
 ---
 
@@ -399,15 +421,24 @@ python -m exocortex.testbed.proof_route_a --model llama3.1-8b-8k
 **PASS** = the harness reports `PreToolUse` records (a local model drove the hooks). **FAIL** = no hook
 activity → check `ccr status`, native tool_calls, that `enhancetool` is absent, and `num_ctx` size.
 
-### 6.3 Slices 2–3 — exporter, Grafana (+ planned repo-feeder)
+### 6.3 Slices 2–3 — the body page, exporter, Grafana, repo-feeder
+
+The friendliest entry is the **body page** — no Docker, no flags:
+
+```bash
+sentaince body /path/to/your/project     # exporter + browser on http://localhost:9109/  (the silhouette)
+```
+
+Or drive the exporter and the history stack directly:
 
 ```bash
 python -m exocortex.testbed.exporter.metrics --config exocortex_config.json    # Prometheus text on :9109/metrics
-docker compose -f exocortex/testbed/compose/docker-compose.yml up              # Grafana on :3000
-# repo-feeder (Slice 4) is PLANNED — not yet shipped (no exocortex/testbed/feeder.py); see docs/OPERATIONS.md §6
+docker compose --project-directory exocortex/testbed/compose up                # Grafana on :3000
+python -m exocortex.testbed.feeder --label demo                                # repo-feeder: drive a disposable repo to accrue data
 ```
 
-Grafana → "Exocortex testbed" shows the colony + declarative rows. (Windows allows **duplicate binds** on
+Grafana → "Exocortex testbed" shows the colony + declarative rows; the body page (`:9109/`) is the
+plain-language silhouette and `:9109/control` is the tuning plane. (Windows allows **duplicate binds** on
 `:9109`; if metrics look stale, kill all listeners and start one.)
 
 ### 6.4 The science check (and its honest limit)
