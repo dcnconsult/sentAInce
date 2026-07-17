@@ -93,10 +93,16 @@ process (it died on the host's first reboot). One `docker compose up -d` and it 
 
 ```bash
 docker compose --project-directory exocortex/testbed/compose up -d
-#   Control:    http://localhost:9109/    — tweak each repo's organs in the browser (anatomy-skinned)
-#   Grafana:    http://localhost:3000     — lands on "SentAInce — The Organism" (the story skin)
+#   Body:       http://localhost:9109/         — one silhouette per repo, organs colored by live vitals
+#   Control:    http://localhost:9109/control  — tweak each repo's organs in the browser (anatomy-skinned)
+#   Grafana:    http://localhost:3000          — lands on "SentAInce — The Organism" (the story skin)
 #   Prometheus: http://localhost:9090
 ```
+
+> **No Docker? Still get the body.** `sentaince body [repo-path]` (or plain
+> `python -m exocortex.testbed.exporter.metrics --scan-root <projects-root>`) serves the same body page +
+> `/api/vitals` on loopback with zero dependencies — the compose stack only adds Grafana/Prometheus/Loki
+> history on top.
 
 > **The `-f` trap.** Don't bring the stack up with `docker compose -f …/docker-compose.yml up -d`: an
 > explicit `-f` loads *only* that file and **silently suppresses the auto-merge of a local
@@ -119,9 +125,13 @@ Grafana provisions **two** dashboards from `grafana/dashboards/`:
   instrument panel** — raw gauge verdict board, per-class convergence, the seg_len heatmap, live audit tail.
   This is what an operator tunes against.
 
-The browser **control plane** (`:9109/`) is likewise skinned: knobs are grouped by their human counterpart
-with a plain-language hint on each, and the 🛡️ immune system (`integrity`/`somatic_gate`/audit chain) is
-shown 🔒 read-only — **never web-writable**.
+The exporter's own pages are likewise skinned. The **body page** (`:9109/`) draws one SVG organism per
+repo — organ regions colored by thresholded raw vitals with the rule printed beside every color
+([`../../../docs/COLOR_DOCTRINE.md`](../../../docs/COLOR_DOCTRINE.md)); parked organs render gray, unfed
+organs render as dashed outlines (nothing fakes green), and undeployed sibling git repos appear asleep with
+a copy-paste deploy command. The **control plane** (`:9109/control`) groups knobs by their human counterpart
+with a plain-language hint on each, edits the [estate file](../../../docs/ESTATE.md), and the 🛡️ immune
+system (`integrity`/`somatic_gate`/audit chain) is shown 🔒 read-only — **never web-writable**.
 
 **Keep it up across reboots** (one-time per host): `restart: unless-stopped` brings the containers back
 *if* Docker is running, so register the logon task that also starts Docker Desktop + ensures the stack:
@@ -134,9 +144,10 @@ override `EXOCORTEX_PROJECTS_ROOT`) and **auto-scans** `<root>/*/.claude/exocort
 Deploy the organism into any repo under that root and it appears in Grafana's `$repo` dropdown within 15 s —
 **no restart, no per-repo port, no Prometheus edit**. Every metric carries a `repo="<name>"` label.
 
-- **Central registry** (`~/.exocortex/repos.json`, mounted read-only) is the *override*: add a repo
-  **outside** the scan root, or pin a custom display name. Auto-scan covers the common case; the registry
-  covers the rest. Re-read every scrape — edit and save, no restart.
+- **The estate file** (`~/.exocortex/repos.json`, mounted read-only; contract in
+  [`../../../docs/ESTATE.md`](../../../docs/ESTATE.md)) is the *override*: add a repo **outside** the scan
+  root, or pin a custom display name. Auto-scan covers the common case; the estate file covers the rest.
+  Re-read every scrape — edit and save (by hand or via the `/control` form), no restart.
 
   **A repo outside the scan root needs BOTH halves** — the registry *names* it, a mount *makes it
   readable*. Registering alone yields a repo whose every series is zero (`exocortex_state_dir_present 0`

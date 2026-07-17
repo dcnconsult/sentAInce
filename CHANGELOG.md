@@ -5,7 +5,40 @@ What changed, and what it cost us to find out. Claims here must not exceed
 
 Numbers are measured on this project's own hardware unless stated, and negative results are kept.
 
-## [0.1.5] — unreleased
+## [0.1.6] — 2026-07-17
+
+The face release. No change to the immune kernel, the C1–C7 lock, or any hook behavior — this release
+gives the organism a face and a voice you don't need Docker to see.
+
+### Added
+
+- **The body page.** The exporter's home (`:9109/`) now draws **one human silhouette per repo**, each
+  organ region colored by a live, thresholded raw vital — head = sleep, heart = stamina, chest shield =
+  immune, arms = muscle memory, book = notebook. Every color prints the rule that produced it beside the
+  number (the rules are [`docs/COLOR_DOCTRINE.md`](docs/COLOR_DOCTRINE.md)); organs whose own gauge said
+  the prize was modest render **gray (dormant)**, and organs that simply haven't seen data render as a
+  dashed outline — **nothing ever fakes green**. The knobs page moved to `/control`, one click away.
+- **A bare `sentaince` command.** `sentaince status <repo>` prints the vitals voice line — the promised
+  fallback for environments where the session-start `systemMessage` doesn't render — and
+  `sentaince body <repo>` starts the exporter (loopback, zero dependencies) and opens the body page.
+  Unknown subcommands dispatch **lazily** to the new `sentaince.commands` entry-points group, so
+  third-party packages can add subcommands — and a broken plugin can never break `status` (test-pinned).
+- **Onboarding from the dashboard.** Sibling git repos with no organism appear on the body page asleep,
+  with a copy-paste deploy command. Deploying stays a deliberate CLI act — the web plane never executes it.
+- **The estate file.** `~/.exocortex/repos.json` is now the first-class, documented multi-repo registry
+  ([`docs/ESTATE.md`](docs/ESTATE.md)): a `version` key, an ignore-unknown-keys rule, and a
+  preserve-unknown-keys-on-write rule (both test-pinned), plus a bounded web editor on `/control` behind
+  the exporter's existing write guards. `/api/vitals` now carries `schema_version` and evolves
+  additively from here.
+
+### Tests
+
+- 12 new contract tests (`exocortex/tests/test_body_estate_cli.py`): the cold-body negative control
+  (an empty repo renders outlines, never green — this control caught and fixed a fake-green immune
+  state during development), the estate round-trip rules, dormant discovery, and the lazy-plugin proof.
+  Organism suite 308 → 320; the 99-test kernel lock untouched.
+
+## [0.1.5] — 2026-07-16
 
 The honesty release. Three of these are bugs that only ever manifested **outside** the development
 repo — which is exactly why they survived four releases.
