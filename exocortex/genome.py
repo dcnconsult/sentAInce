@@ -129,8 +129,8 @@ DEFAULTS = {
         # (0 → the verified status quo: splice stays pure, abstains on a cold wiki). Endocrine seam (later,
         # gauge-first, mirrors endocrine.levers): when wired, the budget scales with the metabolic tier
         # (SATED → explore more / "dream"; HYPOXIA → 0 / tunnel-vision). A flat int until then.
-        # UNITS ARE NOTES, NOT BLOCKS (sizing fix, 2026-07-09): the lab's delivery-budget probe
-        # (sentAInce-lab DELIVERY_BUDGET_PROBE.md) proved a block-unit budget starves multi-block notes —
+        # UNITS ARE NOTES, NOT BLOCKS (sizing fix, 2026-07-09): the delivery-budget probe
+        # (DELIVERY_BUDGET_PROBE, 2026-07-08) proved a block-unit budget starves multi-block notes —
         # budget=2 injected 2 of the conventions note's 8 blocks, 0/6 full deliveries; budget=8 → 6/6.
         # An admitted note now delivers all its proposed blocks atomically; `explore_block_cap` is the
         # explicit total-blocks byte bound (the one place a note may still truncate, loudly).

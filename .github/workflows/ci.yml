@@ -1,8 +1,5 @@
 name: CI
 
-# The deterministic build-gate stays green on every push/PR: the 99-test C1–C7 evidence lock plus the
-# out-of-lock component suites. Pure-Python, numpy + pytest only — no Docker, no Ollama, no network. Tests
-# that need an optional extra (e.g. the read-only `mcp` server) skip cleanly when it is absent.
 on:
   push:
     branches: [ main ]
@@ -25,11 +22,43 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install
+      - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
           pip install numpy pytest
-      - name: The 99-lock (the deterministic C1–C7 evidence lock)
+      - name: The 99-lock
         run: python -m pytest -q
-      - name: Component suites (out of the lock)
+      - name: Component suites
         run: python -m pytest -q exocortex/tests cerebral/tests battle/tests
+
+  release-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install reproducible release dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy "build>=1,<2" "pytest>=7.4"
+      - name: Public-safe release tests
+        run: python -m pytest -q release/tests
+      - name: Verify projection receipt
+        run: python -m release.build_public --verify-receipt --json
+      - name: Re-run all publication gates and wheel scan
+        run: python -m release.build_public --json
+
+  release-gate:
+    name: release-gate
+    if: always()
+    needs: [ test, release-boundary ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every test and boundary job
+        shell: bash
+        run: |
+          test "${{ needs.test.result }}" = "success"
+          test "${{ needs.release-boundary.result }}" = "success"

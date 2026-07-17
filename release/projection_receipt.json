@@ -1,0 +1,41 @@
+{
+  "file_count": 330,
+  "gates": [
+    {
+      "name": "patent_filed",
+      "ok": true
+    },
+    {
+      "name": "no_commercial_or_private",
+      "ok": true
+    },
+    {
+      "name": "no_denylisted_tokens",
+      "ok": true
+    },
+    {
+      "name": "no_ip_disclosure",
+      "ok": true
+    },
+    {
+      "name": "no_secrets",
+      "ok": true
+    },
+    {
+      "name": "license_present",
+      "ok": true
+    },
+    {
+      "name": "clean_public_worktree",
+      "ok": true
+    },
+    {
+      "name": "wheel_purity",
+      "ok": true
+    }
+  ],
+  "generated_utc": "2026-07-17T04:47:45+00:00",
+  "projection_digest": "a18310670d483359268fe5cb452781ae9c3991e13cb84508103831321fd2dd82",
+  "release_version": "0.1.5",
+  "schema": 1
+}
