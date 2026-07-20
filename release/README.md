@@ -3,7 +3,7 @@
 This directory is the **single source of truth** for what ships to the public, Apache-2.0 **community
 repo**. The boundary is *data* (`manifest.py`) enforced by *fail-closed gates* (`prepush_gates.py`), and the
 public repo is **derived** deterministically from the private monorepo — not scrubbed by hand. See
-[docs/ADR.md](../docs/ADR.md) ADR-011 and [docs/PRODUCT.md](../docs/PRODUCT.md).
+[docs/ADR.md](../docs/ADR.md) ADR-011.
 
 ## The boundary in one screen
 - **Community (open, Apache-2.0):** the whole local **body** — immune kernel (`sentaince/`, `vendor/kernel/`),

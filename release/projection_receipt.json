@@ -35,8 +35,8 @@
       "ok": true
     }
   ],
-  "generated_utc": "2026-07-17T18:19:24+00:00",
-  "projection_digest": "bef68eb47924f45222654ecff5792a5e302775f6ca52887750c0886ba36bef41",
-  "release_version": "0.1.7",
+  "generated_utc": "2026-07-20T17:26:57+00:00",
+  "projection_digest": "2c9b537100d88424d536d6ccd1dc78aa7cc9389cdf2b53c08e70c6405a64fcd9",
+  "release_version": "0.1.8",
   "schema": 1
 }

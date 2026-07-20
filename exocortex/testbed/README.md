@@ -192,8 +192,7 @@ hook invocation (the Genome re-reads the file per process).
 ## Slice 4 — the repo-feeder (the fuel pump)
 
 `feeder.py` drives a **disposable** repo through the six hooks for N episodes of scripted, tool-forcing
-tasks (Write/Edit + a Bash verify each), so real vitals accrue — the fuel the dashboard charts and the
-future Tuner ([`../../docs/PRODUCT.md`](../../docs/PRODUCT.md)) consumes.
+tasks (Write/Edit + a Bash verify each), so real vitals accrue — the fuel the dashboard charts.
 
 ```bash
 # flagship baseline (8 episodes against a fresh disposable repo the exporter auto-discovers):

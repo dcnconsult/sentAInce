@@ -55,6 +55,10 @@ COMMERCIAL_EXCLUDE = [
 NEVER_PUBLIC = [
     "patent/",                       # the provisional claim drafts — code IS disclosure; these never ship
     "docs/INVESTOR_SUMMARY.md",      # investor materials
+    # commercialization strategy — the paid/Appliance model is NOT ready to be entangled with the public
+    # OSS project (PI, 2026-07-20). The open tree describes the free organism only; the open-core
+    # *boundary mechanism* stays on the record in ADR-011/012, which is a governance record, not a pitch.
+    "docs/PRODUCT.md",
     "exocortex_config.json",         # local activation — may point at a private vault
     "release/denylist_private.py",   # the identifying denylist tokens — publishing the list = the leak
     # local agent/plugin/runtime state is never release input. The generic provider-probe specification

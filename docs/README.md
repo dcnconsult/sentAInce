@@ -20,7 +20,7 @@ documentation suite.
 | **Installing / running it** | [USER_GUIDE.md](USER_GUIDE.md) → [OPERATIONS.md](OPERATIONS.md) (deploy/config/soak/revert) → [DEPLOYMENT.md](DEPLOYMENT.md) (packaging tiers) |
 | **Going technical** | [WHITEPAPER.md](WHITEPAPER.md) → the deep-dives: [`../exocortex/docs/CORE.md`](../exocortex/docs/CORE.md), [`../exocortex/MEMORY_GAUGE_DESIGN.md`](../exocortex/MEMORY_GAUGE_DESIGN.md), [`../exocortex/docs/BRIDGE_ORGAN_DESIGN.md`](../exocortex/docs/BRIDGE_ORGAN_DESIGN.md) |
 | **Reviewing security** | [SECURITY.md](SECURITY.md) → [CLAIM_BOUNDARY.md](CLAIM_BOUNDARY.md) → [`battle_test/WHITEPAPER.md`](battle_test/WHITEPAPER.md) |
-| **Understanding the product** | [STORY.md](STORY.md) → [PRODUCT.md](PRODUCT.md) → [`use_cases/README.md`](use_cases/README.md) |
+| **Understanding the product** | [STORY.md](STORY.md) → [LANDSCAPE.md](LANDSCAPE.md) (where this sits, and what it isn't) → [`use_cases/README.md`](use_cases/README.md) |
 | **Contributing** | [../CONTRIBUTING.md](../CONTRIBUTING.md) → [ADR.md](ADR.md) (the *why* behind the decisions) → [CLAIMS.md](CLAIMS.md) → [GLOSSARY.md](GLOSSARY.md) |
 
 ## The suite
@@ -30,7 +30,7 @@ documentation suite.
 | [WHITEPAPER.md](WHITEPAPER.md) | the full system — architecture, the biological stack, consequence-sourcing, the gauge-first method, evidence |
 | [USER_GUIDE.md](USER_GUIDE.md) | install, configure, and run the whole stack end to end |
 | [FEATURES.md](FEATURES.md) | each organ as a feature: what it does, its status, the knob to enable it |
-| [PRODUCT.md](PRODUCT.md) | commercialization strategy: free local dashboard vs paid hosted "managed organism" (tuner consumes vitals, not source); tiers, principles, build order |
+| [LANDSCAPE.md](LANDSCAPE.md) | where this sits among agent-safety tooling — compared by altitude (where in the call path a check runs), what we claim, what is only a bet, and which hosts are actually supported |
 | [OPERATIONS.md](OPERATIONS.md) | runbook + the Genome config reference: deploy / soak / monitor / revert |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | packaging & deployment tiers (T1 pip → T2 Nuitka → T3 container → T4 Rust/MCP) + the integrity layer |
 | [DEPLOY_TO_A_PROJECT.md](DEPLOY_TO_A_PROJECT.md) | runbook: install the organism into any working repo (gates, the 3 artifacts, verify + apoptosis drill; TAO worked example) |

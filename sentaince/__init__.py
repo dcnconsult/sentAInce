@@ -5,4 +5,4 @@ lethal action even when the generative organelle (an LLM, here a deterministic s
 prompt-injected into proposing one. Pure-Python, deterministic, numpy + pytest only.
 """
 
-__version__ = "0.1.7"
+__version__ = "0.1.8"

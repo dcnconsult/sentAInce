@@ -66,10 +66,27 @@ real but not-yet-habitual action) and *high-stakes* (8), so its expected cost of
 it paused and put a human in the loop. A recognized *lethal* command never reaches this prompt; the
 somatic reflex has already refused it.
 
-## What's new in 0.1.7
+## What's new in 0.1.8
+
+**No code changed** — this one is documentation. Skip the upgrade if you only run the organism. Full
+detail in the [changelog](CHANGELOG.md).
+
+- **🗺️ [Where this actually sits](docs/LANDSCAPE.md).** An outside reviewer put us on a shelf next to
+  alternatives and said we weren't ready to be anyone's primary tool. They were right, so we wrote the
+  shelf down ourselves — organised by *where in the call path a check runs*, because that decides what it
+  survives. We're the in-process refusal: a floor, not a ceiling, and built to run alongside the other
+  layers rather than replace them.
+- **🔌 Which hosts actually work, in a table.** Claude Code is supported. Cursor is a soft shim that can be
+  bypassed. **Codex** and **Kimi Code** are the next targets. Any MCP client gets the memory and *not* the
+  gate. If your host isn't listed as supported, now you know before you install.
+- **📉 Our least flattering number, in the docs where people will read it.** The controlled A/B on earned
+  memory trends positive and **misses its own pre-registered significance gate** (p = 0.0781 vs p ≤ 0.05).
+  It stays labelled as trending until a better-powered run says otherwise.
+
+## What was new in 0.1.7
 
 Two new abilities and the body page's first proper screenshots. No change to the immune kernel or the
-hooks. Full detail in the [changelog](CHANGELOG.md).
+hooks.
 
 - **🔎 `sentaince why` — ask the organism to show its work.** For a recent earned habit it prints the route
   behind it, which past successes still back it, and re-checks its tamper-proof record in front of you.
@@ -196,6 +213,10 @@ part you came for:
 
 Full mapping (metaphor → CS reality → code → status): [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
 
+**Already using another guardrail?** Good — most of them sit at a different layer than we do, and we're
+built to run alongside, not instead. [`docs/LANDSCAPE.md`](docs/LANDSCAPE.md) draws the shelf honestly:
+where each layer catches things, what we claim, and the one number we have that isn't flattering.
+
 **Want the live dashboard?** The quickest view needs no Docker at all — `sentaince body` opens the body
 page (the silhouette at the top of this page) straight in your browser:
 
@@ -318,18 +339,15 @@ ActionGraph across a process boundary.
 
 ---
 
-## Free forever — and sustainable
+## Free and open
 
 The whole local body — the safety gate, the earned memory, the dashboards — is **Apache-2.0, free, and
-open, always.** Safety is never paywalled. What keeps the project alive is an optional, **fully local**
-tune-up subscription (the *Appliance*) that maintains and auto-tunes your organism over time — your code
-never leaves your machine. See [`docs/PRODUCT.md`](docs/PRODUCT.md) for the honest commercial model, and
-[`docs/STORY.md`](docs/STORY.md) for the plain-language tour.
+open.** Safety is never paywalled. It runs entirely on your machine: no account, no telemetry, nothing
+leaves the box. For the plain-language tour, see [`docs/STORY.md`](docs/STORY.md).
 
-| | What it is |
+| | |
 |---|---|
-| **Free, forever** | The complete organism: safety gate + audit chain, earned memory, MCP recall, deploy tooling, the full dashboard stack. 100% local, no account, no telemetry. |
-| **Paid (optional)** | The **Appliance** — a fully local, offline tune-up subscription: maintained signed auto-tune cadence, history-mined insights, ranked estate view, local alerts. Unlimited repos, DRM-free (cancelling stops updates, never the running organism). |
+| **What you get** | The complete organism: safety gate + audit chain, earned memory, MCP recall, deploy tooling, the full dashboard stack. 100% local, no account, no telemetry. |
 | **Never** | Paywalled safety. Your code leaving your machine. A kill-switch. |
 
 > Built by one maintainer, in the open, gauge-first — every claim is broken by its own null or it doesn't ship.

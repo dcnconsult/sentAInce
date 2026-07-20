@@ -35,11 +35,9 @@ primitive present, not yet wired), **MARGINAL** (measured small / unproven).
 
 ## 1. Shipped
 
-> **Delivery (ADR-011/012):** the community/commercial boundary is executable data (`release/manifest.py`
-> + fail-closed gates incl. wheel purity); the community wheel carries the whole local body (tuner
-> excluded); the commercial trust layer (Ed25519 + DRM-free license/manifest) is built; the first
-> sellable artifact is the on-prem **Tuner Appliance** (cloud only on customer pull) — see
-> [PRODUCT.md](PRODUCT.md) build order and ADR-012.
+> **Delivery (ADR-011/012):** what ships publicly is executable data (`release/manifest.py` + fail-closed
+> gates incl. wheel purity), not a hand-scrubbed copy — the boundary is auditable rather than asserted.
+> The published wheel carries the whole local body.
 
 ### LOCKED — frozen, evidence-backed
 
@@ -81,8 +79,8 @@ primitive present, not yet wired), **MARGINAL** (measured small / unproven).
   paid "brain". A local model (`llama3.1:8b`) drives the hooks via a proxy; the exporter is **multi-repo**
   with a **browser control plane** (allowlisted config writes; the safety genome is never web-writable)
   and self-healing containers; a repo-feeder accrues real vitals; the **Tuner emulator** turns the
-  dormant-organ flip-triggers into signed recommendations (the paid product, built local-first — see
-  [PRODUCT.md](PRODUCT.md)). Honest limit confirmed by a complete 8-episode BYO feed: the small model
+  dormant-organ flip-triggers into signed recommendations. Honest limit confirmed by a complete 8-episode
+  BYO feed: the small model
   drives the hooks but completes no tool-using work (**0 deposits** over 8 episodes), so BYO
   precision-at-scale stays unmeasured. [`../exocortex/testbed/README.md`](../exocortex/testbed/README.md).
 - **Read-only memory MCP server** — the earned colony + declarative wiki exposed to any MCP host (Claude
