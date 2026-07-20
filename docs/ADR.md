@@ -347,7 +347,7 @@ becomes an action. Every organ instantiates it:
 - the **exploration budget** injects UNVERIFIED candidates that earn τ only by a closed `exit 0`;
 - the **cerebellum / macro** (Ticket 3), if ever built, is *suggest-not-execute behind the somatic gate*
   (ADR-005);
-- the **Tuner** (the paid brain) only *recommends* tunables, and the allowlist makes it **structurally unable**
+- the **Tuner** (the held-back brain) only *recommends* tunables, and the allowlist makes it **structurally unable**
   to suggest a change to safety;
 - the §G frontier organs (the ESCALATE hand-off, consequence-grounded ToT, the dream organ) are suggest-only
   by construction.
@@ -370,19 +370,24 @@ becomes an action. Every organ instantiates it:
 
 ---
 
-## ADR-011 — The open-core boundary: the safety kernel is free by *license*, the paid value is the hosted brain
+## ADR-011 — The open-core boundary: the safety kernel is free by *license*, drawn as data
 
-**Status:** LOCKED product/IP boundary (2026-07-01). Evidence: [PRODUCT.md](PRODUCT.md) (the three
-non-negotiables) and the `release/` toolchain (the boundary as executable data + fail-closed pre-push gates).
+**Status:** LOCKED product/IP boundary (2026-07-01). Evidence: the strategy note held privately
+(the three non-negotiables) and the `release/` toolchain (the boundary as executable data + fail-closed
+pre-push gates).
+
+> *Wording softened 2026-07-20 — forward-looking product and revenue language removed from the public
+> copy. The decision, the boundary, and the mechanism are unchanged; nothing here was superseded. What is
+> held out of the public tree is described as a boundary, not offered as a product.*
 
 **Context.** The repo was deliberately local-only while the patent clock ran — **code is disclosure**, so
 nothing was published until the provisionals were filed (they now are). "Ready to push once complete" needs
 the community/commercial line drawn mechanically, not scrubbed by hand at the last minute. Two facts make
-the line drawable cleanly. First, PRODUCT.md's law: **never paywall safety** — the C1–C7 immune system,
-apoptosis, and the hash-chained audit run locally and free, *always*; what is sold is *optimization and
-management*, never *protection*. Second, "**no local unlock — the intelligence is the service**": the moat is
-the **hosted Tuner + the curated policy tables + patented methods + the managed-update cadence**, none of
-which is *source secrecy*. When the moat is not the source, the open surface can be almost the whole organism.
+the line drawable cleanly. First, the standing law: **never paywall safety** — the C1–C7 immune system,
+apoptosis, and the hash-chained audit run locally and free, *always*; anything held back is *optimization
+and management*, never *protection*. Second, **no local unlock**: what is held out is the curated policy
+tables and patented methods — none of which is *source secrecy*. When the boundary is not the source, the
+open surface can be almost the whole organism.
 
 **Decision.** An **open-core** split, drawn as data (`release/manifest.py`) and enforced by gates
 (`release/prepush_gates.py`):
@@ -392,11 +397,10 @@ which is *source secrecy*. When the moat is not the source, the open surface can
   slices (resurrection Governor, intent journal), the battle-test proof, and the local dashboard/exporter.
   **Apache-2.0 for its explicit patent grant** — the immune methods are *defensively* patented yet *freely*
   granted, so the safety kernel is free by **license**, not merely by promise.
-- **Commercial (proprietary, held out of the public tree):** the **Tuner** (`exocortex/tuner/` — the
-  deterministic **policy table** = the honest moat, the emulator, the client↔Tuner protocol), the hosted
-  service (accounts/billing/fleet), and the future actuator (S3), Consolidator daemon, and cross-repo
-  Alliance analytics. A monetized method lives *here*, outside Apache-2.0's grant reach — the license
-  boundary and the patent-monetization boundary are the same line.
+- **Held out of the public tree (proprietary):** the **Tuner** (`exocortex/tuner/` — the deterministic
+  **policy table**, the emulator, the client↔Tuner protocol), and the not-yet-built actuator (S3),
+  Consolidator daemon, and cross-repo analytics. Patented methods live *here*, outside Apache-2.0's grant
+  reach — the license boundary and the patent boundary are the same line.
 - **Never public:** `patent/` (the claim drafts), investor materials, and any **private-crucible** content
   (the private patent vault — anonymized in these docs as `research-vault` — and the quantum repo). The
   demos ran against the real vault, so the gate fails closed on the identifying tokens (kept in a
@@ -408,7 +412,7 @@ which is *source secrecy*. When the moat is not the source, the open surface can
 **Consequences.**
 - **"Never paywall safety" becomes a license fact.** The brake is Apache-2.0 and patent-granted; only the
   *autopilot* (the Tuner) is proprietary — the same suggest/act line as ADR-010 (the disposer is free and
-  open; the *paid* proposer only recommends, and cannot touch the safety genome by construction).
+  open; the held-back proposer only recommends, and cannot touch the safety genome by construction).
 - **Push is mechanical and auditable, not a manual scrub.** The boundary is one allowlist + fail-closed
   gates (patent-filed, no denylisted tokens, no secrets, no commercial paths, license present) — the same
   gate-first discipline as the pre-deploy gates in [DEPLOYMENT.md](DEPLOYMENT.md).
@@ -417,34 +421,36 @@ which is *source secrecy*. When the moat is not the source, the open surface can
 
 ---
 
-## ADR-012 — Delivery architecture: on-prem appliance first, stdlib stack, Ed25519 trust, DRM-free entitlement
+## ADR-012 — Delivery architecture: on-prem first, stdlib stack, Ed25519 trust, DRM-free entitlement
 
-**Status:** LOCKED delivery shape (2026-07-01, PI-ratified plan). Evidence: the shipped Phase-1 arc —
+**Status:** LOCKED delivery shape (2026-07-01, PI-ratified plan). *Wording softened 2026-07-20 alongside
+ADR-011 — forward-looking product language removed from the public copy; the delivery decisions,
+constraints, and trust design are unchanged and nothing was superseded.* Evidence: the shipped Phase-1 arc —
 exporter write-surface guards (`exocortex/testbed/exporter/metrics.py`), the Ed25519/license layer
 (`exocortex/tuner/protocol.py`, `exocortex/tuner/license.py`), the completed community wheel
 (`pyproject.toml` + the `wheel_purity` gate), `docker/Dockerfile.exporter`.
 
-**Context.** ADR-011 drew *what* is community vs commercial; this decides *how each tier physically
-ships*. Constraints: a single developer (minimal operational surface); the moat is the hosted/updated
-policy intelligence, not source secrecy; "vitals-not-source" must survive contact with customers; the
+**Context.** ADR-011 drew *what* is open vs held back; this decides *how each side physically ships*.
+Constraints: a single developer (minimal operational surface); the boundary is updated policy
+intelligence, not source secrecy; "vitals-not-source" must survive contact with real users; the
 HMAC signing stand-in was semantically empty as a trust anchor (the client held the signing secret).
 
 **Decision.**
-- **On-prem first.** The first sellable artifact is the **Tuner Appliance**: the emulator hardened, as a
-  private container image + client wheel. Subscription = the **signed policy-update cadence** (v1: the
-  image IS the policy pack; each release ships a signed manifest). Cloud = Phase 4, the same container
-  single-tenant per customer, only on explicit pull. Customer vitals never leave their perimeter — the
-  privacy pitch defends itself and a pre-revenue solo dev never becomes a telemetry custodian.
+- **On-prem first.** The held-back artifact is the **Tuner Appliance**: the emulator hardened, as a
+  private container image + client wheel, updated via a **signed policy-update cadence** (v1: the image IS
+  the policy pack; each release ships a signed manifest). Anything hosted is a later phase, the same
+  container single-tenant, only on explicit pull. Vitals never leave the operator's perimeter — the
+  privacy posture defends itself and a solo developer never becomes a telemetry custodian.
 - **Stack: stdlib `http.server` everywhere** (exporter + Tuner); TLS never in-process (a Caddy sidecar
   when needed). Not adopted, deliberately: FastAPI/uvicorn/pydantic, Postgres, JWT/JOSE, K8s, PyNaCl,
   license servers/DRM, Nuitka, the Rust T4 daemon (gauge-gated).
-- **Trust: Ed25519 via `cryptography`** — a dependency of the commercial artifact ONLY, lazy-imported.
+- **Trust: Ed25519 via `cryptography`** — a dependency of the held-back artifact ONLY, lazy-imported.
   Three signatures, one canonical-JSON style: `/tune` responses (service key; the client pins the public
   key and REFUSES an unverifiable or downgraded response), the **license file**, and the **release
   manifest** (offline publisher key). **DRM-free law:** a tampered license refuses to start (it isn't a
   license); an expired `updates_until` only stops *updates* — runtime never bricks.
-- **Free/paid write seam:** the exporter's POST surface gained CSRF guards, `--read-only` (the free
-  monitoring posture), and an optional shared token (the paid client's write path). The TUNABLE
+- **Write seam:** the exporter's POST surface gained CSRF guards, `--read-only` (the default monitoring
+  posture), and an optional shared token (the privileged client's write path). The TUNABLE
   allowlist is unchanged — a valid token still cannot touch the safety genome.
 - **Community delivery:** the wheel carries the whole local body (`sentaince` + `exocortex` + `cerebral`,
   tuner excluded and gate-asserted); console scripts for humans; hooks pin the installing interpreter and
@@ -452,9 +458,9 @@ HMAC signing stand-in was semantically empty as a trust anchor (the client held 
   public tree at launch. The dashboard stack builds from a dedicated Dockerfile; the committed compose is
   generic (machine-local paths live in a gitignored override).
 
-**Consequences.** The paid gate is a *service boundary plus signatures*, not obfuscation — fully
-consistent with "never paywall safety" (the brake ships in the free wheel; only the autopilot is sold).
-The emulator/appliance/cloud are ONE codebase with three postures, so nothing is built twice. And the
+**Consequences.** The gate is a *service boundary plus signatures*, not obfuscation — fully
+consistent with "never paywall safety" (the brake ships in the open wheel; only the autopilot is held).
+The emulator/appliance/hosted postures are ONE codebase, so nothing is built twice. And the
 publishing gates now assert the boundary at three levels: file set (manifest), tokens (denylist), and
 build artifact (wheel purity).
 
@@ -501,7 +507,7 @@ captured before any multi-repo estate work; the scoping choice is deferred (post
 *about* repo X deposits into **Y** — e.g. SentAInce carries an earned class about the research vault
 (`repo-tao_publication#22`), stranded in SentAInce's store. An agent booting *in* the research vault can
 never see it. For a single developer with one active repo this is invisible; for a multi-repo **estate**
-(the OSS/population regime, or a customer fleet) it is a real gap: the colony is fragmented across stores
+(the OSS/population regime, or a multi-operator fleet) it is a real gap: the colony is fragmented across stores
 that never federate.
 
 **The open forks (to decide post-P1, gauge-first).**
@@ -797,7 +803,7 @@ vs committed) — and every write path beyond the explicit seeder (the MCP tool 
 - Orientation works fleet-wide, not just where memory was earned: `orient_repo` resolves against the
   estate log ∪ the deployed fleet, so the riskiest target — a repo with no earned memory — is exactly the
   one that still gets a graded capsule.
-- The product shape survives without the PI: a customer estate has no REPO_LOG.md, and the same mechanism
+- The shape survives without the PI: another operator's estate has no REPO_LOG.md, and the same mechanism
   runs on capsules alone (grades cap lower without an estate audit — which is the honest answer).
 
 ---
@@ -875,7 +881,7 @@ host the way the somatic gate protects the host from the model; and the proposer
 the spine beneath all of it — generation may only *suggest*, the frozen gate and the body are the only things
 that *act*, which is what makes every new organ safe to add and the whole system honest enough to measure;
 and the open-core boundary (ADR-011) with its delivery shape (ADR-012) carries that same line out to the
-product — the safety kernel is free and open by *license*, only the *autopilot* is sold, and the paid gate
+boundary — the safety kernel is free and open by *license*, only the *autopilot* is held back, and that gate
 is a service boundary plus signatures, never obfuscation; and the completion of the law states its negatives
 plainly — retrieval never earns τ (ADR-001) and **authority never earns τ** (ADR-013), so even a human in
 the loop credits only verified outcomes, with cross-repo federation (ADR-014) reserved as an open,

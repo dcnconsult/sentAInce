@@ -5,6 +5,54 @@ What changed, and what it cost us to find out. Claims here must not exceed
 
 Numbers are measured on this project's own hardware unless stated, and negative results are kept.
 
+## [0.1.8] — 2026-07-20
+
+A positioning and honesty pass. **No code changed** — no immune kernel, no C1–C7 lock, no hook behavior,
+no API. Safe upgrade, and skippable if you only run the organism.
+
+An outside reviewer put this project on a shelf next to named alternatives and concluded it was "not yet
+ready as a primary tool." That reading was correct. Rather than argue, we wrote the shelf down ourselves.
+
+### Added
+
+- **`docs/LANDSCAPE.md` — where this actually sits.** Agent-safety tools are usually compared by feature
+  list; the useful axis is **altitude** — where in the call path the check runs, because that decides what
+  it survives. Prompt rules, detection, proxy/gateway control planes, dialog rails, and in-process
+  execution refusal (us) are different layers, not competing answers. A gateway cannot see a call that
+  never leaves the process; a detector that flags a command still needs something to refuse it. We are the
+  refusal, and a floor is only useful if you also have the rest of the building. The page names no
+  vendors — that is a claim about someone else's software, and it goes stale.
+- **Host support stated plainly**, as a status table rather than a feature list: Claude Code supported;
+  Cursor a soft, fail-open, user-bypassable shim; **Codex** and **Kimi Code** named as near-term targets;
+  any MCP client gets the memory organ and **not** the hook gate. If your host is not in the supported
+  row, you get memory and no gate — better to know before installing than after.
+- **The multi-repo estate written up as what it is**: the differentiator that exists *today*. Most agent
+  tooling is single-repo by construction; developers are not.
+
+### Changed
+
+- **The A/B result is now published in the positioning docs, not just the ledger** — 0.625 vs 0.475, a
+  +15pp gap that widened on extension, **p = 0.0781 against a pre-registered gate of p ≤ 0.05, openly
+  unmet**, plus the honest reason it is underpowered (short timeline, one maintainer, only 6 of 16 tasks
+  able to move at all). Trending, on a real control, reported as trending. A directional result sold as a
+  win would be the exact failure this project exists to avoid.
+- **Commercialization material withdrawn from the public tree.** `docs/PRODUCT.md` is no longer published,
+  the README's Free-vs-Paid table is replaced by a plain statement that the whole local body is
+  Apache-2.0, and forward-looking product language in ADR-011/012 was softened. The decisions and the
+  boundary mechanism are unchanged and nothing was superseded — both ADRs carry a dated note saying the
+  wording was touched. **"Never paywall safety" survives verbatim**; it is the load-bearing law.
+
+### Fixed
+
+- Four dangling documentation links from the withdrawal above — two of which only surfaced by building the
+  derived public tree and grepping the *artifact*. A grep over the source docs reported clean. The release
+  gates also reported READY: they check secrets, license, IP disclosure, wheel purity, and worktree
+  cleanliness — **not link integrity**. Another instance of the standing rule that a green gate proves the
+  tree is publishable, not that it is correct.
+- Issues [#12](https://github.com/dcnconsult/sentAInce/issues/12) and
+  [#13](https://github.com/dcnconsult/sentAInce/issues/13) closed — shipped in 0.1.7 and left open for
+  three days.
+
 ## [0.1.7] — 2026-07-17
 
 Two community-issue features and a documentation pass that finally gives the body page a face. No change
