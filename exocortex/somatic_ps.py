@@ -1,23 +1,26 @@
 """PowerShell-aware somatic recognizer — the NON-PINNED half (issue #12).
 
-The somatic veto vocabulary is Bash-shaped; on Windows hosts PowerShell commands are audited
-but not vetoed (the disclosed "Honest scope"). This module translates the existing veto
-vocabulary — kill-PID-1, wipe-the-root-fs, flush-the-firewall, host shutdown, fork bomb — to
-PowerShell idiom: cmdlet forms, alias forms (``rm``/``del``/``ri``/``kill``/``spps``), common
-parameter abbreviations, and ``-EncodedCommand`` unwrapping.
+The somatic veto vocabulary is Bash-shaped; this module translates it — kill-PID-1,
+wipe-the-root-fs, flush-the-firewall, host shutdown, fork bomb — to PowerShell idiom: cmdlet
+forms, alias forms (``rm``/``del``/``ri``/``kill``/``spps``), common parameter abbreviations,
+and ``-EncodedCommand`` unwrapping.
 
-**Deliberately importable-but-UNWIRED.** The routing edit in ``hook.py`` is under the ADR-016
-control-plane pin and is explicitly out of scope here; tests drive this module directly
-(``exocortex/tests/test_somatic_ps.py`` pins the unwired state). Like the C1 list it mirrors,
-recognition is structural — regex over the command's shape, never a judgment call — and the
-scar list is a closed vocabulary: additions belong in review, not in config.
+**WIRED into ``handle_pretooluse`` as of ADR-021 (2026-07-22).** Built importable-but-unwired
+for v0.1.7 because the routing edit sits under the ADR-016 control-plane pin; an audit of 16,623
+live records then showed 828 ungated PowerShell calls, and a command channel the gate cannot read
+is a hole rather than a scope. PowerShell now runs the same mode semantics as Bash;
+``test_module_is_wired_into_the_pretooluse_gate`` pins that, and
+``test_wiring_is_the_somatic_half_only`` pins the boundary — the epistemic layer, energy, and
+strategy-lock accounting stay Bash-only. Like the C1 list it mirrors, recognition is structural —
+regex over the command's shape, never a judgment call — and the scar list is a closed vocabulary:
+additions belong in review, not in config.
 
 Honest scope of the recognizer itself: parameter abbreviations are matched for the common
 explicit spellings (``-Recurse``/``-r``, ``-Force``/``-fo``); more exotic-but-legal prefixes
 (``-Recur``) are not enumerated. Splatting, variable indirection (``& $cmd``), and
 ``Invoke-Expression`` of computed strings are structurally unrecognizable by ANY static
-vocabulary — that residual is exactly why the audited-not-vetoed disclosure stays in place
-until the outcome oracle covers it.
+vocabulary — that residual is disclosed rather than closed, and it is why "PowerShell is covered"
+means *the catalogued lethals are refused*, never *no lethal can get through*.
 """
 from __future__ import annotations
 

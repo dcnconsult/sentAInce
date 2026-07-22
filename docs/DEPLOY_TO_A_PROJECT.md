@@ -116,8 +116,9 @@ At the start of a task:
 ```
 
 Two honest disclosures belong next to it: your gate **mode** (`somatic` refuses catalogued lethals;
-`observe` records without blocking), and on Windows the PowerShell scope note (the veto vocabulary is
-Bash-shaped — PowerShell commands are audited but not vetoed; see `exocortex/README.md` "Honest scope").
+`observe` records without blocking), and the command-surface scope note — Bash **and**, since ADR-021,
+PowerShell run the same somatic veto, but the residual (splatting, `& $cmd`, `Invoke-Expression` over
+computed strings) is unrecognizable to any static vocabulary; see `exocortex/README.md` "Honest scope".
 
 ## Verify the deploy (before handing off / going live)
 ```bash

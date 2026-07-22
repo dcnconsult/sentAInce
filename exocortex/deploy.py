@@ -272,8 +272,10 @@ At the start of a task:
    on it. On a novel task an empty recall is correct behavior (abstain), not a failure.
 4. After verified success the hooks deposit automatically; MCP tools never write memory.
 
-Honest scope on Windows hosts: the somatic veto vocabulary is Bash-shaped — PowerShell commands are
-audited but not vetoed (see the exocortex README "Honest scope")."""
+Honest scope: the somatic veto covers Bash **and** PowerShell (ADR-021), under the same mode semantics.
+The residual is disclosed, not closed — splatting, variable indirection (`& $cmd`), and
+`Invoke-Expression` over computed strings are unrecognizable to any static vocabulary, and file writes
+are out of scope by decision (ADR-022). See the exocortex README "Honest scope"."""
 
 
 def _agents_md_path(t: Path) -> Path: return t / "AGENTS.md"
@@ -450,9 +452,12 @@ def install(target: str, *, mode="observe", integrity="off", audit_chain=True,
             warnings.append(".claude/skills/sentaince-recall/SKILL.md exists without our marker — a "
                             "foreign skill owns that name; ours was NOT installed (never clobbered)")
     if sys.platform == "win32" and not wsl and provider in ("claude", "both"):
-        warnings.append("Windows honest scope: the somatic veto vocabulary is Bash-shaped — PowerShell "
-                        "commands are audited but NOT vetoed (PowerShell-aware gating is deferred; "
-                        "run under --wsl for a Bash-only surface). See exocortex/README.md 'Honest scope'.")
+        warnings.append("Windows honest scope (ADR-021): PowerShell commands ARE somatically vetoed — the "
+                        "veto vocabulary is translated to PS idiom (cmdlet, alias, and -EncodedCommand "
+                        "forms). Residual gap, unrecognizable to any static vocabulary: splatting, "
+                        "variable indirection (& $cmd), and Invoke-Expression over computed strings. The "
+                        "epistemic layer and energy accounting stay Bash-only. See exocortex/README.md "
+                        "'Honest scope'.")
     _state_dir(t).mkdir(parents=True, exist_ok=True)
     capsule_stamped = _stamp_capsule(t)
     return {"ok": True, "target": str(t), "ignore_added": ig, "provider": provider,

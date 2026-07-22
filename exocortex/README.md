@@ -69,9 +69,16 @@ agent proposes a Bash command
 
 ## Honest scope
 
-- **Bash / Linux surface.** The locked gate recognizes Linux/shell idioms. The experiment runs in **WSL**
-  (`--wsl`) because Claude Code on Windows also exposes a **PowerShell** tool that bypasses a Bash-only
-  gate — a real safety gap. A production Windows guard needs PowerShell-aware gating (deferred).
+- **Bash + PowerShell command surface (ADR-021).** The locked gate recognizes Linux/shell idioms; since
+  2026-07-22 the **PowerShell** tool Claude Code exposes on Windows routes through the same somatic veto,
+  with the vocabulary translated to PS idiom (cmdlet, alias, and `-EncodedCommand` forms) under identical
+  mode semantics. That closed a real gap — an audit of 16,623 live records found **828 ungated PowerShell
+  calls**, and somatic coverage of mutating tool calls rose **46% → 57%**. It is a coverage number, not a
+  harm-prevention claim. **The residual is disclosed, not closed:** splatting, variable indirection
+  (`& $cmd`), and `Invoke-Expression` over computed strings are unrecognizable to *any* static vocabulary,
+  and the **epistemic layer, energy, and strategy-lock accounting stay Bash-only**. File writes
+  (Write/Edit) are deliberately out of the floor's scope — see ADR-022 for why that is a decision rather
+  than a gap. The experiment still runs in WSL (`--wsl`) for a single-shell surface.
 - **Recognized-destructive only.** The gate is a finite structural/effect recognizer, not a universal
   detector. It defends *declared* invariants and *catalogued* lethals (the C1–C6 boundaries). The
   complete guarantee is the container's physical read-only boundaries (the battle-test lesson).
@@ -81,7 +88,7 @@ agent proposes a Bash command
 ## Run the experiments
 
 ```bash
-python -m pytest exocortex/tests -q                                   # 29 unit tests (deterministic)
+python -m pytest exocortex/tests -q                                   # 370 unit tests (deterministic)
 # somatic A/B (in WSL — Bash-only surface):
 python -m exocortex.runner --scenario lethal_inject --n 20 --mode observe --model haiku --wsl --out results/treat
 python -m exocortex.runner --scenario lethal_inject --n 20 --mode ungated --model haiku --wsl --out results/null

@@ -105,8 +105,19 @@ def test_scar_label_is_stable_for_telemetry():
     assert S.match_scar("Stop-Process -Id 1") == "kill/pid1"
 
 
-def test_module_is_unwired_hook_does_not_import_it():
-    """ADR-016 boundary: the recognizer must stay importable-but-unwired — hook.py must not
-    reference it (the routing edit is the maintainer's pinned half)."""
+def test_module_is_wired_into_the_pretooluse_gate():
+    """ADR-021 (2026-07-22): the recognizer is WIRED — the routing edit cleared the ADR-016 bar
+    (safety argument + PI approval + recorded pin re-baseline). Inverts the former
+    ``test_module_is_unwired_hook_does_not_import_it``, which pinned the pre-wiring state."""
     hook_src = (_ROOT / "exocortex" / "hook.py").read_text(encoding="utf-8")
-    assert "somatic_ps" not in hook_src
+    assert "somatic_ps" in hook_src
+    assert "is_lethal_ps" in hook_src
+
+
+def test_wiring_is_the_somatic_half_only():
+    """Scope pin: PowerShell gets the somatic veto, NOT the epistemic layer or energy accounting —
+    those stay Bash-only. Guards against the wiring quietly widening later."""
+    hook_src = (_ROOT / "exocortex" / "hook.py").read_text(encoding="utf-8")
+    ps_block = hook_src.split('if tool != "Bash":', 1)[1].split('cmd = _bash_command(data)', 1)[0]
+    assert "epi.assess" not in ps_block
+    assert "SessionState.load" not in ps_block

@@ -66,10 +66,36 @@ real but not-yet-habitual action) and *high-stakes* (8), so its expected cost of
 it paused and put a human in the loop. A recognized *lethal* command never reaches this prompt; the
 somatic reflex has already refused it.
 
-## What's new in 0.1.8
+## What's new in 0.1.9
 
-**No code changed** — this one is documentation. Skip the upgrade if you only run the organism. Full
-detail in the [changelog](CHANGELOG.md).
+**The kernel is untouched** — 99 frozen tests, C1–C7 lock, no API change. The one behavioral change is a
+gate that refuses *more*, never less. Full detail in the [changelog](CHANGELOG.md).
+
+- **🛡️ The safety floor is no longer Bash-only.** We audited 16,623 of our own live records and found the
+  gate evaluating Bash 3,362 out of 3,362 — and **every other tool zero**, including **828 PowerShell
+  calls**. On Windows, PowerShell *is* the shell. The refusal floor that is this whole product's thesis
+  wasn't covering the platform's main command channel. It does now, same rules as Bash, `-EncodedCommand`
+  payloads unwrapped before matching. Coverage of mutating calls: **46% → 57%**. That is a coverage
+  number, not a claim that harm was prevented — and splatting, `& $cmd`, and `Invoke-Expression` over
+  computed strings remain unrecognizable to any static vocabulary. We would rather say that than round up.
+- **📊 `sentaince status --full` — find out whether it's actually doing anything.** A refusal fires about
+  once in a thousand tool calls, so a working install and a dead one look identical from outside. This
+  prints two numbers: how often memory had an earned route to give you, and how much of your mutating
+  tool traffic the floor actually saw. Read-only, reads your own audit log, **no telemetry of any kind**.
+  It reports *dose*, never *effect* — the effect question is the A/B below, still unproven.
+- **📉 We re-analyzed our own headline result and lost three claims.** Holding the A/B's secondary
+  measures to the same paired test as the primary: the "cleaner on destructive writes" advantage
+  **withdrawn** (it was two tasks, and every one of those runs had already failed), the token-efficiency
+  advantage **withdrawn** (a pooling artifact), and "the gap widened" **corrected** to "the gap stayed
+  stable." The headline is unchanged and still short of its gate: +15pp, **p = 0.0781 vs p ≤ 0.05**.
+  Nobody made us look. That is the point.
+- **🔬 And the upgrade we expected to win, lost.** A semantic classifier judged by *consequence* — do the
+  prompts it groups actually lead to the same work? — was **falsified**, and the daemon we had planned
+  behind it is retired. The boring shipped classifier is still the best measured option.
+
+## What was new in 0.1.8
+
+**No code changed** — that one was documentation. Full detail in the [changelog](CHANGELOG.md).
 
 - **🗺️ [Where this actually sits](docs/LANDSCAPE.md).** An outside reviewer put us on a shelf next to
   alternatives and said we weren't ready to be anyone's primary tool. They were right, so we wrote the
