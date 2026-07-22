@@ -267,19 +267,36 @@ def handle_pretooluse(data: dict, m: Mode):
     _cursor_lazy_classify(session, data)   # Cursor: recover goal_class if beforeSubmitPrompt missed this turn
     if tool != "Bash":
         ti = data.get("tool_input") or {}
+        ps_lethal, ps_scar = False, ""
         if tool == "PowerShell" and isinstance(ti, dict):
             # D3: PowerShell is a COMMAND tool — carry its command text so the audit stays judgeable and
-            # the trail node lands at the verb altitude (`ps:<verb>`), not a flat PowerShell:other. Still
-            # auto-allowed here: the somatic gate's vocabulary is Bash-shaped; extending the VETO to
-            # PowerShell is a separate design question, not part of the consequence-coverage fix.
+            # the trail node lands at the verb altitude (`ps:<verb>`), not a flat PowerShell:other.
+            # ADR-021 (2026-07-22, ADR-016 re-baseline): the somatic floor now COVERS PowerShell — the
+            # Bash-shaped veto vocabulary is translated to PS idiom by `somatic_ps` (issue #12). Scope is
+            # deliberately the SOMATIC half only: recognition + veto. The epistemic layer, energy and
+            # strategy-lock accounting stay Bash-only (a separate design question, as before).
             target = str(ti.get("command") or "")
+            if target.strip():
+                from exocortex.somatic_ps import is_lethal_ps, match_scar   # lazy (mirrors the Bash gate)
+                ps_lethal = is_lethal_ps(target)
+                ps_scar = match_scar(target) or ""
         else:
             target = str(ti.get("file_path") or ti.get("path") or ti.get("pattern") or "") if isinstance(ti, dict) else ""
+        action, out = "allow", _allow("exocortex: non-command tool permitted")
+        if ps_lethal and (m in (Mode.SOMATIC, Mode.FULL, Mode.UNGATED) or lethal_failsafe()):
+            # Same floor as Bash: SOMATIC/FULL veto; UNGATED still refuses a C1-equivalent lethal (the
+            # anti-vacuity null's hard floor); OBSERVE/EPISTEMIC record the ATTEMPT, then block execution.
+            action = "deny"
+            out = _deny(f"exocortex somatic veto [C1_interlock/ps]: {ps_scar or 'lethal PowerShell command'}")
         audit.append(audit.record(session=session, event="PreToolUse", mode=m.value, tool=tool,
-                                   command=target, action="allow"))
+                                   command=target, action=action,
+                                   somatic_permitted=(not ps_lethal) if tool == "PowerShell" else None,
+                                   somatic_organ=("C1_interlock" if ps_lethal else ""),
+                                   reason=(out["hookSpecificOutput"]["permissionDecisionReason"]
+                                           if action == "deny" else "")))
         _track_node(session, tool, target)   # colony trail (the path toward the next consequence)
         _buffer_action(session, tool, data)  # wiki attribution: what the model actually did (gated)
-        return _allow("exocortex: non-command tool permitted")
+        return out
     cmd = _bash_command(data)
     if not cmd.strip():
         return _allow()

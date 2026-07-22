@@ -868,9 +868,114 @@ audit append, and whether quarantined stores deserve an automated resurrection p
 
 ---
 
+## ADR-021 — The somatic floor covers PowerShell: a command tool the gate could not read was a hole, not a scope
+
+**Status:** ADOPTED (2026-07-22). Wires `exocortex/somatic_ps.py` (built UNWIRED for issue #12, v0.1.7)
+into `handle_pretooluse`. Clears the ADR-016 bar: safety argument (below), PI approval (2026-07-22),
+99-lock green, frozen DNA untouched (`LOCKED_GLOBS` unaffected — `hook.py` is organ tissue), and a
+**recorded** pin re-baseline.
+
+**Context — measured, not assumed.** A read of 16,623 live audit records across 10 estate repos showed the
+somatic gate evaluating **Bash 3,362/3,362 (100%) and every other tool 0**. Among the ungated: **828
+PowerShell calls**. Read/Grep/Glob being ungated is correct — they do not mutate. PowerShell being ungated
+was not a scope decision that aged well; on a Windows host it is *the* shell, which means the refusal floor
+that is this product's entire thesis did not cover the primary command channel of the platform its
+maintainer develops on. Coverage of mutating tool calls was **46%** (3,362 of 7,264).
+
+The prior comment in `hook.py` called extending the veto to PowerShell "a separate design question." The
+recognizer answered that question in v0.1.7 and then sat importable-but-unwired, pinned in that state by
+`test_module_is_unwired_hook_does_not_import_it`. The honest reading of the audit is that the disclosure
+("audited but not vetoed") described the hole accurately while leaving it open.
+
+**Decision.** PowerShell commands route through `somatic_ps.is_lethal_ps` at `PreToolUse`, under the **same
+mode semantics as Bash**: SOMATIC/FULL veto; UNGATED still refuses a C1-equivalent lethal (the anti-vacuity
+null's hard floor); OBSERVE/EPISTEMIC record the ATTEMPT and block execution under `lethal_failsafe()`.
+The audit carries `somatic_permitted` / `somatic_organ=C1_interlock` so the veto is judgeable.
+
+**Scope is the somatic half only** — recognition and refusal. The epistemic layer, energy, and
+strategy-lock accounting stay Bash-only; widening those is still a separate question, and
+`test_wiring_is_the_somatic_half_only` pins that boundary so it cannot drift silently.
+
+**Safety argument (the ADR-016 bar).** The change can only ever turn an `allow` into a `deny`, never the
+reverse: the new branch is `allow` by default and narrows only on a closed, structural scar vocabulary that
+mirrors the C1 list. ADR-001 is unaffected — no τ added or moved, deposits stay exit-0-only. Fail-open is
+preserved for everything the recognizer does not match. Verified functionally, not merely by unit test:
+driven through `handle_pretooluse` in SOMATIC and OBSERVE, four lethal forms (`Remove-Item -Recurse -Force
+C:\`, `Stop-Process -Id 1`, and the `ri`/`spps` alias forms) denied in both modes, `-EncodedCommand`
+base64 payloads unwrapped and denied, four benign PowerShell commands allowed, non-command tools unchanged.
+
+**Consequences.**
+- Somatic coverage of mutating tool calls rises from **46% → 57%** (3,362 → 4,190 of 7,264) on the observed
+  estate mix. This is a coverage number, not an outcome claim: nothing here says the veto prevented harm,
+  only that the channel is no longer dark.
+- The residual is unchanged and still disclosed: splatting, variable indirection (`& $cmd`), and
+  `Invoke-Expression` over computed strings are structurally unrecognizable to **any** static vocabulary.
+  Write/Edit (3,074 calls) remain ungated — a real remaining gap, deliberately out of scope here.
+- `test_module_is_unwired_hook_does_not_import_it` is **inverted**, not deleted, so the record shows the
+  state it used to pin and when that changed.
+
+**Pin re-baseline (ADR-016).** `6bb0db1 → 6bb3465`. Re-baselines are on the record, never silent.
+
+---
+
+## ADR-022 — File writes are out of the somatic floor's scope: a write has no shape to recognize
+
+**Status:** ADOPTED (2026-07-22). A **negative** decision — it ships almost no code. Recorded because
+"Write/Edit are ungated" looks like an open gap forever unless the reason it is not one is written down.
+
+**Context.** ADR-021 raised somatic coverage by wiring PowerShell, which left Write/Edit as the largest
+remaining ungated volume (3,110 calls estate-wide). The obvious next step is a path-risk organ. It was
+measured first, across all 3,110 real Write/Edit-class calls in 10 repos:
+
+| candidate dangerous target | hits |
+|---|---|
+| system paths (`/etc`, `/usr`, `C:\Windows`, …) | **0** |
+| git internals (`.git/`) | **0** |
+| audit log (`audit.jsonl`) | **0** |
+| colony stores (`colony_*.json`), cue stores | **0** |
+| kernel-lock baseline | **0** |
+| frozen DNA (`vendor/kernel/`) | 1 — `__init__.public.py`, a legitimate manifest variant |
+| credentials | 1 — `.env.example`, a template (the probe's own false positive) |
+
+The dangerous-target population is **empty**. The false-positive surface is not: 1,528 `.md` + 1,335 `.py`
+of ordinary authoring, and the most plausible broad rule — gate `.claude/` paths — would have fired on
+**687 legitimate calls (22%)**: plans, memory files, settings, the agent working normally.
+
+**Decision.** **Do not gate Write/Edit on path risk.** Beyond the base rates, there is a structural reason:
+`rm -rf /` is recognizable because destructiveness lives in the *command's shape*, and the C1 vocabulary is
+a closed list over that shape. A file write has no such shape — `Write foo.py` is byte-identical whether it
+repairs the file or destroys it. The somatic vocabulary has **no referent** here. This is a category the
+organ does not cover, not a hole in its coverage, and `exocortex/usage.py` reports it that way: coverage is
+computed over command tools (the veto's actual domain) with file-write volume shown separately and labelled.
+`test_file_writes_are_not_counted_as_an_uncovered_gap` pins that so a later edit cannot quietly fold them
+back into the denominator without re-making the argument.
+
+**Honest scope of the null.** A zero base rate here measures **one careful maintainer's benign usage across
+10 repos** — it is not evidence the risk is absent. The scenario that produces a malicious write is prompt
+injection, and this estate has had essentially none. Absence in benign data argues against a *heuristic*
+gate, which needs signal to discriminate; it says nothing about a *structural* interlock over a closed,
+self-referential set. That distinction is the whole of this decision.
+
+**Deferred, with a trigger: the self-preservation interlock.** The measurement did surface one real
+asymmetry — **5 calls (0.16%) wrote `.claude/settings*.json`**, the hook configuration. That is the
+self-disablement path: an agent editing that file removes the hooks and switches the organism off, and
+nothing today prevents or detects it. Colony-store tampering is likewise undetectable (ADR-017 is PROPOSED
+and **UNBUILT**); only the audit chain is tamper-evident (ADR-009). A narrow structural refusal over
+`audit.jsonl` / `colony_*.json` / `cues.json` / the `hooks` block of `settings*.json` would have a **0%**
+false-positive rate on the first three across 3,110 calls.
+
+It is **NOT built**, deliberately. All 5 observed settings writes were legitimate deploy/config work, so the
+fourth clause is currently 100% false-positive, and building against a zero base rate is the failure this
+ledger exists to prevent. **Build-trigger (any one):** a store or hook-config write appears that the PI did
+not initiate; a prompt-injection reaching tool use is observed on any host; or an external user reports
+either. **−1 if built anyway and it refuses a legitimate `deploy` run** — the exemption path for the
+installer is the unsolved half, and it is why this is deferred rather than merely unscheduled.
+
+---
+
 ## The through-line
 
-These twenty decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
+These twenty-two decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
 consequence, nothing unproven reaches the user's hot path or the committed defaults, and the organism's own
 integrity is a mathematical invariant — not a secret.**
 Consequence-sourcing (ADR-001) is the law; the σ economy (ADR-004) and suggest-then-verify (ADR-008) protect

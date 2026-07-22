@@ -1,6 +1,6 @@
 # Where this sits — the honest landscape
 
-*Last reviewed 2026-07-20.*
+*Last reviewed 2026-07-22.*
 
 If you are evaluating agent-safety tooling, you will find several categories of product that sound like
 they solve the same problem. They mostly don't — they operate at different points in the call path, and
@@ -46,6 +46,26 @@ action → `exit 0` chain, never by being read or repeated. That is a real archi
 conversation-history and vector-store memory, which retain whatever passed through them. Shipped and
 tested. Its *benefit* is still being measured — see the last section.
 
+## Earned memory vs retrieved memory
+
+There is a healthy line of work — call it **graph engineering** — around treating the model as **one node
+in a graph** rather than the center of the system, and giving it **relational** or graph-structured memory
+instead of baking everything into weights. We think that framing is correct, and the terminology is a good
+fit for what this project already is: the earned-route store *is* a directed graph, and the model is a
+proposer inside it, not the whole of it.
+
+Where we differ is the **one axis that defines this project**. In the common pattern, the graph or
+relational memory is **retrieved from** — a store, usually pre-built, read to make the next generation more
+likely or more coherent, and judged by a proxy for quality. Here, the graph is **earned into**: an edge
+gains weight only when a real action closed successfully, retrieval alone changes nothing, and the signal
+is an actual outcome rather than a proxy for one.
+
+Same substrate — a graph, the model decentered. Opposite discharge: **retrieved-from vs earned-into.** We
+believe the earned version pays off over a long horizon and across many repositories, precisely where a
+larger context window stops helping. We have not proven that yet — the honest status is two sections down.
+It is the harder bar on purpose: improving a likelihood score is one thing, moving real outcomes is
+another, and we would rather be measured on the second even while the number is still only trending.
+
 ## Multi-repo visibility — the part that exists today
 
 Most agent tooling is single-repo by construction: it sees the project it is installed in and nothing
@@ -71,13 +91,16 @@ We are not aware of anyone addressing that layer. That is the bet.
 
 **Status: measured, directional, not yet proven.** Our controlled A/B on earned-memory guidance:
 
-- Paired same-task ON/OFF, R=5, full N: **50/80 (0.625) vs 38/80 (0.475)** — a **+15pp gap that widened**
-  when we extended the run.
+- Paired same-task ON/OFF, R=5, full N: **50/80 (0.625) vs 38/80 (0.475)** — a **+15pp gap that stayed
+  stable** (12.5–15.6pp) across a 5× increase in runs.
 - **p = 0.0781.** The pre-registered gate was p ≤ 0.05. **The gate is not met**, and we stopped rather
   than extend a third time — extending until a number crosses a line is how you fool yourself.
 - Honest reason it is underpowered: a short timeline, one maintainer, and a task battery where only 6 of
-  16 tasks could move at all (6 were saturated, 4 impossible in both arms). The ceiling was the
-  instrument, not the effect.
+  16 tasks could move at all (5 were saturated, 4 impossible in both arms, 1 tied mid-range). The ceiling
+  was the instrument, not the effect.
+- **The secondary measures do not survive the primary's own paired test**, so we claim none of them —
+  not efficiency, not a do-no-harm advantage. Success rate is the only signal here. We found that by
+  re-analyzing our own result and losing; see the changelog.
 
 So: **trending, on a real control, with the gate openly unmet.** We publish it in that shape deliberately.
 A directional result reported as a win would be the exact failure this project was built to avoid, and a

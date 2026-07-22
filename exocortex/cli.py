@@ -5,7 +5,7 @@ The human-facing surface that does NOT depend on hook-UI rendering (the SessionS
 promised, enforceable fallback; see hook._vitals).
 
 Subcommands:
-  ``sentaince status [path]``      -> the vitals voice line for a deployed repo (default: cwd)
+  ``sentaince status [path] [--full]`` -> the vitals voice line (``--full``: + usage report)
   ``sentaince body   [path]``      -> start the exporter (if not already up) and open the body page
   ``sentaince why    [path]``      -> render the latest deposits' consequence provenance (read-only)
   ``sentaince <other> ...``        -> dispatched to an installed ``sentaince.commands`` entry point
@@ -71,7 +71,12 @@ def _routes(state_dir: Path) -> int:
 
 
 def cmd_status(argv: list[str]) -> int:
-    root = Path(argv[0] if argv else ".").resolve()
+    """The vitals voice line, unchanged. With ``--full``, follow it with the usage report
+    (issue: the organism's only visible event is a refusal, ~1 per 1,000 calls, so a
+    working install and a dead one otherwise look identical — see exocortex.usage)."""
+    args = [a for a in argv if not a.startswith("-")]
+    full = "--full" in argv or "-f" in argv
+    root = Path(args[0] if args else ".").resolve()
     state = root.joinpath(*_STATE)
     if not state.is_dir():
         _say(f"🧬 sentaince: not deployed in {root}")
@@ -85,6 +90,15 @@ def cmd_status(argv: list[str]) -> int:
     if integ != "off":
         bits.append(f"integrity={integ}")
     _say("🧬 sentaince: " + " · ".join(bits) + f"  [{root.name}]")
+    if full:
+        # Imported on demand so the vitals line stays stdlib-thin and a fault in the
+        # reporter can never break `sentaince status` (the same discipline as `why`).
+        try:
+            from exocortex.usage import render as _render
+            _say("")
+            _say(_render(state))
+        except Exception as exc:                              # fail-safe, never fatal
+            _say(f"   (usage report unavailable: {exc})")
     return 0
 
 
@@ -169,7 +183,7 @@ def main() -> int:
     argv = sys.argv[1:]
     if not argv or argv[0] in ("-h", "--help", "help"):
         _say((__doc__ or "sentaince").strip().split("\n\n")[0])
-        _say("\ncommands:\n  status [path]          the vitals voice line\n"
+        _say("\ncommands:\n  status [path] [--full] the vitals voice line (--full: + usage report)\n"
              "  body [path] [--port N] start the exporter + open the body page\n"
              "  why [path] [--last N]  render the latest deposits' consequence provenance\n"
              "  <plugin> ...           an installed sentaince.commands entry point")
