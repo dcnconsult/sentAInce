@@ -95,6 +95,44 @@ def declarative_ingest() -> str:
     return str(GENOME.get("declarative", {}).get("ingest", "all")).strip().lower()
 
 
+def lexical_rank_enabled() -> bool:
+    """F1: rank the wiki proposer's lexical matches by IDF-weighted overlap before ``proposer_k`` truncates
+    them, instead of returning them in vault FILE order (which made the cap select alphabetically — the
+    2026-07-24 log audit). ``EXOCORTEX_LEXICAL_RANK`` (0/1) overrides the Genome; "file" restores the exact
+    pre-fix ordering. Read per call (not at import) so a gauge can A/B both arms in one process."""
+    env = os.environ.get("EXOCORTEX_LEXICAL_RANK")
+    if env is not None:
+        return env == "1"
+    from .genome import GENOME
+    return str(GENOME.get("declarative", {}).get("lexical_rank", "rank")).lower() == "rank"
+
+
+def explore_rotate_enabled() -> bool:
+    """F2: order the exploration channel least-offered-first (persistent per-note offer counts) so
+    never-credited tissue rotates out instead of being re-offered every turn. Nothing is ever banned —
+    an exhausted pool still explores, just in a different order. ``EXOCORTEX_EXPLORE_ROTATE`` (0/1)
+    overrides the Genome; "order" restores the pre-fix proposer-order admission."""
+    env = os.environ.get("EXOCORTEX_EXPLORE_ROTATE")
+    if env is not None:
+        return env == "1"
+    from .genome import GENOME
+    return str(GENOME.get("declarative", {}).get("explore_rotate", "rotate")).lower() == "rotate"
+
+
+def declarative_exclude() -> list:
+    """Glob patterns (vault-relative, POSIX) the wiki organ must NOT ingest, under either ``ingest``
+    boundary. Ships EMPTY (ADR-003). The motivating case: 42% of this repo's vault was a frozen
+    ``ab_snap`` snapshot that both halved every candidate pool and split earned τ with the live docs it
+    duplicated. ``EXOCORTEX_WIKI_EXCLUDE`` overrides with an os.pathsep- or comma-separated list."""
+    env = os.environ.get("EXOCORTEX_WIKI_EXCLUDE")
+    if env is not None:
+        raw = env.replace(os.pathsep, ",").split(",")
+        return [s.strip() for s in raw if s.strip()]
+    from .genome import GENOME
+    pats = (GENOME.get("declarative", {}) or {}).get("exclude", []) or []
+    return [str(s) for s in pats if str(s).strip()]
+
+
 def integrity_mode() -> str:
     """The cryptographic immune system's posture (ADR-009): ``off`` | ``warn`` | ``enforce``. Ships ``off``;
     ``enforce`` is the production apoptosis (fail-closed on a frozen-DNA mismatch). ``EXOCORTEX_INTEGRITY``

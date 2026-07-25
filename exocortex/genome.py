@@ -121,6 +121,14 @@ DEFAULTS = {
         # Committed default stays "all" (ADR-003 — main stays conservative); a large real vault (e.g. TAO)
         # flips to "tracked" as a LOCAL gitignored activation. EXOCORTEX_WIKI_INGEST overrides.
         "ingest": "all",                # all | tracked
+        # Vault-relative globs the organ must NOT ingest, applied under EITHER boundary. Ships empty
+        # (ADR-003). Measured motivation (2026-07-24): 42% of this repo's own 3,980-node vault was
+        # `results/guide_accrue_ab_v1/ab_snap/` — a frozen snapshot of the repo. It halved every candidate
+        # pool AND split earned credit (`ab_snap/docs/ADR.md` had accrued 11 τ edges belonging to the live
+        # `docs/ADR.md`). fnmatch semantics: `*` crosses `/`, so one pattern excludes a whole tree.
+        # EXOCORTEX_WIKI_EXCLUDE overrides. Changing this changes the vault signature → next load
+        # re-digests, which is the intended self-healing path.
+        "exclude": [],                  # e.g. ["results/*/ab_snap/*", "**/node_modules/*"]
         # The wiki proposer + bootstrap exploration (NEXT_PHASE_PLAN §6, Ticket 1). The splice injects
         # only τ-bearing notes (the crown jewel), which DEADLOCKS a fresh wiki: a note can't earn τ until
         # it's used, can't be used until injected, can't be injected until it has τ. The exploration budget
@@ -139,6 +147,27 @@ DEFAULTS = {
         "max_exons": 20,                # splice injection ceiling (verified tissue)
         "proposer_k": 24,               # candidate cap the proposer returns before τ/σ filtering
         "link_hops": 1,                 # structural spreading-activation depth from the active context
+        # F1 (log audit 2026-07-24): the lexical layer matched on ANY single shared token and returned
+        # nodes in FILE order, so `proposer_k` did all the selecting — ALPHABETICALLY. Measured on the live
+        # 3,980-node vault: "fix the failing test in the colony deposit path" → 2,313 matches (58% of the
+        # vault), the 24 kept were all `.claude/skills/*` (which sort first), zero colony docs; across 33
+        # sessions only 18 distinct docs (9.5% of 189) were EVER injected. "rank" scores each match by
+        # summed IDF over the matched surface tokens, length-normalised, so a rare specific token outranks
+        # a common one and the cap keeps the most relevant instead of the alphabetically luckiest.
+        # `EXOCORTEX_LEXICAL_RANK` (0/1) overrides. "file" restores the pre-fix ordering exactly.
+        "lexical_rank": "rank",         # rank | file
+        # Corpus ceiling for the IDF pass that rarity-weights the ranking. One hook is one process, so the
+        # build is paid per turn: ~28 ms per 4k nodes measured, i.e. ~1.4 s on TAO's 194k-node vault.
+        # Above this, ranking continues with uniform weights (match count over surface specificity) at
+        # zero added cost — the alphabetical monopoly stays fixed either way.
+        "idf_max_nodes": 20000,
+        # F2 (same audit): the explore channel admitted the first `explore_budget` sub-floor notes in that
+        # same fixed order with NO memory of prior offers, so the identical never-credited notes were
+        # re-offered every turn (exocortex-reflection/SKILL.md: 109 blocks offered, 5 credited). "rotate"
+        # orders eligible notes by least-offered-first (a persistent counter in `wiki_offers.json`), so a
+        # note that keeps failing to earn τ sinks below fresher tissue. NOT a σ scar — nothing is banned,
+        # and the counter clears the moment a note earns τ. `EXOCORTEX_EXPLORE_ROTATE` (0/1) overrides.
+        "explore_rotate": "rotate",     # rotate | order
         "attribution": {
             # Used-note attribution (#2): credit τ ONLY to notes whose distinctive content (code / inline
             # / path tokens) echoes in the exit-0 segment's actions — never merely because injected (that

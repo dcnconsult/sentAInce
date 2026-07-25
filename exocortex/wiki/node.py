@@ -86,6 +86,10 @@ class WikiGraph:
     colony: "Colony | None" = None                  # tau lane: note-transition pheromone (consequence-only)
     scars: set[NodeId] = field(default_factory=set) # sigma lane: immortal doc-rot / toxic marks
     phasor_bank: "np.ndarray | None" = None         # (N, M) int8 — built ONLY in PreCompact
+    # Derived scalar-lane cache (NOT earned state): token → IDF over the corpus's lexical surface, built
+    # lazily by `propose._idf` on first use and valid for this process only. Rebuildable from `nodes`, so
+    # it is matter, never memory — never persisted, never consulted by attribution.
+    _lex_idf: "dict | None" = field(default=None, repr=False, compare=False)
 
     # ------------------------------------------------------------------ structure (numpy-free)
     def add(self, node: ExonNode) -> None:

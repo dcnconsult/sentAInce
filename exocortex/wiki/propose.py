@@ -20,9 +20,11 @@ touches numpy. Fail-open throughout: any error yields ``[]``.
 
 from __future__ import annotations
 
+import math
 import re
 
 from ..colony import _SEP
+from ..config import lexical_rank_enabled
 from ..genome import GENOME
 from .node import NodeId, WikiGraph
 
@@ -31,6 +33,9 @@ PROPOSER_K = int(_D.get("proposer_k", 24))
 LINK_HOPS = int(_D.get("link_hops", 1))
 
 _TOKEN_RE = re.compile(r"[a-z0-9]{3,}")
+# Corpus size above which the IDF pass is skipped (see `_idf`): the build is ~28 ms per 4k nodes and one
+# hook is one process, so a 194k-node vault would pay ~1.4 s per turn for rarity weighting alone.
+IDF_MAX_NODES = int(_D.get("idf_max_nodes", 20000))
 
 
 def _tokens(text: str) -> set:
@@ -82,19 +87,80 @@ def _structural(graph: WikiGraph, active: list, hops: int) -> list:
     return out
 
 
+def _surface(nid: NodeId, node) -> set:
+    """A node's lexical surface — its doc-name tokens plus every heading-path token. This is the ONLY
+    text the lexical layer matches against (never the block body), so it stays cheap on the hot path."""
+    hay: set = set(_tokens(_doc_of(nid)))
+    for h in node.heading_path:
+        hay |= _tokens(h)
+    return hay
+
+
+def _idf(graph: WikiGraph) -> dict:
+    """token → log(N / df) over the corpus's lexical surface, cached on the graph for this process.
+
+    Rarity is the whole point: a prompt token like "run" or "summary" appears in most surfaces and
+    carries almost no signal, while "endocrine" or "colony" identifies a handful of notes. Weighting by
+    IDF is what stops the generic tokens from deciding the splice.
+
+    COST CEILING: building this is one extra O(N) pass over the corpus surface — measured at ~28 ms on a
+    3,980-node vault, against ``load_graph``'s ~76 ms. It scales linearly, so on the largest vault we
+    measured in the estate (194,502 nodes) it would add ~1.4 s to EVERY hook. Above ``IDF_MAX_NODES`` we therefore return {} and
+    the ranker falls back to uniform weights — still relevance-ordered by match count and surface
+    specificity (which is what fixes the alphabetical monopoly), just without rarity weighting, and at
+    zero added cost. Degrade the scoring, never the latency."""
+    cached = getattr(graph, "_lex_idf", None)
+    if cached is not None:
+        return cached
+    if len(graph.nodes) > IDF_MAX_NODES:
+        idf: dict = {}
+    else:
+        df: dict = {}
+        n = 0
+        for nid, node in graph.nodes.items():
+            n += 1
+            for t in _surface(nid, node):
+                df[t] = df.get(t, 0) + 1
+        idf = {t: math.log(max(1.0, n / c)) for t, c in df.items()} if n else {}
+    try:
+        graph._lex_idf = idf        # WikiGraph is a non-slots dataclass; a cache attr is safe
+    except Exception:
+        pass                        # never let a caching failure break the proposer
+    return idf
+
+
 def _lexical(graph: WikiGraph, prompt: str) -> list:
-    """Notes whose heading-path or doc-name tokens overlap the prompt's tokens."""
+    """Notes whose heading-path or doc-name tokens overlap the prompt's tokens.
+
+    F1 (2026-07-24 log audit): this used to return matches in vault FILE order, which meant
+    ``propose``'s ``proposer_k`` cap did all the selecting — and it selected ALPHABETICALLY, so
+    ``.claude/skills/*`` monopolised every splice while genuinely relevant notes were truncated away
+    (2,313 matches → 24 kept, none of them the ones the prompt was about). Ranked mode scores each match
+    by summed IDF over the matched tokens, normalised by sqrt(|surface|) so a note with a long heading
+    path cannot win on breadth alone. Ties break on corpus position, so the order stays deterministic.
+    Set ``lexical_rank="file"`` (or ``EXOCORTEX_LEXICAL_RANK=0``) to restore the old behaviour exactly."""
     toks = _tokens(prompt)
     if not toks:
         return []
-    out: list = []
-    for nid, node in graph.nodes.items():
-        hay: set = set(_tokens(_doc_of(nid)))
-        for h in node.heading_path:
-            hay |= _tokens(h)
-        if hay & toks:
-            out.append(nid)
-    return out
+    if not lexical_rank_enabled():
+        out: list = []
+        for nid, node in graph.nodes.items():
+            if _surface(nid, node) & toks:
+                out.append(nid)
+        return out
+    idf = _idf(graph)
+    scored: list = []
+    for pos, (nid, node) in enumerate(graph.nodes.items()):
+        hay = _surface(nid, node)
+        matched = hay & toks
+        if not matched:
+            continue
+        # Uniform weight 1.0 when the IDF map is absent (corpus over the cost ceiling) — the ranking then
+        # reduces to match-count over surface specificity, which still beats file order outright.
+        score = sum(idf.get(t, 1.0) for t in matched) / math.sqrt(len(hay) or 1)
+        scored.append((-score, pos, nid))
+    scored.sort()
+    return [nid for _s, _p, nid in scored]
 
 
 def _muscle_memory(graph: WikiGraph, k: int) -> list:

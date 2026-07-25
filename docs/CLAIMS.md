@@ -14,9 +14,11 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
 
 - **99 frozen kernel-lock tests** — the C1–C7 evidence lock (69) + 30 domain-crucible/adapter — **untouched**
   across this entire arc. This is the load-bearing guarantee.
-- **370 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** tests, all green (one
-  exocortex test — the alert-engine backtest over a live audit store — auto-skips on storeless clones). The
-  lock and the organ tests are separate suites; organ work never edits the lock.
+- **412 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** + **118 tuner** tests, all
+  green (one exocortex test — the alert-engine backtest over a live audit store — auto-skips on storeless
+  clones). The lock and the organ tests are separate suites; organ work never edits the lock.
+  Note: `pytest -q` at the repo root collects only the 99-lock (`testpaths`), so the organ suites must be run
+  by path — a gate nobody runs is not a gate (ADR-016).
 
 ## PROVEN
 - **C1–C7 somatic interlock.** Model-independent hard-veto on lethal actions, by objective physical
@@ -50,6 +52,25 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
   coincidental-echo penalty) (`results/attribution_layer2/`). Default set to 2.
 - **Bridge mechanism (offline).** The HDC router recalls routes faithfully (1-hop fidelity 1.0) and the 0-well
   abstain lifts 2-hop chord precision **0.96 → 1.00** (`results/bridge_gauge_v1/`).
+- **Proposer diversity (retrieval quality, not outcome).** The declarative proposer ranked by filename, not
+  relevance: `_lexical` matched on any single shared token and returned nodes in vault file order, so
+  `proposer_k` did the selecting. A write-free replay of this repo's real prompt history (**344 prompts**,
+  2,305-node vault, 105 documents) through both paths: distinct documents proposed **51 → 104**, explored
+  **44 → 104**, top-doc share of slots **29% → 6%**, and the **pre-registered falsifier** — recall of
+  documents that have actually earned τ — **73.3% → 96.7%** (22/30 → 29/30), so diversity did not come at
+  relevance's expense. Attribution: ranking **+57** distinct docs explored, rotation **+7** solo and **+3**
+  on top of ranking (F1 is the fix; F2 is additive). Gauge: `exocortex/gauge/proposer_diversity_gauge.py`,
+  `results/proposer_diversity_v1/`. **Scope, stated plainly:** this measures what the organ *offers*, not
+  whether offering it causes more work to reach `exit 0` — see MARGINAL. Both the corpus and the credited
+  set are living, so these are snapshot figures, not constants (an earlier 340-prompt run read the control
+  as 81% → 96% against a smaller credited set; direction and attribution held).
+- **Estate censuses (read-only, measure-before-changing).** `splice_composition_gauge` — a repo needs ≥2
+  organs able to emit before "which organ wins the context budget" is even a question, true in only **3 of
+  17** estate repos; the rest are colony monologues. `wiki_candidacy_gauge` — of the **16** repos not
+  already running the declarative organ, **4** could plausibly earn keep if switched on, **1** well-powered;
+  the bridge is unreachable in all of them, being gated behind declarative-live. The two denominators are
+  different populations, not a discrepancy. Both sweeps accept explicit extra repo roots, because a
+  root-glob had silently omitted a live declarative repo sitting outside the projects root.
 - **VoI cross-validation (D'Ambrogio et al.).** An independent value-of-information model of stigmergic
   foraging (β1 inertia · β2 satiation · β3 undirected · β4 directed exploration) fit to the live colony logs
   finds the colony **embodies β1–β3** — deposit-count↔τ correlate (pooled Spearman **ρ ≈ 0.60**) and satiation
@@ -67,6 +88,11 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
   (26 classes / 245 edges; the `CAP=32` leanness bound binds only the 2 busiest classes; 7 classes converged
   at τ_max≥1.0, 6 exploratory starving sub-floor). Lock criteria met across ~3.5× more data — precision held,
   trickle not flood, bloat starving. Observable on Grafana (`exocortex/testbed/`).
+  **Provenance caveat (v0.1.10):** this soak predates the ranked proposer, so its **credit-rate 7.7%**
+  describes the superseded filename-ordered selection — the organ now offers a materially different set of
+  documents, and the rate under ranking is not yet soaked. The **precision @ mo=2 = 1.0** result is
+  unaffected: attribution is content-echo, computed on what the model actually used, and is independent of
+  which documents were offered.
 
 ## LIVE (running, accruing telemetry)
 - **Procedural colony** — deposits/splices on the user's real sessions (per-project `colony_*.json`).
@@ -139,6 +165,15 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
   dormant until the tail fattens (other repos / scale, e.g. the larger TAO vault).
 - **Attribution precision is on controlled tasks.** The 1.0 @ mo=2 is for clean single-command planted
   tasks; the messy-real-coding coincidental-echo rate is still being watched live (`wiki_credit_rate`).
+- **The ranked proposer's EFFICACY is unmeasured — only its retrieval quality is gauged.** The replay above
+  shows the organ now offers far more of the vault while keeping the documents that earn τ reachable. It
+  does **not** show that this causes more work to reach `exit 0`. The one post-fix credit-rate observation
+  (61%) came from the session that wrote the fix, whose task mix was *about* the wiki — self-selected, and
+  therefore not evidence. Closing this needs sessions whose task mix is unrelated to the organ, and ideally
+  a second repo. **Recorded as open**; no efficacy claim is made anywhere in this release.
+- **The proposer replay is one repo and partly self-referential.** Credited-doc recall is computed over
+  documents that already earned τ *under the old proposer*, so it can show the fix does not lose what the
+  organ had learned, but cannot speak for documents the old ordering never surfaced at all.
 - **BYO small-model completion is poor.** `llama3.1-8b` drives the hooks but cannot reliably complete
   forced-token tasks (it hallucinates) — so BYO precision-at-scale is unmeasured; capable-model numbers stand in.
 - **Directed exploration (β4) is a powered null.** The D'Ambrogio VoI fit finds no β4 directed-exploration

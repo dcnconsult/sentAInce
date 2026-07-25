@@ -11,13 +11,16 @@ baseline is untouched).
 
 from __future__ import annotations
 
+import fnmatch
 import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
 from ..colony import Colony
-from ..config import state_dir, declarative_ingest
+from ..config import state_dir, declarative_exclude, declarative_ingest
+from ..fsutil import atomic_write_text
 from .digest import digest_document
 from .node import ExonNode, WikiGraph
 
@@ -46,17 +49,89 @@ def _git_tracked_md(vault: Path) -> "list | None":
         return None
 
 
-def _md_files(vault: Path, ingest: str = "all") -> list:
+def _excluded(vault: Path, files: list, patterns: list) -> list:
+    """Drop vault-relative paths matching any ``declarative.exclude`` glob.
+
+    Motivated by a measured harm, not tidiness: 42% of this repo's own 3,980-node vault was
+    ``results/guide_accrue_ab_v1/ab_snap/`` — a FROZEN SNAPSHOT of the repo. It cost half of every
+    candidate pool, and worse, it split earned credit: ``ab_snap/docs/ADR.md`` had accumulated 11 τ edges
+    that belong to the live ``docs/ADR.md``. A duplicate corpus does not just waste slots, it competes
+    with the original for consequence.
+
+    Matching is ``fnmatch`` over the POSIX vault-relative path, so ``*`` DOES cross directory separators
+    (``results/*`` excludes ``results/a/b.md``). That is deliberate — one obvious pattern per tree — and
+    both ``**/x/**`` and ``*ab_snap*`` behave as a reader expects. Ships empty (ADR-003: main stays
+    conservative); a repo opts in through its own gitignored ``exocortex_config.json``."""
+    if not patterns:
+        return files
+    out = []
+    for p in files:
+        try:
+            rel = p.relative_to(vault).as_posix()
+        except Exception:
+            out.append(p)
+            continue
+        if not any(fnmatch.fnmatch(rel, pat) for pat in patterns):
+            out.append(p)
+    return out
+
+
+def _md_files(vault: Path, ingest: str = "all", exclude: "list | None" = None) -> list:
     """Discover the vault's Markdown files (T4 inclusion boundary). ``ingest``:
       - ``"all"`` (default): every ``*.md`` under the vault — the verified baseline (zero behaviour change).
       - ``"tracked"``: only git-tracked ``*.md``; falls OPEN to ``"all"`` if the vault is not a git repo
-        or git is unavailable, so ``tracked`` can never break a hook (ADR-007)."""
+        or git is unavailable, so ``tracked`` can never break a hook (ADR-007).
+    ``exclude`` (``declarative.exclude``) then removes matching paths under EITHER boundary — a frozen
+    snapshot is just as duplicated whether or not git tracks it. Changing it changes the vault signature,
+    so the next load re-digests; that is the intended, self-healing behaviour."""
+    pats = declarative_exclude() if exclude is None else list(exclude)
     if ingest == "tracked":
         tracked = _git_tracked_md(vault)
         if tracked is not None:
-            return tracked
+            return _excluded(vault, tracked, pats)
         # fail-open: git unavailable / not a repo → behave exactly as "all"
-    return sorted(p for p in vault.rglob("*.md") if p.is_file())
+    return _rglob_md(vault, pats)
+
+
+# Directories that can never hold vault content but dominate a full-tree walk. `.git` alone is thousands
+# of files in this repo, and discovery — not the cache parse — turned out to be the biggest term in
+# load_graph (51 ms of 67 ms measured 2026-07-24), so pruning them is the cheapest real win available.
+_ALWAYS_PRUNE = frozenset({".git", ".hg", ".svn", "node_modules", "__pycache__",
+                           ".venv", "venv", ".mypy_cache", ".pytest_cache", ".ruff_cache"})
+
+
+def _rglob_md(vault: Path, patterns: list) -> list:
+    """``*.md`` under ``vault``, walking with directory PRUNING rather than ``rglob`` + filter.
+
+    ``rglob`` descends into every directory and the exclusion then discards the results, so a 42%
+    exclusion bought 0 ms of discovery. Walking with ``os.walk`` lets an excluded subtree be skipped
+    outright: a pattern ending in the conventional ``/*`` is matched against directory paths too, so
+    ``results/*/ab_snap/*`` prunes the snapshot tree instead of traversing it.
+
+    Output is sorted and identical to the old ``rglob`` path EXCEPT that ``_ALWAYS_PRUNE`` directories no
+    longer contribute (this repo loses exactly ``.pytest_cache/README.md`` — build residue that was being
+    digested as declarative memory). Both properties are pinned by tests."""
+    out: list = []
+    vs = str(vault)
+    for dirpath, dirnames, filenames in os.walk(vs):
+        rel_dir = Path(dirpath).relative_to(vault).as_posix()
+        keep = []
+        for d in dirnames:
+            if d in _ALWAYS_PRUNE:
+                continue
+            sub = f"{rel_dir}/{d}" if rel_dir not in ("", ".") else d
+            if any(fnmatch.fnmatch(sub, pat.rstrip("/*")) for pat in patterns if pat.rstrip("/*")):
+                continue                      # the whole subtree is excluded — never descend into it
+            keep.append(d)
+        dirnames[:] = keep
+        for fn in filenames:
+            if not fn.endswith(".md"):
+                continue
+            rel = f"{rel_dir}/{fn}" if rel_dir not in ("", ".") else fn
+            if any(fnmatch.fnmatch(rel, pat) for pat in patterns):
+                continue                      # a file-level pattern that no directory prune covered
+            out.append(Path(dirpath) / fn)
+    return sorted(out)
 
 
 def _signature(vault: Path, files: list) -> str:
@@ -166,6 +241,36 @@ def save_scars(scars: set) -> None:
         _scar_path().write_text(json.dumps(sorted(scars)), encoding="utf-8")
     except Exception:
         pass
+
+
+# ---- explore-offer ledger (F2; derived bookkeeping, NOT earned state) ----
+# How many times each NOTE has been offered through the exploration channel WITHOUT yet earning τ. The
+# 2026-07-24 log audit found the channel re-offering the identical never-credited notes every turn
+# (exocortex-reflection/SKILL.md: 109 blocks offered, 5 ever credited) because admission walked the
+# proposer's fixed order with no memory. This counter lets `splice._select` order least-offered-first.
+# It is NOT immunity: nothing is ever banned, an exhausted pool still explores, and a note's count is
+# dropped the moment it earns τ. Losing this file costs nothing but a round of re-offers.
+def _offers_path() -> Path:
+    return state_dir() / "wiki_offers.json"
+
+
+def load_offers() -> dict:
+    try:
+        p = _offers_path()
+        if p.exists():
+            d = json.loads(p.read_text(encoding="utf-8"))
+            if isinstance(d, dict):
+                return {str(k): int(v) for k, v in d.items()}
+    except Exception:
+        pass
+    return {}
+
+
+def save_offers(offers: dict) -> None:
+    try:
+        atomic_write_text(_offers_path(), json.dumps(offers, sort_keys=True))
+    except Exception:
+        pass                                        # fail-open: bookkeeping must never break a splice
 
 
 # ---- action-text extraction (what the model actually did, for used-note attribution) ----

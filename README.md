@@ -66,7 +66,37 @@ real but not-yet-habitual action) and *high-stakes* (8), so its expected cost of
 it paused and put a human in the loop. A recognized *lethal* command never reaches this prompt; the
 somatic reflex has already refused it.
 
-## What's new in 0.1.9
+## What's new in 0.1.10
+
+**The kernel is untouched** — 99 frozen tests, C1–C7 lock, no API change. This release came out of a
+measurement pass over the declarative memory organ, which ships dormant, so a default install sees no
+behavioural change beyond a read-path fix and cleaner ingestion. Full detail in the
+[changelog](CHANGELOG.md).
+
+- **🔬 We measured which documents our own memory was choosing, and it was choosing them alphabetically.**
+  A log audit across the live stores showed the wiki proposer matching on any single shared token and
+  returning results in vault file order — so the size cap did the selecting, and `.claude/` sorts first.
+  On a 3,980-node vault the question *"fix the failing test in the colony deposit path"* matched **2,313
+  documents (58% of the vault)**; the 24 that survived the cap were all skill files and none were about
+  the colony. Proposals are now ranked by IDF-weighted relevance, and the exploration channel rotates
+  instead of re-offering the same never-credited notes every turn.
+- **📊 The fix was gated on a replay with a pre-registered falsifier, not on looking right.** Replaying
+  **344 real prompts** from this repo's own history through both paths: distinct documents offered
+  **51 → 104** of 105, concentration on the single most-offered document **29% → 6%**, and the control
+  that could have sunk it — recall of documents that have genuinely earned trust — **73% → 97%**.
+  Diversity did not cost relevance. Banked at
+  [`results/proposer_diversity_v1/`](results/proposer_diversity_v1/RESULTS.md). This measures what gets
+  *offered*, not what reaches `exit 0`; the efficacy question is still open and recorded as open.
+- **⚡ `declarative.exclude` — tell the organ what not to read.** Vault-relative globs, pruned from the
+  directory walk rather than filtered after it, which took graph loading **76 → 24.7 ms** on every prompt.
+  Build directories are now always pruned; `.pytest_cache/README.md` had been quietly digesting as
+  memory. Ships empty, so nothing changes unless you set it.
+- **🧭 Three read-only censuses, so the next change is aimed.** They ask how many repos have two organs
+  that can even speak at once (**3 of 17**), which repos could earn keep by switching the organ on
+  (**4 of 16**, one well-powered), and what a proposer change actually did. Measuring the organ before
+  changing it is the habit we are trying to keep.
+
+## What was new in 0.1.9
 
 **The kernel is untouched** — 99 frozen tests, C1–C7 lock, no API change. The one behavioral change is a
 gate that refuses *more*, never less. Full detail in the [changelog](CHANGELOG.md).

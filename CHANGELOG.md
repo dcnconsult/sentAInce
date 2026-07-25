@@ -5,6 +5,91 @@ What changed, and what it cost us to find out. Claims here must not exceed
 
 Numbers are measured on this project's own hardware unless stated, and negative results are kept.
 
+## [0.1.10] — 2026-07-25
+
+This release comes out of a measurement pass over the declarative organ: a log audit across the live
+stores, three purpose-built censuses of the estate, and a replay of this repo's own prompt history through
+both the old and new selection paths. The audit showed the organ spending 12–14 KB of context per turn on
+tissue it was selecting in **filename order** rather than by relevance. Ranking it, rotating the
+exploration channel, and giving the ingest boundary an exclusion list are what that measurement produced.
+
+Nothing here touches the kernel or the ADR-016 P1-pinned control plane (`hook.py` / `colony.py` /
+`epistemic.py` are byte-identical). The declarative organ ships **dormant** as before, so a default
+install sees no behavioural change beyond a read-path fix and cleaner ingestion.
+
+### Fixed
+
+- **The wiki proposer now ranks by relevance rather than filename.** `propose._lexical` matched on any
+  single shared token and returned nodes in vault **file order**; `proposer_k` then truncated, so the cap
+  was doing the selecting and `.claude/` sorts first. Measured on the live 3,980-node vault:
+  *"fix the failing test in the colony deposit path"* produced **2,313 matches (58% of the vault)**, the
+  24 kept were all skill files, and none concerned the colony. Across 33 live sessions **18 distinct
+  documents (9.5% of 189)** were ever injected. Proposals are now ranked by IDF-weighted surface overlap
+  before the cap (`declarative.lexical_rank`; `idf_max_nodes` bounds the O(N)-per-hook IDF pass —
+  ~28 ms/4k nodes, so a 194k-node vault degrades to uniform weights rather than paying ~1.4 s a turn).
+- **The exploration channel now rotates.** `splice._select` admitted the first `explore_budget` sub-floor
+  notes in that same fixed order with no memory, so the same never-credited notes were re-offered each
+  turn (`exocortex-reflection/SKILL.md`: 109 blocks offered, 5 ever credited). Admission is now
+  least-offered-first from `wiki_offers.json` (`declarative.explore_rotate`). This is not a σ scar —
+  nothing is banned, an exhausted pool still explores, and a note's count clears when it earns τ.
+- **Rendering a splice no longer mutates state.** `splice_payload` delegates to `splice_with_ids`, so the
+  new offer ledger was writing from the read-only MCP path, and the test suite wrote into the repo's own
+  live store. A pre-existing test caught it; fixed with `record_offers=False`.
+- **Six documentation disclosures brought current**: several docs still described the `semantic`
+  cue-classifier as the genome default after it moved to `lexical` (issue #4). `docs/FEATURES.md` also
+  carried a superseded **18%** ≥2-note tail where `CLAIMS.md` binds **8.9%** — a document standing above
+  the ledger, which is the direction we most want to catch. Organism test count in `CLAIMS.md` refreshed
+  370 → **412**.
+
+### Added
+
+- **`declarative.exclude`** — vault-relative globs the organ must not ingest, applied under either ingest
+  boundary and **pruned from the walk** rather than filtered after it. Motivated by measurement: a frozen
+  `results/*/ab_snap/*` snapshot was **42% of this repo's vault** and had accrued **11 τ edges belonging
+  to the live `docs/ADR.md`** — a duplicate corpus competes with the original for credit. Filtering after
+  `rglob` bought **0 ms**, because discovery (51 of 67 ms), not the cache parse, was the dominant term;
+  the pruning walk took **`load_graph` 76 → 24.7 ms** and discovery 54.7 → 11.1 ms, on every prompt and
+  every consequence. Build directories (`.git`, `node_modules`, `__pycache__`, `.pytest_cache`, …) are
+  always pruned — `.pytest_cache/README.md` had been digesting as declarative memory. Ships empty (ADR-003).
+- **Three read-only gauges.** `splice_composition_gauge` (organ contention ceiling — ≥2 organs can speak
+  in only **3 of 17** estate repos); `wiki_candidacy_gauge` (could the organ earn keep if flipped on here —
+  **4 of 16** qualify, one well-powered; the bridge is unreachable everywhere, being gated behind
+  declarative-live); `proposer_diversity_gauge` (the before/after gate below). The two denominators are
+  different populations, not a discrepancy: contention is surveyed across all **17** estate repos, while
+  candidacy asks which of the **16** *not already running the organ* could earn keep by flipping it on.
+  All sweeps take explicit extra repo roots, because the estate's largest vault lives outside the projects
+  root and a root-glob had silently omitted a **live** declarative repo from the first census.
+
+### Measured
+
+- **The gate** — banked at [`results/proposer_diversity_v1/`](results/proposer_diversity_v1/RESULTS.md).
+  A write-free replay of this repo's real prompt history (**344 prompts**, 2,305-node vault, 105 distinct
+  documents) through both selection paths: distinct docs proposed **51 → 104** of 105, explored
+  **44 → 104**, top-doc share of slots **29% → 6%**, and the pre-registered falsifier — recall of docs that
+  have actually earned τ — **73% → 97%** (22/30 → 29/30). Diversity did not cost relevance. Attribution
+  across four arms: ranking **+57** distinct docs explored, rotation **+7** alone and **+3** on top of
+  ranking, so F1 is the fix and F2 is additive. This is a **retrieval-quality** result, not an outcome
+  claim — it measures what gets offered, not what reaches `exit 0`. Both the corpus and the credited-doc
+  set are living, so these are snapshot figures, not constants: an earlier 340-prompt run read the control
+  as 81% → 96% against a smaller credited set. Direction and attribution have held across runs.
+- **The estate's largest vault runs the declarative organ live at 194,502 nodes / 118.5 MB** — ~19× the working
+  hot-path ceiling, ≥0.53 s of pure JSON parse per graph-loading hook. Reported, not changed.
+
+### Documented
+
+- **ADR-023 — dreaming: ±1-gated generative reflection at sleep** joins the public decision log. The
+  implementation is a commercial leaf and is not in this tree; the ADR is published because the decision
+  record is public even when the code is not (the ADR-011/012 pattern). Worth reading for one property:
+  a dream is a *reflection*, never a τ writer, and it runs as a sibling `PreCompact` hook so the ADR-016
+  control-plane pin is untouched. Its efficacy is a later gauge, not an assumption.
+
+### Not done, deliberately
+
+- Switching this repo to `ingest: "tracked"` is 2.7× faster to discover but drops 6 untracked files
+  including two skills carrying **30 earned τ edges**. Speed is not worth orphaning memory.
+- No efficacy claim for the ranked proposer. The replay measures retrieval quality; whether better offers
+  cause more work to reach `exit 0` needs sessions whose task mix is not about the wiki, and a second repo.
+
 ## [0.1.9] — 2026-07-22
 
 The safety floor stops being Bash-only, the organism learns to report its own dose, and three claims
