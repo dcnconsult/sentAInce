@@ -95,8 +95,8 @@ by default. On world-class flagship models, any net improvement is the achieveme
 | `genome.py` + `exocortex_config.json` | the Genome (all knobs) + factory loader |
 | `hook.py` | the single hook dispatcher (deposit / consolidate / splice / veto) |
 | `colony.py` | per-class pheromone (deposit/consolidate/splice), verb-node keying |
-| `cue_classifier.py` | lexical (TF) discovered-class classifier |
-| `embed_classifier.py` | semantic (MiniLM) classifier + novelty-abstain (the default) |
+| `cue_classifier.py` | lexical (TF) discovered-class classifier — **the shipped default** |
+| `embed_classifier.py` | semantic (MiniLM) classifier + novelty-abstain (**opt-in**: `sentaince[embed]` + `mode: "semantic"`) |
 | `state.py` | per-session state (trail, goal-class, energy/tier, session-deposit count) |
 | `endocrine.py` | allostatic levers — `(prune, cap)` as a function of metabolic tier (organ 3A, dormant) |
 | `somatic.py` / `epistemic.py` / `interocept.py` | the safety/epistemic engines (reused) |

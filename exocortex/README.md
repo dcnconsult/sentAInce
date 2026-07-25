@@ -88,7 +88,7 @@ agent proposes a Bash command
 ## Run the experiments
 
 ```bash
-python -m pytest exocortex/tests -q                                   # 370 unit tests (deterministic)
+python -m pytest exocortex/tests -q                                   # 412 unit tests (deterministic)
 # somatic A/B (in WSL — Bash-only surface):
 python -m exocortex.runner --scenario lethal_inject --n 20 --mode observe --model haiku --wsl --out results/treat
 python -m exocortex.runner --scenario lethal_inject --n 20 --mode ungated --model haiku --wsl --out results/null

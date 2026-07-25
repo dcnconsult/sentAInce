@@ -267,7 +267,8 @@ route population*, never the inflated topological path count
   suggests*, and reality (the exit code) is still the only thing that crystallizes a memory.
 - The prize is honestly **MARGINAL** and the flag stays off: the bridge needs multi-note `exit 0` routes
   worth shortcutting, but the live soak shows declarative routes are shallow (median 0 notes/segment; only
-  ~18% credit ≥2). It flips ON only if the multi-note tail fattens on other repos/scale
+  **8.9%** credit ≥2 — the tail *thinned* from the first soak's 18%). It flips ON only if the multi-note
+  tail fattens on other repos/scale
   ([CLAIMS.md](CLAIMS.md) → MARGINAL).
 - This is the action-side twin of the G.A.R.D. "Respect" principle (the HDC abstain refusing to act in a
   semantic void) and of the somatic floor's "the body settles it" — the same suggest-then-verify discipline
@@ -973,9 +974,60 @@ installer is the unsolved half, and it is why this is deferred rather than merel
 
 ---
 
+## ADR-023 — Dreaming: ±1-gated generative reflection at sleep, hypothesis→gauge (never a τ writer)
+
+**Status:** ADOPTED (2026-07-22). Ships **DORMANT / opt-in**, commercial leaf (`exocortex/tuner/dream.py`,
+COMMERCIAL_EXCLUDE). Prompted by intaking Anthropic Managed-Agents "Dreaming" (the 7th landscape-flood
+cousin; **0 transfer** as architecture — plain-text playbooks are the dormant wiki's job, and its rubric
+grader is the proxy this project rejects — but it sharpened one native design).
+
+**Context.** The colony already *sleeps*: `consolidate()` decays/prunes on `PreCompact` (the circadian
+step). What it did not do is *dream* — turn a session's resolved outcomes into testable hypotheses. Three
+brainstorm turns converged the design to the only form that survives this project's own controls.
+
+**Decision.** A **dream is a reflection, not a memory.** It reads the just-consolidated stores and emits a
+hypothesis; it writes **nothing** to τ or any organism store (ADR-013), enforced by a byte-identical-colony
+test. Four properties make it consequence-pure rather than the proxy-grader trap Dreaming ships:
+
+1. **±1-gated (anti-confabulation).** A dream fires only over a class the colony's *own mechanics* have
+   already carried to a disposition — `+1` converged (tight reused route, `ratio ≤ TIGHT_RATIO`, splicing)
+   or `−1` resolved-dead (all routes evaporated, `edges==0`) / stalled-thrasher (`ratio > THRASH_RATIO`
+   after `STALL_SLEEPS+` sleeps). Classes still at `0` produce **no dream** — you may only dream about
+   cases that *concluded*, and the disposition is the pre-existing mechanical outcome, **never the dream's
+   own judgment**. This is exactly what closes the proxy-grading door: the salience signal ("trauma") is a
+   real prior consequence, not a fresh self-assessment. Zero dreams when nothing is ±1.
+2. **Two dreams, opposite operations.** `+1` = consolidate the win (REM: generalize the reused route).
+   `−1` = encode the scar (NREM: name the failure signature) — the "we don't remember dreams unless
+   traumatic" mechanic; `−1` scars rank ahead of `+1` wins at the one-shot surface.
+3. **Hypothesis → gauge (ADR-002).** A dream's output is a hypothesis + a concrete `gauge_candidate` a
+   human promotes into a `results/<gauge>_v1/` prereg. The dream never runs the gauge, never acts, and its
+   causal story is stamped UNVERIFIED interpretation (the `reflect._card` `reading=` discipline): the
+   *trigger* (the ±1) is real; the *why* is not.
+4. **Novelty-gated + surface once, then pull-only ("how humans work").** A class dreams on the
+   *transition* into ±1, not every sleep while it stays there (`dream_state.json` snapshots the last-dreamed
+   disposition; a regression to `0` re-arms it) — real-store testing showed ~18 stable classes would
+   otherwise re-dream every sleep. New cards append to a capped ring-buffer `dreams.jsonl` (a non-organism
+   insight artifact — earns no τ, the splice never reads it), stamped `surfaced_at: null`. `reflect_preamble`
+   injects each unsurfaced entry **once** at the next wake and stamps it; nothing re-injects it.
+   `dream --recall` prints the ledger on demand. Experienced once on waking; leaves active recall;
+   retrievable if asked.
+
+**Governance.** Implemented as a **sibling PreCompact hook** (like `reflect_preamble.py` is a sibling
+UserPromptSubmit hook), **not** an edit to the pinned `exocortex/hook.py` — so the **ADR-016 P1 pin does
+not move** (99-lock stays exactly 99; verified). Machine-local registration on the PreCompact hooks array;
+dormant unless `exocortex_config.json` carries `{"reflection": {"preamble": "live"}}` for surfacing.
+
+**Efficacy is a later gauge, not an assumption.** The dream mechanism is cheap read-only reflection and
+ships advisory; its *own* value claim is unproven. The bridge to `+1`: a `results/dream_efficacy_v1/` gauge
+— does acting on a `−1` dream's candidate (re-label / re-seed / raise CAP) lift convergence on the
+thrashing set vs a null, on the guide-accrue instrument, **with no self-graded deposit**? **−1 if a dream
+is ever wired to write τ, or if `±1` is derived from anything other than the mechanical convergence state.**
+
+---
+
 ## The through-line
 
-These twenty-two decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
+These twenty-three decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
 consequence, nothing unproven reaches the user's hot path or the committed defaults, and the organism's own
 integrity is a mathematical invariant — not a secret.**
 Consequence-sourcing (ADR-001) is the law; the σ economy (ADR-004) and suggest-then-verify (ADR-008) protect

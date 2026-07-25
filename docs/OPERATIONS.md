@@ -27,7 +27,9 @@ capability — [CLAIMS.md](CLAIMS.md) is ground truth and this document never ex
 
 ### 1.1 Requirements
 - Python 3 with `numpy` (the somatic gate uses it).
-- Optional but recommended: `sentence-transformers` for the semantic classifier (the default). Without it the
+- Optional: `sentence-transformers` for the **opt-in** semantic classifier. The shipped default is the fast
+  lexical TF classifier (issue #4 — semantic reloaded a model on every prompt, ~10 s vs 0.15 s); enable it with
+  `pip install sentaince[embed]` + `epistemic_classifier.mode: "semantic"`. Without the package the
   hook fails open to the lexical TF classifier — no breakage, just phrasing-based clustering. On WSL, install
   in the same `python3` the hook runs in ([USERS_GUIDE.md](../exocortex/docs/USERS_GUIDE.md) §1).
 

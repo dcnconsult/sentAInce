@@ -198,7 +198,7 @@ The hook fuses three independent organs (`exocortex/config.py`):
    [`exocortex/STAGE1_SOMATIC_VERDICT.md`](../exocortex/STAGE1_SOMATIC_VERDICT.md).
 
 2. **Epistemic classifier** (the cue router) — routes paraphrased prompts to a per-class colony;
-   semantic (MiniLM) by default, lexical fallback. The epistemic *injection* half is honestly
+   lexical (TF) by default, with semantic (MiniLM) opt-in. The epistemic *injection* half is honestly
    **VOID/INERT on bounded tasks** and deferred ([`exocortex/STAGE2_EPISTEMIC_FINDING.md`](../exocortex/STAGE2_EPISTEMIC_FINDING.md)).
 
 3. **Procedural colony** (memory) — accrues + splices **independently of the somatic Mode**; it is the
@@ -365,7 +365,8 @@ crystallization. It ships **DORMANT** (`declarative.bridge.mode = off`).
 
 The **mechanism** is PROVEN offline (1-hop fidelity 1.0; the 0-well abstain lifts 2-hop chord precision
 **0.96 → 1.00**, `results/bridge_gauge_v1/`). But the **prize is currently MARGINAL**: live declarative
-routes are shallow (notes-credited-per-segment median 0; only ~18% of segments credit ≥2 notes), and
+routes are shallow (notes-credited-per-segment median 0; only **8.9%** of segments credit ≥2 notes —
+*thinner* than the first soak's 18%), and
 executable validity is **not offline-decidable** — only the body settles whether the skipped steps
 matter. It stays dormant until the multi-note tail fattens. Design:
 [`exocortex/docs/BRIDGE_ORGAN_DESIGN.md`](../exocortex/docs/BRIDGE_ORGAN_DESIGN.md).

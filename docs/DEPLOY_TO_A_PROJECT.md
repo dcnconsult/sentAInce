@@ -186,17 +186,32 @@ pwsh -File exocortex/testbed/compose/autostart/install-autostart.ps1   # uninsta
   (`sentaince/organism/*` + `vendor/kernel/*`). The mutable layer (colony, wiki) is **not** in the baseline,
   so normal development won't halt the target. After any legitimate frozen change: `--update-baseline`.
 - **Scale rule (declarative):** keep a wiki vault to hundreds–low-thousands of nodes; a whole large repo as a
-  vault lags every hook. Point at a subfolder, leave declarative off, or set **`declarative.ingest:
-  "tracked"`** (env: `EXOCORTEX_WIKI_INGEST=tracked`) so the organ digests only git-**tracked** `*.md` —
-  this respects the vault's `.gitignore`, drops untracked/submodule junk, and reads the git index instead of
-  walking the tree (on `research-vault`: 3,947 tracked vs 6,889 total `.md`, and ~4× faster discovery per hook).
-  Committed default stays `"all"` (ADR-003); `"tracked"` falls open to `"all"` on a non-git vault.
+  vault lags every hook. Three levers, in the order worth reaching for:
+  1. **`declarative.exclude`** (env: `EXOCORTEX_WIKI_EXCLUDE`) — vault-relative fnmatch globs, applied under
+     either ingest boundary. Excluded subtrees are **pruned from the walk**, not filtered after it, so this
+     cuts discovery cost as well as node count. Measured on this repo: `["results/*/ab_snap/*"]` (a frozen
+     snapshot that was **42% of the vault**) took it 3,980 → 2,299 nodes, and the walk rewrite took
+     `load_graph` **76 ms → 24.7 ms** (discovery alone 54.7 → 11.1 ms; it was 51 of the original 67 ms —
+     *not* the cache parse). Build dirs (`.git`, `node_modules`, `__pycache__`, `.pytest_cache`, …) are always
+     pruned. Ships empty (ADR-003).
+  2. **Point `vault_path` at a subfolder** — the only lever that helps a vault which is genuinely that large.
+  3. **`declarative.ingest: "tracked"`** (env: `EXOCORTEX_WIKI_INGEST=tracked`) — digest only git-**tracked**
+     `*.md`: respects `.gitignore`, drops untracked/submodule junk, reads the git index instead of walking
+     (on `research-vault`: 3,947 tracked vs 6,889 total). Committed default stays `"all"` (ADR-003) and
+     `"tracked"` falls open to `"all"` on a non-git vault.
+     ⚠ **Check what it drops first.** Untracked notes that have earned τ become orphaned edges: on this repo
+     `tracked` is 2.7× faster to discover but would drop `sentaince-dream/SKILL.md` (11 τ edges) and
+     `sentaince-pr-triage/SKILL.md` (19) — 30 earned edges pointing at notes the organ can no longer see.
+     A duplicate corpus has the same failure mode in reverse: before it was excluded, `ab_snap/docs/ADR.md`
+     had accrued 11 τ edges that belonged to the live `docs/ADR.md` — a frozen copy **competes with the
+     original for credit**, which is the real reason to exclude it.
 - **Non-invasive + no exfil:** the hooks are local Python, write only to the gitignored state dir, and send
   nothing off-host. All MiniLM use — the wiki note-embeddings **and** the semantic cue-classifier — runs
   fully local; nothing leaves the host.
 - **Classifier cold-start (hot path):** "MiniLM off" above scopes to the *wiki* embedder only. The
-  **cue-classifier** still loads MiniLM on `UserPromptSubmit` whenever `epistemic_classifier.mode =
-  "semantic"` (the genome default), independent of `declarative` — a cold first prompt can stall tens of
+  **cue-classifier** loads MiniLM on `UserPromptSubmit` only when `epistemic_classifier.mode =
+  "semantic"` (**opt-in**; the genome default is `lexical` — issue #4), independent of `declarative`. With
+  semantic enabled, a cold first prompt can stall tens of
   seconds (torch + model load), enough to trip a host hook-timeout, which drops that turn's earned-memory
   recall injection (the `PreToolUse` somatic gate is unaffected). Keep MiniLM off the hot path with
   `epistemic_classifier.mode = "lexical"` (or `EXOCORTEX_EMBED=0`), or raise the generated hooks' `timeout`

@@ -151,7 +151,9 @@ whose distinctive content actually echoes in the `exit-0` segment's actions — 
   `declarative.attribution.min_overlap` (`2`). The committed default stays **dormant** — go-live is a
   local, gitignored activation.
 - **Honest limit (MARGINAL):** declarative routes are shallow — notes-credited-per-segment is **median 0**;
-  only **~18%** of segments credit ≥2 notes. The multi-note tail the bridge needs is real but small.
+  only **8.9%** of injected segments credit ≥2 notes (`{0:59, 1:13, 2:4, 3:3}` over 79 segments). The first
+  soak read 18%; **more data made declarative routes shallower, not deeper**. The multi-note tail the bridge
+  needs is real but small — see [`CLAIMS.md`](CLAIMS.md) MARGINAL, which binds this number.
 
 ## 9. Hippocampus bridge — sleep-time shortcut synthesis · **DORMANT**
 

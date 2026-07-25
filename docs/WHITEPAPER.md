@@ -284,7 +284,8 @@ The identity of this project is honest non-overclaiming; the negatives are first
   is a *consequence* of strong consequence-sourcing, and it caps the payoff of eligibility traces,
   macro-execution, and bridges.
 - **Declarative routes are shallower still.** Live soak: notes-credited-per-segment is **median 0**; only
-  **~18%** of injected segments credit ≥2 notes. The multi-note tail the bridge needs is real but small → the
+  **8.9%** of injected segments credit ≥2 notes — *thinner* than the first soak's 18%, i.e. more data made
+  declarative routes shallower, not deeper. The multi-note tail the bridge needs is real but small → the
   **bridge prize is currently MARGINAL**, dormant until the tail fattens (other repos/scale).
 - **Attribution precision is on controlled tasks.** The 1.0 @ mo=2 is for clean single-command planted tasks;
   the messy-real-coding coincidental-echo rate is still being watched live.

@@ -37,6 +37,15 @@ What the system does today, with the verified evidence behind each. Honest statu
   alongside the procedural route (the Transcriptome: similarity *proposes*, earned τ *disposes*; abstains into
   silence on a cold/unearned vault). `declarative.explore_budget` optionally injects a few clearly-flagged
   UNVERIFIED candidates to bootstrap a fresh vault (they earn their first τ only by reaching `exit 0`).
+- **Relevance-ranked proposal** **[shipped 2026-07-25]** — the lexical layer scores candidates by
+  IDF-weighted surface overlap before `proposer_k` truncates. It previously returned matches in vault **file
+  order**, so the cap selected *alphabetically*: a colony question drew 2,313 matches and kept 24 skill files,
+  none about the colony, and across 33 live sessions only **18 distinct docs (9.5% of 189)** were ever
+  injected. Gated by `declarative.lexical_rank`; `declarative.explore_rotate` additionally admits exploratory
+  notes least-offered-first so never-credited tissue rotates out. Gate (`gauge/proposer_diversity_gauge.py`,
+  340-real-prompt replay): distinct docs proposed **51 → 104 of 105**, top-doc share **29% → 6%**, and the
+  falsifying control — recall of docs that have actually earned τ — **81% → 96%**, so the diversity did not
+  come at relevance's expense. This is a **retrieval-quality** measurement, not an outcome claim.
 
 ## Classification
 
@@ -143,7 +152,11 @@ What the system does today, with the verified evidence behind each. Honest statu
   fidelity + 0-well abstain), `gauge/attribution_gauge.py` (content-echo precision), `gauge/credit_hygiene_gauge.py`
   (W5 self-edge/orientation τ-mass · W4 failure plasticity), `gauge/uncertainty_gauge.py` (G1/F2/F1 veto/abstain
   rates — null on flagship), `gauge/nonstationarity_gauge.py` (F3 provenance coverage + de-confounded/de-biased
-  drift). Stats-only, deterministic, numpy-free.
+  drift), `gauge/splice_composition_gauge.py` (organ contention ceiling — how many memory organs can speak in
+  one turn; ≥2 in only 3 of 17 estate repos), `gauge/wiki_candidacy_gauge.py` (could the declarative organ earn
+  keep if flipped on here? vault → hot-path node ceiling → creditability → cold-start reach),
+  `gauge/proposer_diversity_gauge.py` (the F1/F2 before-after gate, replayed over real transcript prompts).
+  Stats-only, deterministic, numpy-free.
 - **Headless drivers** **[shipped]** — scripted real-session runs (`stream_runner.py`) for
   accrual/convergence/clutter measurement; `seg_len` audit telemetry records live deposit-window lengths.
 
@@ -172,6 +185,10 @@ What the system does today, with the verified evidence behind each. Honest statu
 | `declarative.mode` | `off` | `off` or `live` (the declarative wiki organ; also needs `vault_path`) — dormant default |
 | `declarative.attribution.min_overlap` | 2 | content-echo precision lever (2 → attribution precision 1.0) |
 | `declarative.explore_budget` | 0 | # of flagged-UNVERIFIED bootstrap notes per splice (0 = pure/abstaining) |
+| `declarative.exclude` | `[]` | vault-relative globs the organ must not ingest; excluded subtrees are **pruned from the walk** (cuts discovery, not just node count) |
+| `declarative.lexical_rank` | `rank` | `rank` (IDF-weighted relevance before `proposer_k` truncates) or `file` (the pre-fix vault-file order, under which the cap selected alphabetically) |
+| `declarative.idf_max_nodes` | 20000 | corpus ceiling for the IDF pass (one O(N) walk **per hook**); above it, ranking continues on uniform weights |
+| `declarative.explore_rotate` | `rotate` | `rotate` (least-offered-first, via `wiki_offers.json`) or `order` (proposer order — re-offers the same un-credited notes every turn) |
 | `provenance.mode` | `off` | `off` / `recency` / `full` (F3 readout decay by edge age / + model-distance) — dormant |
 | `provenance.recency_halflife_days` | 30 | τ readout-weight half-life when `recency`/`full` |
 | `integrity.mode` | `off` | `off` / `warn` / `enforce` (kernel-lock apoptosis on frozen-DNA mismatch) — dormant |

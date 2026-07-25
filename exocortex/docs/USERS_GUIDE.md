@@ -8,7 +8,9 @@ How to enable, configure, tune, and inspect the Exocortex. Assumes the `exocorte
 ## 1. Requirements
 
 - Python 3 with `numpy` (the somatic gate uses it).
-- **Optional (recommended):** `sentence-transformers` for the semantic classifier (the default). Without it
+- **Optional (opt-in):** `sentence-transformers` for the semantic classifier. The shipped default is the
+  **lexical** TF classifier (issue #4: semantic reloaded MiniLM every prompt — ~10 s vs 0.15 s); enable with
+  `pip install sentaince[embed]` + `epistemic_classifier.mode: "semantic"`. Without the package
   the hook fails open to the lexical classifier — no breakage, just phrasing-based clustering.
   - WSL note: the live hook runs in WSL's `python3`; install there: `pip install sentence-transformers`.
 
@@ -58,8 +60,9 @@ A partial file is fine — unspecified keys keep their defaults.
                                       "STARVING": { "prune_floor": 0.05, "max_edges_per_class": 32 },
                                       "HYPOXIA":  { "prune_floor": 0.12, "max_edges_per_class": 16 } } },
   "eligibility_trace":   { "mode": "off", "gamma": 0.80 },
-  "declarative":         { "mode": "off", "vault_path": "", "ingest": "all", "explore_budget": 0,
-                           "attribution": { "min_overlap": 2 } },
+  "declarative":         { "mode": "off", "vault_path": "", "ingest": "all", "exclude": [],
+                           "explore_budget": 0, "lexical_rank": "rank", "explore_rotate": "rotate",
+                           "idf_max_nodes": 20000, "attribution": { "min_overlap": 2 } },
   "provenance":          { "mode": "off", "recency_halflife_days": 30.0, "version_penalty": 0.5 },
   "integrity":           { "mode": "off", "audit_chain": true }
 }
@@ -83,6 +86,20 @@ Tuning tips (measured):
   Markdown vault, else it stays dormant). `ingest`: `all` (every `*.md`) or `tracked` (git-tracked only).
   `attribution.min_overlap` is the precision lever (**2** → attribution precision 1.0; 1 admits coincidental
   echo). `explore_budget` > 0 injects that many flagged-UNVERIFIED bootstrap notes per splice (0 = pure/abstain).
+- **`declarative.exclude`** — vault-relative fnmatch globs the organ must not ingest (`*` crosses `/`, so one
+  pattern excludes a tree). Excluded subtrees are **pruned from the walk**, so this cuts discovery cost, not
+  just node count. Ships empty. Motivating measurement: a frozen `ab_snap` snapshot was 42% of this repo's
+  vault and had accrued 11 τ edges that belonged to the live doc it duplicated — a duplicate corpus competes
+  with the original for credit.
+- **`declarative.lexical_rank`** — `rank` (default) scores the proposer's lexical matches by IDF-weighted
+  overlap before `proposer_k` truncates them; `file` restores the pre-2026-07-25 vault-file ordering, under
+  which the cap selected **alphabetically** (2,313 matches → 24 kept, all of them `.claude/skills/*`).
+  `idf_max_nodes` (20k) is the corpus ceiling above which the IDF pass is skipped — ranking continues on
+  uniform weights, because the pass is one O(N) walk **per hook** (~28 ms/4k nodes; ~1.4 s on a 194k vault).
+- **`declarative.explore_rotate`** — `rotate` (default) admits exploratory notes least-offered-first from
+  `wiki_offers.json`; `order` restores proposer-order admission, which re-offered the same never-credited
+  notes every turn. Rotation is not a σ scar: nothing is banned, an all-tired pool still explores, and a
+  note's count clears the moment it earns τ.
 - **`provenance.mode`** (organ F3) — `off` (raw-τ readout, the verified status quo) / `recency` (decay the
   readout by edge age, half-life `recency_halflife_days`) / `full` (+ a `version_penalty` when a stamped edge's
   model ≠ the current one). Recording the `(ts, model)` stamp is always on once a deposit supplies it; only the
@@ -121,6 +138,9 @@ State lives under `<state_dir>` (default `<project>/.claude/exocortex/`):
 - `state_<session>.json` — per-session trail, goal-class, session-deposit count.
 - `audit.jsonl` — one record per hook event (the decision trace; hash-chained when `integrity.audit_chain`).
 - `wiki_cache.json` — the derived vault digest (a cache, not memory; rebuilt on a signature mismatch).
+- `wiki_offers.json` — how many times each note has been OFFERED through the exploration channel without yet
+  earning τ (derived bookkeeping, not memory: it only reorders exploration, and a note's count is dropped
+  once it earns τ). Deleting it costs one round of re-offers, nothing more.
 
 To see a class's converged route, sort its `tau` by weight (the dominant edges) — the same view the splice
 injects.

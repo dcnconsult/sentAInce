@@ -28,6 +28,7 @@ Numpy-free and fail-open.
 from __future__ import annotations
 
 from ..colony import PRUNE, _SEP
+from ..config import explore_rotate_enabled
 from ..genome import GENOME
 from .node import ExonNode, NodeId, WikiGraph
 
@@ -35,6 +36,53 @@ _D = GENOME.get("declarative", {}) or {}
 EXPLORE_BUDGET = int(_D.get("explore_budget", 0))     # dormant by default (0 → splice stays pure)
 MAX_EXONS = int(_D.get("max_exons", 20))
 EXPLORE_BLOCK_CAP = int(_D.get("explore_block_cap", 32))  # total explore blocks per splice (byte bound)
+
+
+def _offers() -> dict:
+    """The persisted per-note explore-offer counts (F2). Imported lazily so ``splice`` keeps no import
+    cycle with ``store`` and a missing/corrupt ledger simply reads as 'nothing offered yet'."""
+    try:
+        from .store import load_offers
+        return load_offers()
+    except Exception:
+        return {}
+
+
+def _record_offers(explore_nodes: list, graph: WikiGraph, floor: float) -> None:
+    """Bump the offer count for every NOTE just admitted to the exploration channel, and drop the counter
+    for any note that has since earned τ (it has graduated out of the explore pool — its history of
+    failed offers is no longer interesting). Fail-open: bookkeeping never breaks a splice.
+
+    (This re-reads the ledger that ``_select`` just read. Deliberate: the file is sub-KB, the two reads
+    cost ~0.1 ms against a ~76 ms ``load_graph``, and threading the dict through would buy nothing
+    measurable at the price of a wider signature.)
+
+    SEMANTICS, deliberate: the ledger is GLOBAL while τ is PER-CLASS (the splice loads
+    ``colony_<class>.json``). So a note that earns τ in ANY class has its offer history cleared for ALL of
+    them — a note that proved useful somewhere gets a fresh hearing everywhere. The alternative (a ledger
+    per class) would re-fatigue the same note independently in each of 146 classes, which is the behaviour
+    F2 exists to stop."""
+    if not explore_nodes:
+        return
+    try:
+        from .store import load_offers, save_offers
+        offers = load_offers()
+        for n in explore_nodes:
+            doc = n.id.partition("#")[0]
+            offers[doc] = offers.get(doc, 0) + 1
+        # Graduated notes: derive the τ-bearing docs from the COLONY's edge keys (small — thousands), never
+        # by scanning graph.nodes (TAO carries 194k of them; that scan would be a new hot-path cost).
+        colony = graph.colony
+        earned: set = set()
+        for edge in (getattr(colony, "tau", None) or {}):
+            for nid in edge.split(_SEP):
+                if "#" in nid:
+                    earned.add(nid.partition("#")[0])
+        for doc in earned:
+            offers.pop(doc, None)                       # graduated — forget the failed-offer history
+        save_offers(offers)
+    except Exception:
+        pass
 
 
 def node_tau(colony, node_id: NodeId) -> float:
@@ -83,21 +131,33 @@ def _select(graph: WikiGraph, candidate_node_ids, floor: float, cap: int, budget
 
     explore_nodes: list[ExonNode] = []
     if budget > 0:
-        admitted: dict[str, None] = {}                          # NOTE (doc) keys, insertion-ordered
-        for nid in cands:
-            if len(explore_nodes) >= EXPLORE_BLOCK_CAP:
-                break                                           # the stated byte bound — never silent
+        # Eligible sub-floor blocks, grouped by NOTE, keeping each note's first proposer position.
+        eligible: dict[str, list] = {}
+        doc_pos: dict[str, int] = {}
+        for pos, nid in enumerate(cands):
             if nid in graph.scars or nid in chosen:
                 continue
             node = graph.nodes.get(nid)
             if node is None or node_tau(colony, nid) >= floor:
                 continue                                        # only genuinely un-earned tissue explores
             doc = nid.partition("#")[0]                         # NodeId = relpath#heading:ix → the note
-            if doc not in admitted:
-                if len(admitted) >= budget:
-                    continue                                    # budget counts notes, not blocks
-                admitted[doc] = None
-            explore_nodes.append(node)                          # every proposed block of an admitted note
+            eligible.setdefault(doc, []).append(node)
+            doc_pos.setdefault(doc, pos)
+
+        # F2: admission ORDER. "order" = the pre-fix behaviour (proposer order, no memory) which re-offered
+        # the same never-credited notes every turn. "rotate" = least-offered-first, so tissue that has
+        # repeatedly failed to earn τ sinks below fresher candidates. Nothing is banned: when every note is
+        # equally tired the order is still the proposer's, so exploration never stalls.
+        docs = sorted(eligible, key=lambda d: doc_pos[d])
+        if docs and explore_rotate_enabled():
+            ledger = _offers()                                  # one read per splice; reused on write
+            docs.sort(key=lambda d: (ledger.get(d, 0), doc_pos[d]))
+
+        for doc in docs[:budget]:                               # budget counts notes, not blocks
+            for node in eligible[doc]:
+                if len(explore_nodes) >= EXPLORE_BLOCK_CAP:
+                    break                                       # the stated byte bound — never silent
+                explore_nodes.append(node)                      # every proposed block of an admitted note
         explore_nodes.sort(key=lambda n: (n.span[0] if n.span else 0, n.id))
     return top, explore_nodes
 
@@ -109,6 +169,7 @@ def splice_with_ids(
     max_exons: int | None = None,
     tau_floor: float | None = None,
     explore: int | None = None,
+    record_offers: bool = True,
 ) -> tuple[str, list]:
     """Like ``splice_payload`` but also returns the NodeIds ACTUALLY injected (exploit + explore) — the
     attribution surface (only a note the model could see may later be credited). Returns ("", [])
@@ -125,6 +186,11 @@ def splice_with_ids(
             parts.append("<!-- exploratory tissue (UNVERIFIED — earns τ only by leading to exit 0) -->")
             parts.extend(_render(n, 0.0, kind="explore") for n in explore_nodes)
         ids = [n.id for _, _, n in top] + [n.id for n in explore_nodes]
+        # Only the LIVE hook path keeps the ledger. `splice_payload` (the read-only MCP surface, and every
+        # test that renders a payload) passes record_offers=False — otherwise merely RENDERING a splice
+        # mutates the organism's state, which is the same "retrieval must not pay" law the τ lane obeys.
+        if explore_nodes and record_offers and explore_rotate_enabled():
+            _record_offers(explore_nodes, graph, floor)
         return "\n\n".join(parts), ids
     except Exception:
         return "", []                                           # fail-open: never break the prompt
@@ -143,5 +209,5 @@ def splice_payload(
     note-atomically, never as a partial note (default: the dormant Genome
     ``declarative.explore_budget``). Returns "" (abstain) when nothing survives and nothing is
     explored."""
-    return splice_with_ids(graph, candidate_node_ids,
-                           max_exons=max_exons, tau_floor=tau_floor, explore=explore)[0]
+    return splice_with_ids(graph, candidate_node_ids, max_exons=max_exons, tau_floor=tau_floor,
+                           explore=explore, record_offers=False)[0]   # rendering must not mutate state
