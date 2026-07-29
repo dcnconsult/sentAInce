@@ -77,6 +77,11 @@ NEVER_PUBLIC = [
     # whose own IP-marker prose trips the disclosure gate). Private working data, not public evidence;
     # no public claim rests on it.
     "results/guide_accrue_ab_v1/",
+    # brAIn declarative-flip pre-registration + its eventual results (PI, 2026-07-25): the design is
+    # gate-clean, but it profiles a PRIVATE estate repo (vault size, prompt volume, colony activity).
+    # Held permanently; if the population question ever earns a public claim, it publishes as a
+    # GENERALIZED summary written for that purpose, never by exposing this repo's activity profile.
+    "results/brain_wiki_flip_v1/",
     # ---- forward-looking IP: these describe UNFILED novel methods (whitespace/frontier candidates,
     # the FI-ledger, the model-independence arc) that the docs THEMSELVES flag "filing opportunities
     # before any disclosure" / "keep local until counsel clears". Code IS disclosure — and so is prose.

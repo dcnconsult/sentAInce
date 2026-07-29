@@ -6,9 +6,10 @@
 
 ## The idea in one breath
 
-SentAInce wraps an AI coding agent in a **body borrowed from biology**. Most AI "memory" rewards whatever
-gets *retrieved* often — popularity as a stand-in for usefulness. That is exactly how a bolted-on knowledge
-base rots: it confidently cites stale notes because they were read a lot, not because they ever helped.
+SentAInce wraps the AI you already use in a **body borrowed from biology** — whether you point it at code,
+research, writing, your own notes, or a fleet of agents. Most AI "memory" rewards whatever gets *retrieved*
+often — popularity as a stand-in for usefulness. That is exactly how a bolted-on knowledge base rots: it
+confidently cites stale notes because they were read a lot, not because they ever helped.
 
 SentAInce obeys **one law instead**: a memory is earned by a closed `action → success (exit 0)` chain —
 **never** by being read, repeated, or bookmarked. Habits form only when work *actually succeeds*. That single
@@ -101,6 +102,7 @@ step below carries its real status. A status tag is a promise about evidence, no
 | **Cross-repo federation** — what your research repo learned, your coding repo can consult; one discipline across coding, research, and personal knowledge | **PROPOSED** ([ADR-014](ADR.md)) | a consequence-preserving design for *whose* success earns *which* repo's trust — federation must not launder popularity back in |
 | **Governed fleets** — the audit chain, tamper-evident memory, and policy-bound gates plugged into emerging agent-governance standards, so companies adopt agent memory *with* corporate standards | **IN DESIGN** | an interoperability card + transport work (additive; zero change to the organism); the tamper-evidence hardening is [ADR-017/018](ADR.md), PROPOSED |
 | Deeper tamper-evidence — the mutable memory itself commits digests into the hash-chained record | **PROPOSED** ([ADR-017/018](ADR.md)) | build + gauge; ships dormant first, like everything |
+| **Flock intelligence** — the end state: many bodies, each sovereign over its own memory, that get better because the others are working. No central brain, no shared weights, no cloud. (The idea is *stigmergy* and is not ours; our one departure is that our traces are laid only by work that verifiably succeeded) | **A BET** — nothing ships | single-body memory clearing its own bar first. The controlled A/B that bears on it is trending and **misses its own gate** (p = 0.0781 vs p ≤ 0.05) |
 
 Two things make this vision credible rather than aspirational. First, the pattern above has already run
 to completion several times: idea → gauge → verdict → ship-or-park is how every organ in the anatomy
@@ -117,6 +119,6 @@ science, not just the software.
 ---
 
 **See also:** [`CLAIMS.md`](CLAIMS.md) (the binding evidence ledger) · [`ADR.md`](ADR.md) (the
-architecture decisions — eighteen and counting, each on the record) · [`../README.md`](../README.md) ·
+architecture decisions — twenty-three and counting, each on the record) · [`../README.md`](../README.md) ·
 [`QUICKSTART.md`](QUICKSTART.md) · the testbed dashboards under
 [`../exocortex/testbed/`](../exocortex/testbed/README.md).

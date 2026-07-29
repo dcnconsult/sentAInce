@@ -1,12 +1,20 @@
 # 🌱 SentAInce
 
-### A safety reflex and an honest memory for AI coding agents. Local, unobtrusive, free.
+### The human–AI interface layer. Local and unobtrusive.
 
-Your coding agent is powerful and forgetful, and it will cheerfully run a catastrophic command if a
-prompt injection asks nicely. SentAInce wraps it in a **body**: an immune system that **physically
-refuses catalogued lethal actions** — even when the model itself is compromised — and a memory that
-**only remembers what actually worked**. It runs entirely on your machine, installs in minutes, stays
-out of your way, and uninstalls with one command. **Safety is never for sale.**
+### A Free Open Source Community.
+
+Point an AI at anything — code, research, writing, your notes, a fleet of agents — and you meet the same
+two problems. It is **powerful and forgetful**, and it will cheerfully take a catastrophic action if a
+prompt injection asks nicely. SentAInce is the layer in between: an immune system that **physically
+refuses catalogued lethal actions** — even when the model itself is compromised — a memory that
+**only remembers what actually worked**, and a body page that lets you watch both. It runs entirely on
+your machine, installs in minutes, stays out of your way, and uninstalls with one command.
+**Safety is never for sale.**
+
+Coding agents were the first place we could earn this and prove it, and they are still where most of it
+runs. They are not the boundary. [**Who this is for**](#who-this-is-for) says plainly what each kind of
+user gets today — and what they don't.
 
 [![CI](https://github.com/dcnconsult/sentAInce/actions/workflows/ci.yml/badge.svg)](https://github.com/dcnconsult/sentAInce/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/sentaince?color=3776AB)](https://pypi.org/project/sentaince/)
@@ -22,13 +30,30 @@ out of your way, and uninstalls with one command. **Safety is never for sale.**
 
 ---
 
-## Pick your door
+## Who this is for
 
-| You want to… | Start here | Time |
+The body has two halves and they reach different distances. The **reflex** installs into a host's
+tool-call hook, so it exists only where that hook exists. The **memory** speaks MCP, so it can be read
+from almost anywhere. Find yourself in this table — the third column is what you actually get *today*:
+
+| If you are… | Start here | What you get today |
 |---|---|---|
-| 🛡️ **Protect your agent now** | [Five minutes to a safer agent](#five-minutes-to-a-safer-agent) | ~5 min |
-| 💪 **Give your agent a memory that earns trust** | [The one law](#the-one-law) | 2 min read |
-| 🔬 **See the evidence before you believe anything** | [The evidence lock](#the-evidence-lock--seven-experiments-c1c7) | as long as you like |
+| 🛠️ **Running a coding agent** (Claude Code, Cursor) | [Five minutes to a safer agent](#five-minutes-to-a-safer-agent) | the whole organism — reflex, earned memory, dashboards |
+| 📚 **A researcher, writer, or note-keeper** with a folder of Markdown | [When you're not writing code](#when-youre-not-writing-code) | the notebook organ over your own vault + a governor that resurfaces intents you opened and never closed |
+| 💬 **An everyday AI user** in a chat host (Claude Desktop, ChatGPT, Cline, any MCP client) | [`docs/MCP_SERVER.md`](docs/MCP_SERVER.md) | read-only recall of earned memory — **memory, not the reflex** |
+| 🤖 **Building agents** on any provider | [The standard interface](#the-standard-interface-provider-agnostic-seam) | a provider-agnostic seam; the deterministic stub and a real local model are interchangeable |
+| 🏢 **Responsible for a fleet or for governance** | [`docs/LANDSCAPE.md`](docs/LANDSCAPE.md) | estate-wide view, hash-chained tamper-evident audit, a machine-readable OASF record — and [where the flock goes next](#where-this-is-going--estate-aware-today-flock-aware-next) |
+| 🔬 **Here to check the evidence first** | [The evidence lock](#the-evidence-lock--seven-experiments-c1c7) | seven experiments, two of them deliberate `−1`s, and a binding ledger nothing may exceed |
+
+**Two things to know before you install, not after.**
+
+- **The reflex is host-specific.** Claude Code gets the full hook gate; Cursor gets a fail-open,
+  user-bypassable shim; everywhere else, assume **memory and no gate** until your host appears in the
+  supported row of [`docs/LANDSCAPE.md`](docs/LANDSCAPE.md).
+- **Memory is earned where the work happens.** A memory forms only from a closed `action → exit 0` chain,
+  so it accrues in hooked sessions. If you only ever use a chat host, recall will correctly **abstain**
+  rather than invent something — an empty answer is the design working, not a bug, but it is a thin
+  first experience and we would rather you expect it.
 
 ## See it work — 30 seconds, no install, no daemon
 
@@ -88,9 +113,9 @@ behavioural change beyond a read-path fix and cleaner ingestion. Full detail in 
   [`results/proposer_diversity_v1/`](results/proposer_diversity_v1/RESULTS.md). This measures what gets
   *offered*, not what reaches `exit 0`; the efficacy question is still open and recorded as open.
 - **⚡ `declarative.exclude` — tell the organ what not to read.** Vault-relative globs, pruned from the
-  directory walk rather than filtered after it, which took graph loading **76 → 24.7 ms** on every prompt.
-  Build directories are now always pruned; `.pytest_cache/README.md` had been quietly digesting as
-  memory. Ships empty, so nothing changes unless you set it.
+  directory walk rather than filtered after it, so an excluded tree costs nothing on every prompt rather
+  than being read and discarded. Build directories are now always pruned; `.pytest_cache/README.md` had
+  been quietly digesting as memory. Ships empty, so nothing changes unless you set it.
 - **🧭 Three read-only censuses, so the next change is aimed.** They ask how many repos have two organs
   that can even speak at once (**3 of 17**), which repos could earn keep by switching the organ on
   (**4 of 16**, one well-powered), and what a proposer change actually did. Measuring the organ before
@@ -180,9 +205,9 @@ it was ours**. Full detail in the [changelog](CHANGELOG.md).
 - **🩹 It was dead on arrival for `pip` users.** Install defaulted to verifying a kernel-lock baseline
   whose files aren't in the wheel, so **every session start exited 1, silently**, and memory never woke.
   Fixed and confirmed in a clean install. If you bounced off this project earlier, this is why.
-- **⚡ ~80× faster prompts.** The semantic classifier reloaded MiniLM *on every prompt* (each hook is a
-  fresh process). **10.15 s → 0.125 s.** The accuracy option is still there — now actually installable,
-  via `pip install sentaince[embed]`.
+- **⚡ Much faster prompts.** The semantic classifier reloaded MiniLM *on every prompt* (each hook is a
+  fresh process), so the lexical classifier became the default. The accuracy option is still there — now
+  actually installable, via `pip install sentaince[embed]`.
 - **🗣️ It can finally talk to you.** The organism had no channel to the human at all — its one visible
   event fires about once per 1,100 tool calls, so "working" and "broken" looked identical. Session start
   now tells you it's alive, and says plainly when it hasn't earned anything yet.
@@ -191,7 +216,9 @@ it was ours**. Full detail in the [changelog](CHANGELOG.md).
 
 ## Five minutes to a safer agent
 
-Works with **Claude Code** and **Cursor**. No account. No telemetry. Nothing leaves your machine.
+This is the **hooked** path — the full body, reflex included. It works with **Claude Code** and
+**Cursor**. No account. No telemetry. Nothing leaves your machine. (Chat-host user with no hooks? Skip to
+[reading your memory from anywhere](#reading-your-memory-from-anywhere).)
 
 ```bash
 pip install sentaince
@@ -237,6 +264,64 @@ itself, which is the whole point. Below High, the rule is re-orient before you a
 File-based, stdlib-only, read-only. No database, no daemon, nothing to run. See
 [`docs/ORIENTATION_DISCIPLINE.md`](docs/ORIENTATION_DISCIPLINE.md).
 
+This is the **estate-aware** stage: many bodies, one view, and memory that stays strictly inside each
+repo. Where it goes from here — bodies that get better because the others are working — is
+[the flock](#where-this-is-going--estate-aware-today-flock-aware-next), labeled as the bet it currently is.
+
+## When you're not writing code
+
+Nothing in [the one law](#the-one-law) is about code. It is about *consequence* — and research, writing, analysis and
+note-keeping generate consequence too. Three parts of the organism are already pointed that way:
+
+**📖 Your own notes as the notebook organ.** Point the declarative organ at any folder of Markdown — a
+research vault, a lab notebook, a personal wiki — and it reads what's there, offers the notes it thinks
+bear on the task at hand, and *keeps trust only in the ones the work actually used*. One file, one key:
+
+```jsonc
+// exocortex_config.json in your project
+{ "declarative": { "mode": "live", "vault_path": "~/notes", "explore_budget": 5 } }
+```
+
+**Honest status, because this is the newest organ:** it ships **off**, and its *efficacy is unmeasured*.
+What 0.1.10 measured is what the organ **offers**, on a 344-prompt replay of this repo's own history —
+distinct documents proposed **51 → 104 of 105**, with recall of genuinely-earned documents **73% → 97%**
+([banked here](results/proposer_diversity_v1/RESULTS.md); snapshot figures against a living corpus, not
+constants). It did **not** measure whether offering better notes causes more work to succeed. That
+question is open and [recorded as open](docs/CLAIMS.md). Turn this on as an experiment, not as a solved
+thing.
+
+**🧭 A governor for the intents you dropped.** Research dies in the gap between "I opened this" and
+"I never closed it." `resurrection_candidates` reads your vault for *declared* items — checkboxes, ledger
+entries — that opened, went silent past a reasonable stretch, and never closed, then ranks them by
+days-silent with dormant clusters called out. Read-only: it surfaces, you decide to resume or close.
+It only sees what you actually wrote down — a floor under your own record-keeping, not a mind-reader.
+
+**📚 Orientation over any folder.** The estate grader above doesn't require code either. It reports on
+whatever a folder *claims about itself* versus what the disk shows, which is as useful for a stack of
+half-finished manuscripts as for repositories.
+
+Two limits worth stating plainly. **Procedural** memory — the muscle memory of converged routes — accrues
+where shell work reaches `exit 0`, so a pure writing vault stays procedurally sparse and that organ will
+sit quiet. And a big vault takes seconds to minutes to digest the first time; the MCP server does it once
+in the background so no call ever blocks, but the first answer may say "warming."
+
+### Reading your memory from anywhere
+
+The memory server speaks plain MCP and is **read-only by construction** — retrieval never creates memory,
+which is what keeps popularity from masquerading as usefulness. That means **Claude Desktop, ChatGPT,
+Cline, or any MCP client** can ask what your projects have already learned:
+
+```bash
+pip install "sentaince[mcp]"
+sentaince-mcp                                      # stdio — Claude Desktop, Cline, any local MCP client
+sentaince-chatgpt-mcp --transport sse --port 8000  # adds ChatGPT's search/fetch convention
+```
+
+Wiring for each host is in [`docs/MCP_SERVER.md`](docs/MCP_SERVER.md); the ChatGPT specifics and its
+claim boundary are in [`docs/CHATGPT_APP.md`](docs/CHATGPT_APP.md). Put the remote form behind a trusted
+tunnel before you connect it, and remember what this half is: **memory consume only.** It gives a chat
+host recall. It does not give it a safety veto, and it never lets it earn memory of its own.
+
 ## The one law
 
 Most "AI memory" rewards whatever gets *retrieved often* — popularity as a stand-in for usefulness —
@@ -264,6 +349,7 @@ part you came for:
 | A **success-weighted route cache** (memory that can't rot) | the pheromone colony (muscle memory) | `exocortex/colony.py` |
 | **Automatic cache decay / pruning** | circadian consolidation (sleep) | PreCompact hook |
 | A **knowledge base that only trusts what worked** | the declarative wiki (notebook) | `exocortex/wiki/` |
+| A **nudge about research you opened and never closed** | the Cerebral Substrate governor | `cerebral/`, `resurrection_candidates` |
 | **Read-only ChatGPT / OpenAI MCP access** to earned memory | the ChatGPT Apps memory adapter | `exocortex/chatgpt_mcp.py`, `docs/CHATGPT_APP.md` |
 | **Adaptive rate/retention limits** | the endocrine organ (ships off — its own gauge said modest) | `exocortex/endocrine.py` |
 
@@ -287,15 +373,36 @@ local monitoring containers:
 cd exocortex/testbed/compose && docker compose up -d --build     # then open http://localhost:3000
 ```
 
-## Where this is going
+## Where this is going — estate-aware today, flock-aware next
 
-Today the organism guards and remembers one repo at a time, under Claude Code or Cursor. The arc we're
-building toward — in the open, each step gated by its own evidence — is bigger:
+Today the organism guards and remembers **one body at a time**. It is already *estate-aware* — one file
+names every project it watches, and the dashboard reports across all of them — but memory is earned
+per-repo and **never crosses between them**. That boundary is deliberate, and it is also the frontier.
+
+The direction is **flock intelligence**: many bodies, each still sovereign over its own memory, that
+nonetheless get better because the others are working. Not a central brain issuing orders — no shared
+weights, no cloud, no coordinator — but the older and stranger thing that ants and termites do, where
+coordination emerges because each individual leaves **traces in a shared environment** that change what
+the next one does.
+
+**We did not invent that idea, and we won't pretend otherwise.** It is *stigmergy*, and it has a
+literature going back decades; the pheromone colony already in this repo is a direct application of it.
+Our one departure is the law at the top of this page: our traces are **consequence-gated**, laid only by
+work that verifiably succeeded, where classical stigmergy lays them by activity. That difference is the
+whole bet — it is what should stop a flock from stampeding down a popular-but-wrong path.
+
+**Status: a bet, stated as one.** No flock behavior ships today, and the one controlled experiment we
+have that bears on the thesis is **trending and misses its own pre-registered gate** (+15pp,
+p = 0.0781 vs p ≤ 0.05 — [the honest write-up](docs/LANDSCAPE.md)). Single-body memory has to earn its
+keep before many bodies are worth wiring together, and we would rather show you the arc with the gate
+openly unmet than a demo with hidden wires.
+
+The rest of the arc:
 
 - **One memory discipline across your whole desk**: coding, research, and personal knowledge
   environments sharing the same earned-trust law (cross-repo federation is designed and
   [on the record](docs/ADR.md) as PROPOSED — we publish designs before code, and status tags mean what
-  they say).
+  they say). This is the first step toward the flock, and the one with a design already written down.
 - **A governed organ for agent fleets**: the hash-chained audit trail, tamper-evident memory, and
   policy-bound gates are being shaped to plug into emerging agent-governance frameworks — so a company
   can adopt agent memory *with* corporate standards, not despite them.
@@ -313,6 +420,9 @@ rather show you the vision with honest gates than a demo with hidden wires.
 - **Agents welcome.** This repo has merged pull requests authored by coding agents (with credit
   trailers). If your agent found a bug or wrote a fix, send it — see
   [`CONTRIBUTING.md`](CONTRIBUTING.md).
+- **Non-code contributions count.** A corpus we have never seen is worth more to us than a patch. If you
+  run the notebook organ over a research vault, or the memory server from a host we don't support yet,
+  tell us what broke and what stayed empty — "it abstained on everything" is a real finding.
 - **Run the gauge, post the numbers.** The memory subsystem carries read-only gauges you can run on
   your own accrued corpus — one command each. Results (including nulls!) are the contribution this
   project values most.
@@ -326,7 +436,7 @@ verdicts are intended −1s** (boundaries the arc was run to produce), not faile
 
 *(Claim boundary, stated plainly: the deterministic evidence lock proves the refusal logic under mock
 executors — it records intent, not syscalls. Real-body protection is the layered container posture
-described in [`SECURITY.md`](SECURITY.md).)*
+described in [`docs/SECURITY.md`](docs/SECURITY.md).)*
 
 | # | Claim | Verdict | Evidence (tests) |
 |---|-------|---------|------------------|

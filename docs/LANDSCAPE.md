@@ -85,9 +85,19 @@ it is the question nobody else is answering, and it is a precondition for everyt
 
 Cross-repository **intelligence and governance** is the direction: memory and policy that reason over the
 whole estate rather than each repo in isolation. Not "which command do I refuse here," but *what has this
-developer's whole body of work established, and what should hold across all of it.*
+person's whole body of work established, and what should hold across all of it.*
 
-We are not aware of anyone addressing that layer. That is the bet.
+The name for the end state is **flock intelligence** — many bodies, each still sovereign over its own
+memory, that get better because the others are working. No central brain, no shared weights, no cloud
+coordinator: coordination emerging because each body leaves traces in a shared environment that change
+what the next one does. **That idea is not ours** — it is *stigmergy*, with decades of literature behind
+it, and the pheromone colony in this repo is already an application of it. Our one departure is the law
+this project is built on: our traces are **consequence-gated**, laid only by work that verifiably
+succeeded, where classical stigmergy lays them by activity. That is what should stop a flock from
+stampeding down a popular-but-wrong path.
+
+We are not aware of anyone addressing that layer with that constraint. That is the bet — and **no flock
+behavior ships today.**
 
 **Status: measured, directional, not yet proven.** Our controlled A/B on earned-memory guidance:
 

@@ -27,26 +27,54 @@ from .node import ExonNode, WikiGraph
 _CACHE_NAME = "wiki_cache.json"
 
 
-def _git_tracked_md(vault: Path) -> "list | None":
+def _git_tracked_md(vault: Path, reasons: "list | None" = None) -> "list | None":
     """The Markdown files git TRACKS under ``vault`` — respects the vault's ``.gitignore`` AND excludes
     untracked / submodule noise (git lists neither). Paths are git's cwd-relative output (correct whether
     ``vault`` is the repo root or a subdirectory), re-joined to ``vault`` and existence-checked.
 
     Returns ``None`` on ANY failure (git absent, not a repo, timeout, decode) so the caller falls OPEN to
     the rglob scan. This is the first subprocess on the per-tool hot path, so it is BOUNDED (timeout) and
-    NEVER raises — the ADR-007 numpy-free/fail-open contract carried to a process boundary."""
+    NEVER raises — the ADR-007 numpy-free/fail-open contract carried to a process boundary.
+
+    ``reasons`` (optional sink) collects WHY it failed. The failure used to be discarded here, which is
+    what made the fail-open unauditable downstream — see ``_record_fail_open``."""
     try:
         proc = subprocess.run(
             ["git", "-C", str(vault), "ls-files", "-z", "--", "*.md"],
             capture_output=True, timeout=5.0,
         )
         if proc.returncode != 0:
+            if reasons is not None:
+                reasons.append(f"git-rc-{proc.returncode}")
             return None
         rels = proc.stdout.decode("utf-8", errors="replace").split("\0")
         files = [vault / r for r in rels if r.endswith(".md")]
         return sorted(p for p in files if p.is_file())
-    except Exception:
+    except Exception as exc:
+        if reasons is not None:
+            reasons.append(type(exc).__name__)
         return None
+
+
+def _record_fail_open(vault: Path, reasons: list) -> None:
+    """Stamp the audit when ``tracked`` could not resolve and the boundary fell open to ``all``.
+
+    Motivated by a measured harm, not tidiness. The ADR-007 fail-open is correct — a hook must never break
+    — but it was also SILENT, and silence is what made it dangerous: on 2026-07-27 a live pre-registered
+    window (``results/brain_wiki_flip_v1/``) was found digesting **4,134 files / 187,639 nodes** under a
+    config that says ``ingest: "tracked"`` (74 files / 1,087 nodes). The same hook wrote both boundaries
+    17 minutes apart, so the vault was THRASHING, and nothing anywhere recorded that it had fallen open —
+    the control read pass or fail depending on which minute you looked. A fail-open that cannot be audited
+    after the fact cannot carry a control.
+
+    Best-effort and never raises: this sits on the per-tool hot path."""
+    try:
+        from ..audit import append
+        append({"event": "WikiIngestFailOpen", "vault": str(vault),
+                "requested": "tracked", "resolved": "all",
+                "reason": (reasons or ["unknown"])[0]})
+    except Exception:
+        pass
 
 
 def _excluded(vault: Path, files: list, patterns: list) -> list:
@@ -76,20 +104,28 @@ def _excluded(vault: Path, files: list, patterns: list) -> list:
     return out
 
 
-def _md_files(vault: Path, ingest: str = "all", exclude: "list | None" = None) -> list:
+def _md_files(vault: Path, ingest: str = "all", exclude: "list | None" = None,
+              *, audit_fail_open: bool = False) -> list:
     """Discover the vault's Markdown files (T4 inclusion boundary). ``ingest``:
       - ``"all"`` (default): every ``*.md`` under the vault — the verified baseline (zero behaviour change).
       - ``"tracked"``: only git-tracked ``*.md``; falls OPEN to ``"all"`` if the vault is not a git repo
         or git is unavailable, so ``tracked`` can never break a hook (ADR-007).
     ``exclude`` (``declarative.exclude``) then removes matching paths under EITHER boundary — a frozen
     snapshot is just as duplicated whether or not git tracks it. Changing it changes the vault signature,
-    so the next load re-digests; that is the intended, self-healing behaviour."""
+    so the next load re-digests; that is the intended, self-healing behaviour.
+
+    ``audit_fail_open`` stamps the audit when ``tracked`` falls open (see ``_record_fail_open``). It
+    defaults to **False** so that read-only callers — the gauges and the MCP server — never write to a
+    repo's audit just by measuring it; only the live hook path (``_load_or_digest``) opts in."""
     pats = declarative_exclude() if exclude is None else list(exclude)
     if ingest == "tracked":
-        tracked = _git_tracked_md(vault)
+        reasons: list = []
+        tracked = _git_tracked_md(vault, reasons)
         if tracked is not None:
             return _excluded(vault, tracked, pats)
         # fail-open: git unavailable / not a repo → behave exactly as "all"
+        if audit_fail_open:
+            _record_fail_open(vault, reasons)
     return _rglob_md(vault, pats)
 
 
@@ -175,8 +211,11 @@ def _node_from_dict(d: dict) -> ExonNode:
 def _load_or_digest(vault: Path, ingest: str = "all") -> list:
     """The vault's nodes, from the cache if the signature matches, else freshly digested (and re-cached).
     The signature is computed over the resolved file set, so switching ``ingest`` mode (fewer/more files)
-    changes the signature and correctly invalidates the cache once."""
-    files = _md_files(vault, ingest)
+    changes the signature and correctly invalidates the cache once.
+
+    This is the LIVE path (hooks), so it is the one caller that stamps a fail-open — a boundary flip here
+    silently re-digests the whole vault and rewrites the cache, which is exactly the harm to make visible."""
+    files = _md_files(vault, ingest, audit_fail_open=True)
     if not files:
         return []
     sig = _signature(vault, files)

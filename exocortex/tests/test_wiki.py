@@ -474,6 +474,52 @@ def test_md_files_ingest_tracked_vs_all(tmp_path, monkeypatch):
     assert g is not None and g.nodes
 
 
+def test_tracked_fail_open_is_audited_but_only_on_the_live_path(tmp_path, monkeypatch):
+    """The T4 fail-open must be VISIBLE, and visible only where a write is legitimate.
+
+    The 2026-07-27 finding: a live pre-registered window (`results/brain_wiki_flip_v1/`) ran on `all`
+    (4,134 files) under a config saying `tracked` (74), the same hook wrote both boundaries 17 minutes
+    apart, and NOTHING recorded the flip — so the control read pass or fail depending on when you looked.
+    Two properties are pinned here: the live path stamps `WikiIngestFailOpen` with a reason, and the
+    read-only callers (gauges, MCP) stamp nothing — measuring a repo must never write to its audit."""
+    import json as _json
+    import shutil
+    if shutil.which("git") is None:
+        pytest.skip("git unavailable")
+    from exocortex.wiki import store
+
+    vault = tmp_path / "v"
+    (vault / "sub").mkdir(parents=True)
+    (vault / "a.md").write_text("# A\n\nRun `pytest -q`.\n", encoding="utf-8")
+    state = tmp_path / "state"
+    state.mkdir()
+    audit = state / "audit.jsonl"
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(state))
+    monkeypatch.setenv("EXOCORTEX_AUDIT", str(audit))
+
+    def _events():
+        if not audit.exists():
+            return []
+        return [_json.loads(x)["event"] for x in audit.read_text(encoding="utf-8").splitlines() if x.strip()]
+
+    # tmp dirs are not a git repo → 'tracked' cannot resolve and falls open to 'all' (ADR-007 preserved:
+    # the file set is still returned, the hook does not break).
+    assert {p.name for p in store._md_files(vault, "tracked")} == {"a.md"}
+    assert _events() == []                       # default caller (read-only) wrote NOTHING
+
+    assert {p.name for p in store._md_files(vault, "tracked", audit_fail_open=True)} == {"a.md"}
+    recs = [_json.loads(x) for x in audit.read_text(encoding="utf-8").splitlines() if x.strip()]
+    assert [r["event"] for r in recs] == ["WikiIngestFailOpen"]
+    assert recs[0]["requested"] == "tracked" and recs[0]["resolved"] == "all"
+    assert recs[0]["reason"]                     # a reason is carried, not discarded
+
+    # and a vault where 'tracked' DOES resolve stamps nothing even on the live path
+    audit.unlink()
+    _git_init_repo(vault, track=["a.md"])
+    assert store._load_or_digest(vault, "tracked")
+    assert _events() == []
+
+
 def test_declarative_ingest_config(monkeypatch):
     """The accessor defaults to 'all' (committed-conservative, ADR-003) and honors the env override."""
     from exocortex.config import declarative_ingest

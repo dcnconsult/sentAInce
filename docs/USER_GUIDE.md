@@ -2,11 +2,17 @@
 
 ## New here? Start with this
 
-**What SentAInce is:** a safety-and-memory layer for an AI coding assistant. It sits *around* the AI (it
-doesn't replace it) and does two jobs — it **refuses dangerous actions** before they run, and it **builds a
-memory of what actually worked** so the assistant gets better at *your* project over time. The full plain-
-language tour (with pictures of how each part maps to the human body) is in **[STORY.md](STORY.md)** — read
-that first if you're evaluating, not installing.
+**What SentAInce is:** the **human–AI interface layer** — a safety-and-memory layer for the AI you already
+use. It sits *around* the AI (it doesn't replace it) and does two jobs — it **refuses dangerous actions**
+before they run, and it **builds a memory of what actually worked** so your AI gets better at *your* work
+over time. The full plain-language tour (with pictures of how each part maps to the human body) is in
+**[STORY.md](STORY.md)** — read that first if you're evaluating, not installing.
+
+**Which half you get depends on your host.** The hard reflex installs into a host's tool-call hook, so it
+lives where that hook lives — Claude Code today, Cursor as a weaker fail-open shim. The memory speaks MCP
+and reads from almost anywhere, including chat hosts with no hooks at all
+([MCP_SERVER.md](MCP_SERVER.md)). This guide covers the hooked path; assume **memory and no gate**
+elsewhere until [LANDSCAPE.md](LANDSCAPE.md) lists your host as supported.
 
 **Who this guide is for:** anyone who wants to *run* it. You do not need to understand the internals. If you
 can run a command in a terminal, you can follow along.
@@ -118,6 +124,7 @@ A `pip install` gives you one friendly command with four everyday subcommands (e
 |---|---|
 | `sentaince-deploy install <repo>` | wire the organism into a project (`--provider cursor`/`both` for other hosts) |
 | `sentaince status <repo>` | print the one-line vitals — mode, routes earned — even where the session-start message doesn't render |
+| `sentaince status <repo> --full` | the vitals line **plus the dose report**: how often memory had an earned route to give you, and how much of your mutating tool traffic the safety floor actually saw. Read-only, reads your own audit log, **no telemetry**. Reports *dose*, never *effect* |
 | `sentaince body <repo>` | start the exporter (no Docker) and open the **body page** in your browser (§6) |
 | `sentaince why <repo>` | print the consequence trail behind the latest earned habits — the route, the backing successes, and the re-checked tamper-proof record (read-only) |
 
