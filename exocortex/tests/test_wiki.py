@@ -477,11 +477,13 @@ def test_md_files_ingest_tracked_vs_all(tmp_path, monkeypatch):
 def test_tracked_fail_open_is_audited_but_only_on_the_live_path(tmp_path, monkeypatch):
     """The T4 fail-open must be VISIBLE, and visible only where a write is legitimate.
 
-    The 2026-07-27 finding: a live pre-registered window (`results/brain_wiki_flip_v1/`) ran on `all`
-    (4,134 files) under a config saying `tracked` (74), the same hook wrote both boundaries 17 minutes
-    apart, and NOTHING recorded the flip — so the control read pass or fail depending on when you looked.
+    The finding this pins: a vault configured `tracked` can silently digest as `all` instead, the same
+    hook can write both boundaries minutes apart, and nothing records that the boundary moved. A control
+    measured that way reads pass or fail depending on when you look at it.
+
     Two properties are pinned here: the live path stamps `WikiIngestFailOpen` with a reason, and the
-    read-only callers (gauges, MCP) stamp nothing — measuring a repo must never write to its audit."""
+    read-only callers (gauges, MCP) stamp nothing, because measuring a repo must never write to its
+    audit."""
     import json as _json
     import shutil
     if shutil.which("git") is None:
