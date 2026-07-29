@@ -35,10 +35,17 @@ mode (`exocortex/somatic.py`, reusing the frozen `sentaince.organism.*` kernel).
   the battle-test M0–M5 — N=100 live episodes, survival **1.000, 0 slips**, against a gullible `llama3:8b`
   relaying `kill -9 1` / `find / -delete`. See [CLAIMS.md](CLAIMS.md) and
   [`docs/battle_test/WHITEPAPER.md`](battle_test/WHITEPAPER.md).
+- **Coverage — Bash *and* PowerShell (ADR-021, 0.1.9).** The floor was Bash-only until an audit of 16,623
+  live records found the gate evaluating Bash 3,362/3,362 and **every other tool zero**, including 828
+  PowerShell calls — on Windows, PowerShell *is* the shell. Both channels now run the same rules, with
+  `-EncodedCommand` payloads unwrapped before matching. Coverage of mutating calls: **46% → 57%**. That is
+  a *coverage* number, not a claim that harm was prevented.
 - **Enable:** `somatic_gate.mode` — `observe` (default; log + lethal failsafe) → `somatic` (enforce; alias
   `enforce`) → `full`.
 - **Honest limit:** safety only to the C1–C7 topology + container immutability; it catches *catalogued*
-  lethal shapes, not un-catalogued harm. Defense in depth, no single layer complete.
+  lethal shapes, not un-catalogued harm. Splatting, variable indirection (`& $cmd`), and
+  `Invoke-Expression` over computed strings are unrecognizable to any static vocabulary, and file writes
+  are out of scope **by decision** (ADR-022). Defense in depth, no single layer complete.
 
 ## 2. Epistemic 0-well gate — abstain in a void · **LIVE**
 
@@ -146,10 +153,21 @@ whose distinctive content actually echoes in the `exit-0` segment's actions — 
   coincidental echo) (`results/attribution_layer2/`).
   Locally flipped `mode=live` against this repo's own docs (autopoiesis): first soak injected 110,
   **credit-rate ~11.8%**, precision @ mo=2 = **1.0**, observable on Grafana (`exocortex/testbed/`).
+- **Retrieval quality (0.1.10, PROVEN — but read what it measures).** The proposer used to match on any
+  single shared token and return nodes in *vault file order*, so the size cap did the selecting. It is now
+  ranked by IDF-weighted relevance, with an exploration channel that **rotates** instead of re-offering the
+  same never-credited notes. A write-free replay of **344** real prompts: distinct documents proposed
+  **51 → 104** of 105, top-doc share of slots **29% → 6%**, and the pre-registered falsifier — recall of
+  documents that had genuinely earned `τ` — **73.3% → 96.7%**, so diversity did not cost relevance
+  (`results/proposer_diversity_v1/`). **Scope:** this measures what the organ *offers*, never whether
+  offering it causes more work to reach `exit 0`. Both corpus and credited set are living, so these are
+  snapshot figures, not constants.
 - **Enable:** `declarative.mode` — `off` (committed default) / `live`, **and** `declarative.vault_path`
   must be set; env `EXOCORTEX_DECLARATIVE` / `EXOCORTEX_WIKI_VAULT`. Precision knob
-  `declarative.attribution.min_overlap` (`2`). The committed default stays **dormant** — go-live is a
-  local, gitignored activation.
+  `declarative.attribution.min_overlap` (`2`); breadth knob `declarative.explore_budget` (`5`).
+  **`declarative.exclude`** takes vault-relative globs and prunes them from the directory *walk* rather
+  than filtering after it — build directories are always pruned. It ships empty, so nothing changes
+  unless you set it. The committed default stays **dormant** — go-live is a local, gitignored activation.
 - **Honest limit (MARGINAL):** declarative routes are shallow — notes-credited-per-segment is **median 0**;
   only **8.9%** of injected segments credit ≥2 notes (`{0:59, 1:13, 2:4, 3:3}` over 79 segments). The first
   soak read 18%; **more data made declarative routes shallower, not deeper**. The multi-note tail the bridge
@@ -240,6 +258,19 @@ quiet → close-together, not resume-each). It *surfaces*; you resume/close.
 | G.A.R.D. Governance / Alliance | SUBSTRATE | — (Ticket 4, not wired) | — |
 | Host / provider (Claude Code · Cursor) | LIVE | `deploy --provider` · `EXOCORTEX_PROVIDER` | `claude` → `cursor` / `both` |
 | Cerebral Substrate (Governor) | LIVE (read-only) | no knob — MCP `resurrection_candidates` / CLI gauge | — (query surface) |
+| Declarative vault pruning | LIVE | `declarative.exclude` (vault-relative globs) | `[]` → your globs |
+| Read-only memory over MCP | LIVE | no knob — `sentaince-mcp` / `sentaince-chatgpt-mcp` | — (any MCP client) |
+
+## Is it actually doing anything? (`sentaince status --full`)
+
+A refusal fires roughly **once in a thousand tool calls**, so a working install and a dead one look
+identical from the outside — a failure mode this project shipped for real (see the 0.1.5 changelog).
+`sentaince status --full` prints the **dose**: how often memory had an earned route to give you, and how
+much of your mutating tool traffic the safety floor actually saw. It is read-only, reads your own local
+audit log, and sends **no telemetry of any kind**.
+
+It reports *dose*, never *effect*. Whether the dose changes outcomes is the A/B in
+[LANDSCAPE.md](LANDSCAPE.md), which is trending and short of its own gate.
 
 ## What to enable first (evaluator's path)
 

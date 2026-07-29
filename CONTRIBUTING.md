@@ -1,7 +1,14 @@
 # Contributing to SentAInce / FreqOS
 
-Thanks for your interest. This repo has an unusual discipline: it is an **evidence-locked organism**, and
-the contribution rules exist to keep the evidence honest.
+Thanks for your interest. This is **a free, open-source community project** — Apache-2.0, local-first, and
+the safety floor is never paywalled. It also has an unusual discipline: it is an **evidence-locked
+organism**, and the rules below exist to keep the evidence honest, not to keep people out.
+
+**You do not have to write code to contribute here.** The most valuable thing anyone can send us is a
+measurement from a corpus we have never seen — including one that goes against us. If you run the notebook
+organ over a research vault, or the memory server from a host we don't support yet, tell us what broke and
+what stayed empty. *"It abstained on everything"* is a real finding and we want it. Nulls are the
+contribution this project values most.
 
 ## The one rule that governs everything
 

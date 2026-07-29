@@ -1,9 +1,13 @@
 # FreqOS / SentAInce — Documentation
 
-A Sovereign Cognitive Entity that demotes the LLM to a stateless "prefrontal cortex" and moves safety,
-memory, and alignment off the model's weights into the deterministic physics of a substrate (Z3 VSA,
-Φ⁶ oscillators, thermodynamic pruning, consequence-sourced pheromone). This is the whole-organism
-documentation suite.
+**The human–AI interface layer** — a safety reflex and an honest memory for the AI you already use,
+whether you point it at code, research, writing, your own notes, or a fleet of agents. **A free,
+open-source community project**: Apache-2.0, local-first, and safety is never paywalled.
+
+Technically: a Sovereign Cognitive Entity that demotes the LLM to a stateless "prefrontal cortex" and
+moves safety, memory, and alignment off the model's weights into the deterministic physics of a substrate
+(Z3 VSA, Φ⁶ oscillators, thermodynamic pruning, consequence-sourced pheromone). This is the
+whole-organism documentation suite.
 
 ## Start here
 - **[STORY.md](STORY.md)** — SentAInce in human terms: the anatomy (immune system, muscle memory, sleep…),
@@ -21,6 +25,8 @@ documentation suite.
 | **Going technical** | [WHITEPAPER.md](WHITEPAPER.md) → the deep-dives: [`../exocortex/docs/CORE.md`](../exocortex/docs/CORE.md), [`../exocortex/MEMORY_GAUGE_DESIGN.md`](../exocortex/MEMORY_GAUGE_DESIGN.md), [`../exocortex/docs/BRIDGE_ORGAN_DESIGN.md`](../exocortex/docs/BRIDGE_ORGAN_DESIGN.md) |
 | **Reviewing security** | [SECURITY.md](SECURITY.md) → [CLAIM_BOUNDARY.md](CLAIM_BOUNDARY.md) → [`battle_test/WHITEPAPER.md`](battle_test/WHITEPAPER.md) |
 | **Understanding the product** | [STORY.md](STORY.md) → [LANDSCAPE.md](LANDSCAPE.md) (where this sits, and what it isn't) → [`use_cases/README.md`](use_cases/README.md) |
+| **Not writing code** — research, writing, a notes vault | [STORY.md](STORY.md) → [FEATURES.md](FEATURES.md) §8 (the notebook organ) + §12 (the Governor) → [MCP_SERVER.md](MCP_SERVER.md) |
+| **In a chat host** (Claude Desktop, ChatGPT, Cline, any MCP client) | [MCP_SERVER.md](MCP_SERVER.md) → [CHATGPT_APP.md](CHATGPT_APP.md) — **memory only, not the reflex** |
 | **Contributing** | [../CONTRIBUTING.md](../CONTRIBUTING.md) → [ADR.md](ADR.md) (the *why* behind the decisions) → [CLAIMS.md](CLAIMS.md) → [GLOSSARY.md](GLOSSARY.md) |
 
 ## The suite
