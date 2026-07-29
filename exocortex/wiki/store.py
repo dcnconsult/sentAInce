@@ -59,13 +59,11 @@ def _git_tracked_md(vault: Path, reasons: "list | None" = None) -> "list | None"
 def _record_fail_open(vault: Path, reasons: list) -> None:
     """Stamp the audit when ``tracked`` could not resolve and the boundary fell open to ``all``.
 
-    Motivated by a measured harm, not tidiness. The ADR-007 fail-open is correct — a hook must never break
-    — but it was also SILENT, and silence is what made it dangerous: on 2026-07-27 a live pre-registered
-    window (``results/brain_wiki_flip_v1/``) was found digesting **4,134 files / 187,639 nodes** under a
-    config that says ``ingest: "tracked"`` (74 files / 1,087 nodes). The same hook wrote both boundaries
-    17 minutes apart, so the vault was THRASHING, and nothing anywhere recorded that it had fallen open —
-    the control read pass or fail depending on which minute you looked. A fail-open that cannot be audited
-    after the fact cannot carry a control.
+    Motivated by a measured harm, not tidiness. The ADR-007 fail-open is correct, because a hook must never
+    break. But it was also SILENT, and the silence is what made it dangerous: a vault configured
+    ``ingest: "tracked"`` can quietly digest as ``all`` instead, and nothing anywhere records that the
+    boundary moved. A run measured under one boundary then reads as if it ran under the other, and the
+    difference is invisible after the fact. A fail-open that cannot be audited cannot carry a control.
 
     Best-effort and never raises: this sits on the per-tool hot path."""
     try:
