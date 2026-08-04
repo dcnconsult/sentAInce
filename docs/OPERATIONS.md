@@ -122,6 +122,8 @@ flipping.
 |---|---|---|
 | `mode` | `"off"` | `off` \| `live` (touches the wiki only when `live` **and** `vault_path` set). |
 | `vault_path` | `""` | path to the Markdown vault (empty → dormant even if `mode=live`). |
+| `ingest` | `"all"` | `all` (every `.md` under the vault) \| `tracked` (git-tracked `.md` only — strongly recommended for repo vaults; `all` on a repo with vendored/generated trees can digest an order of magnitude more than you meant). **`tracked` is fail-open by contract (ADR-007):** if git cannot resolve *inside the hook process* (missing from PATH, timeout), the boundary falls open to `all` — and that flip is **stamped** as a `WikiIngestFailOpen` audit record (`requested`/`resolved`/`reason`). The stamp is written by the live hook path only; gauges and the MCP server measure without writing audit. A stamp in your audit means your corpus boundary flipped — treat it as a config-health alarm, not noise. |
+| `exclude` | `[]` | vault-relative globs pruned from the directory *walk* (not filtered after). Doubles as the seatbelt that bounds a fail-open's blast radius: set it so that even an `all` fall-open stays under `idf_max_nodes`, or IDF ranking silently degrades to uniform weights. |
 | `explore_budget` | `0` | sub-floor exploratory exons per splice; `>0` breaks the cold-start deadlock (a note can't earn τ until injected). |
 | `max_exons` | `20` | splice injection ceiling. |
 | `proposer_k` | `24` | candidate cap before τ/σ filtering. |
@@ -146,8 +148,9 @@ is set, so flipping is reversible and the baseline is preserved.
   insufficient; the gauge says the gain is modest.
 - **Eligibility trace** — set `eligibility_trace.mode: "trace"`. Justified only if your workload produces long
   flail-then-succeed segments (a materially fatter `exocortex_seg_len` ≥4 tail vs the median-2 baseline — §5).
-- **Bridge** — set `declarative.bridge.mode: "suggest"`. **Keep dormant**: the live soak shows the multi-note
-  routes the bridge needs are real but small, so the prize is currently MARGINAL ([CLAIMS.md](CLAIMS.md)).
+- **Bridge** — set `declarative.bridge.mode: "suggest"`. **Keep dormant**: the fuel objection is discharged
+  (≥2-note tail 26.5% of 2,383 segments, 2026-07-30) but on-body validity of a proposed shortcut is unproven —
+  flip only when `bridge_validity_gauge` passes on real walked bridges ([CLAIMS.md](CLAIMS.md)).
 
 Do these via a **local** override, not by editing the committed Genome — either `EXOCORTEX_CONFIG=/path/your.json`
 or the repo-root drop-in below.

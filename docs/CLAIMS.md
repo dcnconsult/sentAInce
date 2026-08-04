@@ -14,7 +14,7 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
 
 - **99 frozen kernel-lock tests** — the C1–C7 evidence lock (69) + 30 domain-crucible/adapter — **untouched**
   across this entire arc. This is the load-bearing guarantee.
-- **413 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** + **118 tuner** tests, all
+- **435 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** + **118 tuner** tests, all
   green (one exocortex test — the alert-engine backtest over a live audit store — auto-skips on storeless
   clones). The lock and the organ tests are separate suites; organ work never edits the lock.
   Note: `pytest -q` at the repo root collects only the 99-lock (`testpaths`), so the organ suites must be run
@@ -138,10 +138,16 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
   but a **no-op on short segments**, and segments are median-2 cross-model, so the prize is modest.
   `eligibility_trace.mode = off`.
 - **Hippocampus bridge (Ticket 2)** — suggest-then-verify, 5 slices built, loop proven end-to-end in tests.
-  Dormancy is a **thermodynamic decision, not unfinished work**: the ≥2-note declarative tail that would feed
-  a bridge *thinned* under more soak (18% → **8.9%**, see MARGINAL), so the organ is claimed as a built,
-  mathematically-verified vestige held in the DNA for an environment that actually demands it (e.g. the larger
-  TAO vault). `declarative.bridge.mode = off`.
+  **Dormancy is now an INSTRUMENT decision, not a thermodynamic one** (restated 2026-07-30). It was
+  justified thermodynamically — the ≥2-note declarative tail that feeds a bridge had *thinned* to 8.9% —
+  and **that justification no longer holds**: re-measured on the accumulated store the tail is **26.5% of
+  2,383 injected segments** (2026-07-30), against the 8.9% that was measured over 79. The 8.9% was correct
+  for its window; a regime shift around 2026-07-09 moved it, and it is **not** the v0.1.10 proposer fix
+  (24.9% before that ship date vs 34.6% after — the tail was already fat). Banked with the daily history and
+  the control: `results/declarative_tail_v1/`. It stays dormant because the **second** flip condition is
+  unmet: the on-body bridge-validity gauge **does not exist**, and `bridge_gauge` states that executable
+  validity of a direct `A→D` is *not offline-decidable* (only the body settles whether skipped steps
+  mattered); its topological path counts are self-flagged as cycle-inflated. `declarative.bridge.mode = off`.
 - **Provenance / non-stationarity (organ F3)** — stamps each deposited edge with `(ts, model)` (model sourced
   from the transcript tail, since the hook stdin carries none) and decays τ AT READOUT by recency (+ a
   version-distance penalty across model upgrades). Gauge (`exocortex/gauge/nonstationarity_gauge.py`): the
@@ -158,11 +164,16 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
 - **Deposit windows are short.** Procedural routes are **median 2** edges (cross-model: haiku & sonnet
   identical) — a *consequence* of strong consequence-sourcing (re-root per verified Bash). This caps the
   payoff of eligibility traces, macro-execution, and bridges.
-- **Declarative routes are shallower still.** Soak (389 injections): notes-credited-per-segment is **median
-  0** (dist `{0:59, 1:13, 2:4, 3:3}` over 79 declarative segments); only **8.9%** of injected segments credit
-  ≥2 notes — *thinner* than the first soak's 18%, i.e. more data made declarative routes shallower, not
-  deeper. The multi-note tail the bridge needs stays small → the **bridge prize is MARGINAL**; it stays
-  dormant until the tail fattens (other repos / scale, e.g. the larger TAO vault).
+- **Declarative routes are shallow, and the tail is NOT a constant — quote it with its n and its date.**
+  Notes-credited-per-segment stays **median 0**, but the ≥2-note share has moved a lot as the corpus grew:
+  **8.9%** over 79 segments (the early soak, correct for its window) → **26.5% of 2,383 injected segments**
+  on 2026-07-30 (`results/declarative_tail_v1/`, reproduce with
+  `python -m exocortex.gauge.credit_funnel_gauge --state-dir .claude/exocortex`). The daily rate ranges
+  **0%–59%** across the store's life, with a regime step around 2026-07-09 that is *not* explained by the
+  v0.1.10 proposer fix, and the two most recent days (21.3%, 16.5%) sit below the mid-July peak. **Any bare
+  percentage from this gate is meaningless**; corpus, vault and credited set are all live. What the fattened
+  tail changes is the *bridge's* rationale (see DORMANT), not the standing limits on route depth: procedural
+  segments are still median 2, so the **eligibility-trace and macro-execution prizes remain MARGINAL**.
 - **Attribution precision is on controlled tasks.** The 1.0 @ mo=2 is for clean single-command planted
   tasks; the messy-real-coding coincidental-echo rate is still being watched live (`wiki_credit_rate`).
 - **The ranked proposer's EFFICACY is unmeasured — only its retrieval quality is gauged.** The replay above

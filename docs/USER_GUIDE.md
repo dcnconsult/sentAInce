@@ -371,11 +371,11 @@ live session walks it, `exit 0` crystallizes τ and `exit 1`/no-pay scars σ —
 crystallization. It ships **DORMANT** (`declarative.bridge.mode = off`).
 
 The **mechanism** is PROVEN offline (1-hop fidelity 1.0; the 0-well abstain lifts 2-hop chord precision
-**0.96 → 1.00**, `results/bridge_gauge_v1/`). But the **prize is currently MARGINAL**: live declarative
-routes are shallow (notes-credited-per-segment median 0; only **8.9%** of segments credit ≥2 notes —
-*thinner* than the first soak's 18%), and
+**0.96 → 1.00**, `results/bridge_gauge_v1/`). It stays dormant, but **the reason changed on 2026-07-30**.
+The old reason was a thin multi-note tail (8.9% over 79 segments); re-measured, that tail is **26.5% of
+2,383 injected segments** (`results/declarative_tail_v1/`). The blocker is now the *other* condition:
 executable validity is **not offline-decidable** — only the body settles whether the skipped steps
-matter. It stays dormant until the multi-note tail fattens. Design:
+matter — and the on-body validity gauge is unbuilt. Design:
 [`exocortex/docs/BRIDGE_ORGAN_DESIGN.md`](../exocortex/docs/BRIDGE_ORGAN_DESIGN.md).
 
 ---

@@ -124,14 +124,19 @@ def _already_connected(graph: WikiGraph, a, d, link_index: dict) -> bool:
 
 
 def synthesize(graph: WikiGraph, *, bridges: dict | None = None, top_k: int | None = None,
-               stamp: str = "", conf_floor: float | None = None, margin: float | None = None) -> dict:
+               stamp: str = "", conf_floor: float | None = None, margin: float | None = None,
+               save: bool = True) -> dict:
     """Sleep-cycle bridge synthesis over the materialized ``graph.phasor_bank`` (build it first). For each
     note A, take its top-k geometrically-nearest ELIGIBLE notes (not self, not already-connected) by the Z3
     familiarity ``|(ω^a)·conj(ω^d)|/M`` (the recall_successor metric), and emit those that clear the 0-well
     gate (a confident basin: above the wall AND distinct from the runner-up). NEVER crystallizes — only
     PROPOSES. Numpy + frozen-kernel ``OMEGA``; PreCompact only. Fail-open → bridges unchanged.
 
-    Returns the updated bridges dict (persisted)."""
+    ``save=False`` runs the synthesis as a PURE function (same gate, same geometry, no persistence) so a
+    gauge can measure what the organ *would* propose without depositing earned state — the same convention
+    ``attribute.deposit_attributed`` already carries. A gauge that writes is not a gauge; it is the organ.
+
+    Returns the updated bridges dict (persisted unless ``save=False``)."""
     bridges = load_bridges() if bridges is None else bridges
     try:
         import numpy as np
@@ -169,7 +174,8 @@ def synthesize(graph: WikiGraph, *, bridges: dict | None = None, top_k: int | No
                 if not bridge_gate(conf, runner, conf_floor=conf_floor, margin=margin):
                     break                                          # sorted desc → no confident basin left for A
                 added += int(upsert_candidate(bridges, a.id, d.id, conf, stamp=stamp))
-        save_bridges(bridges)
+        if save:
+            save_bridges(bridges)
         return bridges
     except Exception:
         return bridges

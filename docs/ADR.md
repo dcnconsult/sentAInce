@@ -754,6 +754,22 @@ tamper classes — a payload edit (self-hash mismatch, `:153`) and a reorder/del
   `ledger.py`, and `cerebral/journal.py` — none of which touches a P1-pinned file, so unlike ADR-017 this can
   land without a pin re-baseline.
 
+**Field report constraining the design (2026-08-04, external — RFC Discussion #9, `joeyycli`).** An
+operator whose audit trail was a git repo with an offsite mirror reported the mirror silently stopped
+receiving pushes; local history ran **174 commits / 13 days** ahead before a deterministic checker caught
+it — every property the trail claimed (tamper-evident, externally anchored) had been false the whole time,
+with nothing visibly unhealthy from inside the log. The criterion this forces, adopted here as an
+acceptance condition for measure 1: **an anchor is admissible only when its re-verification is recurring
+and runs outside the writing process's control.** A checkpoint file the hook itself writes, checked only
+by a reader someone remembers to run, reproduces the reported failure — *a verifier that never runs reads
+identically to one that passes.* The build must therefore specify not just the anchor's format but its
+re-check cycle and who owns it (scheduled task, CI, or the observability exporter's poll — anything whose
+liveness is itself observable). *Follow-up from the same reporter (Discussion #9, 2026-08-04): their
+deterministic checker has since caught the same declared-vs-actual gap repeatedly — each catch small,
+each real, no false alarms — i.e. the drift recurs after being fixed. This is why the criterion says
+**recurring**, not "verified once after the incident": a one-shot post-fix check would have read PASS and
+gone back to sleep.*
+
 ---
 
 ## ADR-019 — Repo Orientation Capsule: cross-repo orientation is checked, graded metadata — never assumed truth
@@ -1025,9 +1041,102 @@ is ever wired to write τ, or if `±1` is derived from anything other than the m
 
 ---
 
+## ADR-024 — Conditional essentiality: an organ is judged in the regime it claims to regulate, at that regime's real rate
+
+**Status:** ADOPTED (2026-07-31). **Doctrine, no code** — it changes how an organ earns promotion, so it sits
+beside ADR-002 (gauge-first) and ADR-003 (dormant-by-default) rather than adding a mechanism. Prompted by
+intaking the mouse intrinsic-cardiac-nervous-system result (ENHANCEMENTS §G14; **+1 design-informant · 0
+transfer · −1 on any biological-equivalence reading**).
+
+**Context.** Four organs sit DORMANT or MARGINAL after being measured on *ordinary flagship traffic*:
+endocrine (SAFE but a modest clutter lever), the eligibility trace (a no-op because real segments are
+median-2), the uncertainty lane (G1 abstain **0/4349**, F2 veto **13/13927**, F1 latent — re-run 2026-07-30 at
+~12× the original power and still null), and, until its instrument accrued, F3 provenance. Each verdict is
+correct *for the traffic it saw*. None of them asked the prior question: **was the organ measured in the
+regime it claims to regulate at all?**
+
+The cardiac study is the clean statement of why that question matters. Two molecularly distinct neuron
+populations divide the labour: one carries routine parasympathetic homeostasis, the other is near-silent in
+ordinary operation and becomes load-bearing only under extreme stress, where it preserves electrical
+stability. Baseline utility and stress resilience are **different functions, measured differently**.
+
+**We have already run this experiment — that is the load-bearing fact.** `experiments/exp2_hypoxia.py` (C2)
+fires a deterministic flood at three arms: `MetabolicNull` (ablated, gauge-blind), `MetabolicOrganism`
+(full), and `BlindDropperControl(e0, n_abstain=treatment.abstained)` — a **rate-matched gauge-blind control**
+that abstains exactly as often as the treatment and therefore cannot pass by refusing everything. That is a
+stress × ablation interaction with its anti-gaming arm already written. C3 then proves the composition
+constraint: under a starving ambush the safety scar holds absolute precedence and is energy-independent *by
+construction*. So this ADR **generalises a locked design outward onto the dormant organs**; it does not
+invent an experimental structure.
+
+**Decision.** An organ's evaluation must declare its **operating regime** before the result is read, and
+promotion requires an interaction, not a level:
+
+1. **Declared regime, pre-registered.** Every organ states the regime it claims to regulate — tonic
+   (always), stress-conditional, sleep-time, consequence-time — as part of its contract, *before* the gauge
+   runs. Baseline inactivity does **not** falsify a stress-conditional organ.
+2. **Interaction, not level.** Promotion needs `Δ(organ | regime) ≫ Δ(organ | baseline)`: a benefit inside
+   the declared regime that the organ does **not** falsely claim during ordinary work. Ablation must remove
+   the benefit; where the organ can be re-activated, restoration should recover it.
+3. **The rate clause — the anti-loophole.** The declared regime must carry its **measured frequency in real
+   traffic**, sourced from the audit. Judgement is on `P(regime) × magnitude(consequence in regime)`, never
+   on the conditional effect alone. An organ whose regime never occurs is **vestigial even when it is
+   genuinely essential inside that regime**. If the rate is unmeasurable, the organ may stay dormant but
+   **may not be promoted**.
+3a. **The units clause — what `regime_frequency` is allowed to count.** The rate must count **scoreable
+   occurrences** of the regime — instances confirmed present, over the population where such confirmation
+   was actually possible — and **never exposures**, meaning episodes where the conditions that *could*
+   produce the regime were merely present. Exposure counting inflates every crisis organ, because
+   "conditions under which instability might arise" is a far larger set than "instability arose". Both the
+   numerator and the denominator ship with the rate; a bare ratio is not a rate. And the **organ's own
+   activation may never be the detector**: an organ that counts its own firings as its niche's rate has
+   assumed what it must demonstrate, which is why the somatic gate's regime is measured from *proposals
+   observed* (the `observe` mode's job) rather than from refusals issued. This is the fifth appearance of
+   one failure — the A/B's 6 movers of 16 tasks, the declarative tail's injected-vs-all denominator, the
+   eligibility gauge returning `segments=0` from a parse error, and the bridge-validity gauge's
+   scoreable-vs-unseen-endpoint split, which was one denominator away from parking an organ for the wrong
+   reason. Treat the denominator as the first question asked of any rate in this repo, not the last.
+4. **Magnitude is bounded by CLAIMS.** Rarity is rescued by consequence *magnitude*, and the magnitude must
+   be argued from a real, evidenced harm class — never asserted. This is what keeps clause 3 from becoming
+   the loophole it exists to close.
+5. **A blanket-throttle null is mandatory.** Any stress arm ships with C2's rate-matched control. An organ
+   that "survives" by suppressing work has not survived; it has stopped playing.
+6. **Separations are unchanged.** A stress lane may alter pacing, throttle cognition, request context,
+   abstain or escalate. It may **never** override a somatic refusal (C1/C2/C3 — "starvation grants no
+   amnesty"), never earn τ merely because it fired (ADR-001), and its own failure must degrade without
+   weakening the safety floor.
+
+**Why the rate clause does not endanger the somatic gate.** The obvious objection is that our best-evidenced
+organ fires about **once in a thousand tool calls** — on baseline utility it looks like dead weight, and a
+naive frequency rule would retire it. It passes clause 3 because judgement is on rate **× magnitude**, and its
+regime's consequence class (an executed catalogued-lethal action against the host) is evidenced by the C1 arc
+and the battle test rather than asserted. That is the template and the existence proof at once: conditional
+essentiality is not a doctrine we are importing to rescue parked organs — it is how the strongest claim in
+this repo already works, applied inconsistently until now.
+
+**The chamber must be harvested, not invented.** A stress chamber designed alongside the organ it tests is
+self-selected evidence — the failure that already cost the ranked proposer its efficacy claim. Where a real
+instability signature exists, it seeds the chamber. One exists today: the Tuner's **thrash lens**, gauged as
+a real per-class property (`results/reflection_gauge_v1`, T1 **p = 0.001**), with 11 of 75 classes thrashing
+at the time of writing. Thrash *is* route oscillation and repeated reversal — the phasic target, measured in
+live traffic rather than imagined.
+
+**What this ADR does not do.** It promotes nothing, flips nothing, and adds no organ. It does not license
+the G.A.R.D. Governance pacemaker (still SUBSTRATE, unwired) — it states what that organ would have to
+survive. And it makes no claim about biological equivalence: the mouse result is an architectural informant,
+and no software mechanism follows from cardiac biology.
+
+**−1 conditions.** −1 if the rule ships without the rate clause, which would let any parked organ become
+unfalsifiable by declaring a narrow enough niche. −1 if a declared regime is ever narrowed *after* a null is
+seen. −1 if a stress arm is promoted without its rate-matched control. −1 if magnitude is claimed beyond what
+CLAIMS binds. −1 if a `regime_frequency` is ever quoted as a bare ratio, counted off exposures rather than
+scoreable occurrences, or detected by the candidate organ's own activation.
+
+---
+
 ## The through-line
 
-These twenty-three decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
+These twenty-four decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
 consequence, nothing unproven reaches the user's hot path or the committed defaults, and the organism's own
 integrity is a mathematical invariant — not a secret.**
 Consequence-sourcing (ADR-001) is the law; the σ economy (ADR-004) and suggest-then-verify (ADR-008) protect

@@ -139,6 +139,38 @@ def test_missing_everything():
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_multi_note_tail_counts_only_injected_segments():
+    """The ≥2-note tail is the Hippocampus-bridge trigger and the number CLAIMS binds, so pin its
+    DENOMINATOR: injected segments, not all consequences. A segment that was never injected cannot
+    credit a note, and counting it would silently deflate the tail."""
+    def cons(injected: int, used: int) -> dict:
+        r = {"event": "PostToolUse", "tool": "Bash", "outcome": "ok"}
+        if injected:
+            r["wiki_injected"] = injected
+        if used:
+            r["wiki_used"] = used
+        return r
+
+    records = [
+        cons(3, 2),      # injected, credits 2  -> in tail, ≥2
+        cons(3, 4),      # injected, credits 4  -> in tail, ≥2
+        cons(3, 1),      # injected, credits 1  -> in tail, not ≥2
+        cons(3, 0),      # injected, credits 0  -> in tail, not ≥2
+        cons(0, 0),      # NOT injected         -> excluded from the tail denominator entirely
+    ]
+    f = cf.audit_funnel(records)
+    assert f["consequences"] == 5, f
+    assert f["tail_n"] == 4, f            # the un-injected consequence is not in the denominator
+    assert f["tail_ge2"] == 2, f
+    assert f["tail_ge2_frac"] == 0.5, f
+    assert f["tail_histogram"] == {"0": 1, "1": 1, "2": 1, "4": 1}, f
+
+
+def test_multi_note_tail_is_zero_safe_on_an_empty_store():
+    f = cf.audit_funnel([])
+    assert f["tail_n"] == 0 and f["tail_ge2"] == 0 and f["tail_ge2_frac"] == 0.0, f
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for f in fns:

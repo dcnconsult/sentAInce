@@ -149,16 +149,33 @@ def measure_real_segments(results_root: str) -> dict:
     """Reconstruct colony SEGMENTS from recorded audit JSONL and report the length distribution. A segment
     = the tool-steps (PreToolUse) the live trail accumulates between Bash consequences (it re-roots at each
     Bash PostToolUse). Skips files that aren't hook-audit JSONL (e.g. the demo host-ops command batches).
-    The honest question: do N≥4 flail-then-succeed segments exist in the wild, or only short probes?"""
+    The honest question: do N≥4 flail-then-succeed segments exist in the wild, or only short probes?
+
+    Parsing is PER LINE, and a malformed line is skipped and COUNTED (``lines_malformed``) rather than
+    discarding its whole file. This is not tidiness: the audit is append-only and fail-open on write, so a
+    torn row from a pre-D7 concurrent append is an expected artifact of a real store. Reading the file as
+    one all-or-nothing parse meant a single 40-byte fragment returned ``segments=0`` — which this gauge's
+    own printed read turns into "N≥4 is ~0% → park 3D". A gauge that cannot tell *"the flail topology is
+    absent"* from *"I could not parse the file"* is not a gauge; it silently returns the parked verdict.
+    Measured on the live SentAInce store: 5 malformed lines out of 11,029 suppressed all 2,758 segments."""
     files = glob.glob(os.path.join(results_root, "**", "*.jsonl"), recursive=True)
     seg_lengths: list = []
     sessions_seen, files_used, files_skipped = set(), 0, 0
+    lines_malformed = 0
     for f in files:
         try:
-            recs = [json.loads(l) for l in open(f, encoding="utf-8") if l.strip()]
+            raw_lines = open(f, encoding="utf-8").read().splitlines()
         except Exception:
-            files_skipped += 1
+            files_skipped += 1            # genuinely unreadable (permissions, encoding) — not a torn row
             continue
+        recs = []
+        for line in raw_lines:
+            if not line.strip():
+                continue
+            try:
+                recs.append(json.loads(line))
+            except Exception:
+                lines_malformed += 1      # torn/partial append — skip the ROW, keep the file
         if not recs or not isinstance(recs[0], dict) or "event" not in recs[0]:
             files_skipped += 1            # not a hook-audit file (e.g. {"commands":[...]} demo batches)
             continue
@@ -167,6 +184,8 @@ def measure_real_segments(results_root: str) -> dict:
         # PostToolUse consequences (success OR failure both close a segment in the live trail).
         cur: dict = {}
         for r in recs:
+            if not isinstance(r, dict):   # a well-formed JSON line that isn't a record (list/str/number)
+                continue
             sess = r.get("session", "?")
             sessions_seen.add(sess)
             ev, tool = r.get("event"), r.get("tool")
@@ -183,6 +202,7 @@ def measure_real_segments(results_root: str) -> dict:
     return {
         "results_root": results_root,
         "files_used": files_used, "files_skipped": files_skipped,
+        "lines_malformed": lines_malformed,
         "sessions": len(sessions_seen), "segments": n,
         "len_max": seg_lengths[-1] if n else 0,
         "len_mean": round(sum(seg_lengths) / n, 2) if n else 0.0,
@@ -222,11 +242,16 @@ def _print_sweep(rows: list) -> None:
 def _print_real(real: dict) -> None:
     print(f"\nDirective 1 — REAL segment lengths from {real['results_root']}:")
     print(f"  hook-audit files used={real['files_used']} (skipped non-audit={real['files_skipped']}); "
-          f"sessions={real['sessions']}; segments={real['segments']}")
+          f"sessions={real['sessions']}; segments={real['segments']}"
+          + (f"; MALFORMED LINES SKIPPED={real['lines_malformed']}" if real.get("lines_malformed") else ""))
     print(f"  length: max={real['len_max']} mean={real['len_mean']} median={real['len_median']}  "
           f"| N≥4: {real['ge4_count']} ({real['ge4_frac']*100:.0f}%)")
     print(f"  histogram (len→count): {real['histogram']}")
-    print("  read: if N≥4 is ~0%, the flail-then-succeed topology is absent in this corpus → park 3D.")
+    if real["segments"] == 0:
+        print("  read: NO SEGMENTS PARSED — this is an INSTRUMENT result, not a corpus result. Check the "
+              "path and the skip counts above before reading anything into it; do NOT read it as 'park 3D'.")
+    else:
+        print("  read: if N≥4 is ~0%, the flail-then-succeed topology is absent in this corpus → park 3D.")
 
 
 def main() -> None:

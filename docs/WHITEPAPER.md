@@ -283,10 +283,11 @@ The identity of this project is honest non-overclaiming; the negatives are first
   sonnet, so this is *architectural* (the trail re-roots at every verified Bash), not a model limitation. It
   is a *consequence* of strong consequence-sourcing, and it caps the payoff of eligibility traces,
   macro-execution, and bridges.
-- **Declarative routes are shallower still.** Live soak: notes-credited-per-segment is **median 0**; only
-  **8.9%** of injected segments credit ≥2 notes — *thinner* than the first soak's 18%, i.e. more data made
-  declarative routes shallower, not deeper. The multi-note tail the bridge needs is real but small → the
-  **bridge prize is currently MARGINAL**, dormant until the tail fattens (other repos/scale).
+- **Declarative routes are shallow, and the ≥2-note tail is not stationary.** Notes-credited-per-segment
+  is still **median 0**, but the multi-note share read **8.9%** over 79 segments early and **26.5% of 2,383
+  injected segments** on 2026-07-30, ranging 0%–59% daily (`results/declarative_tail_v1/`). So the bridge is
+  no longer dormant for want of a tail; it is dormant because **executable validity is not offline-decidable**
+  and that instrument is unbuilt. Quote this figure with its n and date, never bare.
 - **Attribution precision is on controlled tasks.** The 1.0 @ mo=2 is for clean single-command planted tasks;
   the messy-real-coding coincidental-echo rate is still being watched live.
 - **BYO small-model completion is poor.** `llama3.1-8b` can *drive* the hooks but cannot reliably *complete*

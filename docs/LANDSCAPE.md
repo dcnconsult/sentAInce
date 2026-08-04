@@ -1,6 +1,6 @@
 # Where this sits — the honest landscape
 
-*Last reviewed 2026-07-22.*
+*Last reviewed 2026-08-04.*
 
 If you are evaluating agent-safety tooling, you will find several categories of product that sound like
 they solve the same problem. They mostly don't — they operate at different points in the call path, and
@@ -149,8 +149,11 @@ We would rather plug into emerging agent-governance standards than invent a comp
 - **AGNTCY / OASF** — the memory server ships a machine-readable agent-directory record
   ([`oasf-record.json`](../oasf-record.json)), versioned with the package.
 - **MCP** — the open standard; any compliant client can read earned memory.
-- **Audit** — the hash-chained, tamper-evident trail is built to satisfy an external reviewer, not just
-  us. Tamper with a record and provenance renders `CHAIN BROKEN` rather than failing quietly.
+- **Audit** — the hash-chained trail is built to satisfy an external reviewer, not just us. Tamper with
+  a retained record and provenance renders `CHAIN BROKEN` rather than failing quietly. Honest scope,
+  because an external reviewer asked ([#9](https://github.com/dcnconsult/sentAInce/discussions/9)):
+  verification is reader-triggered, and truncation at the tail is not yet detected — the tail anchor
+  (ADR-018) is designed on the record, not built ([GOVERNANCE.md](GOVERNANCE.md)).
 
 ## How to falsify this page
 
