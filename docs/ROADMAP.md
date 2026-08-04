@@ -65,8 +65,11 @@ primitive present, not yet wired), **MARGINAL** (measured small / unproven).
 - **Procedural colony** — deposits/splices on the user's real sessions (`colony_*.json`).
 - **Declarative wiki (Ticket 1)** — **LOCKED** (design frozen) but runs live against the SentAInce docs
   (autopoiesis). Soak-validated (970 audit records / 389 injections): **credit-rate 7.7%** (a trickle,
-  not a flood), **precision @ mo=2 = 1.0** held, colony clean; the ≥2-note declarative tail thinned to
-  **8.9%** (so the bridge stays dormant — a thermodynamic decision). **The committed default stays
+  not a flood), **precision @ mo=2 = 1.0** held, colony clean. The ≥2-note declarative tail read
+  **8.9%** in the early soak (79 segments) — the thermodynamic reason the bridge stayed dormant — but
+  re-measured on the accumulated store it is **26.5% of 2,383 injected segments** (2026-07-30,
+  `results/declarative_tail_v1/`), so **that reason no longer holds**: the bridge's remaining blocker is
+  on-body validity, not fuel (see Ticket 2 below). **The committed default stays
   DORMANT** — go-live is a local, gitignored activation (runbook + vault-scale limits in
   [`../exocortex/testbed/README.md`](../exocortex/testbed/README.md)).
 - **Battle-test M0–M5** — a real LLM head + a real disposable body in a hardened container. Latest
@@ -111,7 +114,7 @@ falsifiable trigger that would justify flipping it.
 |---|---|---|---|
 | Endocrine (3A) | `endocrine.mode = off → tier` | SAFE, modest lever | a live workload where the tier-stepped envelope *earns over static decay* |
 | Eligibility trace (3D) | `eligibility_trace.mode = off → trace` | math proven, no-op on short segments | a workload whose `seg_len` ≥4 tail is *materially fatter* |
-| Hippocampus bridge (Ticket 2) | `declarative.bridge.mode = off → suggest` | mechanism sound offline | the declarative soak grows *bridgeable* multi-note routes |
+| Hippocampus bridge (Ticket 2) | `declarative.bridge.mode = off → suggest` | mechanism sound offline; fuel confirmed (tail 26.5%, 2026-07-30) | the on-body validity gauge passes on real walked bridges |
 
 - **Endocrine — allostatic prune/cap (3A).** Makes `prune_floor`/`max_edges_per_class` step with the
   metabolic tier (SATED/STARVING/HYPOXIA): stress → prune↑/cap↓ (tunnel-vision), sated → prune↓/cap↑
@@ -128,10 +131,12 @@ falsifiable trigger that would justify flipping it.
 - **Hippocampus bridge — suggest-then-verify (Ticket 2).** All 5 slices built; the propose → offer →
   verify → crystallize/scar loop is **proven end-to-end in tests**. Geometry *proposes* a provisional
   `A→D` edge; the **body walks it**; `exit 0` crystallizes (τ), `exit 1` scars (σ). **No autonomous
-  crystallization.** The mechanism is sound offline (0.96→1.00), but the **prize is currently MARGINAL**:
-  declarative routes are shallow, and a bridge needs a multi-note tail to shortcut. **Trigger to flip
-  `suggest`:** the soak (and/or other repos/scale) shows that tail fattening into real bridgeable
-  structure, **and** an offline bridge-validity-on-the-body gauge passes first.
+  crystallization.** The mechanism is sound offline (0.96→1.00). The tail-thinness reason for dormancy is
+  **discharged** (≥2-note tail **26.5% of 2,383 segments**, 2026-07-30, `results/declarative_tail_v1/`) —
+  the fuel exists. **The one remaining blocker:** executable validity of a direct `A→D` shortcut is not
+  offline-decidable — only the body settles whether the skipped steps mattered — and the on-body validity
+  gauge for exactly that question now exists (`exocortex/gauge/bridge_validity_gauge.py`). **Trigger to
+  flip `suggest`:** that gauge passing on real walked bridges, nothing less.
   [`BRIDGE_ORGAN_DESIGN.md`](../exocortex/docs/BRIDGE_ORGAN_DESIGN.md).
 
 ---

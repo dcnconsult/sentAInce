@@ -44,6 +44,11 @@ COMMERCIAL_EXCLUDE = [
     # the reflect gauge's verdict validates a paid-tier method (the reflection lenses) and names it;
     # held with the leaf it gauges until the PI's IP review clears reflection for disclosure.
     "results/reflection_gauge_v1/",
+    # same rule, same reason: the dream-efficacy prereg specifies the ±1 gate, the novelty gate and
+    # the content registers of `exocortex/tuner/dream.py` closely enough to reconstruct the method.
+    # `results/` is public by default, so a prereg for a COMMERCIAL_EXCLUDE leaf would publish the
+    # design of a never-public feature. Held with the leaf it gauges.
+    "results/dream_efficacy_v1/",
     # a feasibility probe held private per PI (no promotion) pending IP review — module, test, and
     # findings held together. The method is not named in this public manifest until counsel clears it.
     "battle/twin_reporter.py",

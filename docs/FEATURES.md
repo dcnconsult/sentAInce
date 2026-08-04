@@ -167,11 +167,17 @@ whose distinctive content actually echoes in the `exit-0` segment's actions — 
   `declarative.attribution.min_overlap` (`2`); breadth knob `declarative.explore_budget` (`5`).
   **`declarative.exclude`** takes vault-relative globs and prunes them from the directory *walk* rather
   than filtering after it — build directories are always pruned. It ships empty, so nothing changes
-  unless you set it. The committed default stays **dormant** — go-live is a local, gitignored activation.
-- **Honest limit (MARGINAL):** declarative routes are shallow — notes-credited-per-segment is **median 0**;
-  only **8.9%** of injected segments credit ≥2 notes (`{0:59, 1:13, 2:4, 3:3}` over 79 segments). The first
-  soak read 18%; **more data made declarative routes shallower, not deeper**. The multi-note tail the bridge
-  needs is real but small — see [`CLAIMS.md`](CLAIMS.md) MARGINAL, which binds this number.
+  unless you set it. **Boundary honesty:** `ingest: "tracked"` is fail-open by contract (ADR-007) — if
+  git cannot resolve inside the hook process, the walk falls open to `all`; since 2026-07-28 that flip
+  is **stamped** (`WikiIngestFailOpen` audit record, live path only — read-only consumers never write
+  audit merely by measuring), and `exclude` is the seatbelt that bounds what a fall-open can digest.
+  The committed default stays **dormant** — go-live is a local, gitignored activation.
+- **Honest limit (MARGINAL):** declarative routes are shallow — notes-credited-per-segment is still
+  **median 0**. The ≥2-note share, though, is **not a constant**: it read **8.9%** over 79 segments in the
+  early soak and **26.5% of 2,383 injected segments** on 2026-07-30, with a daily range of 0%–59% across the
+  store's life (`results/declarative_tail_v1/`; re-run with `python -m exocortex.gauge.credit_funnel_gauge
+  --state-dir <repo>/.claude/exocortex`). **Quote it with its n and its date, never bare** — corpus, vault
+  and credited set are all live. See [`CLAIMS.md`](CLAIMS.md), which binds this number.
 
 ## 9. Hippocampus bridge — sleep-time shortcut synthesis · **DORMANT**
 
@@ -240,6 +246,58 @@ quiet → close-together, not resume-each). It *surfaces*; you resume/close.
   on one vault, never evidence. Further slices (the Cerebral Substrate arc) are tracked in internal design notes.
 
 ---
+
+## The organ contract (ADR-024)
+
+Every organ declares seven things. The first six describe what it *is*; the seventh is what decides whether
+it may ever be promoted, and it is the only one you cannot write from the armchair.
+
+| # | Field | What it declares |
+|---|---|---|
+| 1 | **sensor** | which local signals the organ may observe |
+| 2 | **operating regime** | tonic (always) · stress-conditional · sleep-time · consequence-time · query-time |
+| 3 | **effector** | what it may change: pacing, context, memory weight, execution permission, alerting, nothing |
+| 4 | **forbidden authority** | what it must never override (for every organ this includes the somatic refusal) |
+| 5 | **ablation null** | what should fail when it is removed, *in the regime where it claims value* |
+| 6 | **rescue condition** | whether re-activating it recovers the lost behaviour |
+| 7 | **`regime_frequency`** | **the measured rate at which its declared regime actually occurs** |
+
+**Why the seventh exists.** An organ that does nothing during ordinary work is not thereby useless — it may
+be a crisis organ measured outside its niche. But that argument is also the perfect excuse, so ADR-024 makes
+it pay rent: promotion is judged on `P(regime) × magnitude`, and an organ whose regime never occurs is
+vestigial *even when it is genuinely essential inside that regime*. No measured rate → no promotion.
+
+**⚠ The seventh field counts occurrences, not exposures.** A rate over "episodes where the regime *could*
+have arisen" inflates every crisis organ, because that set is far larger than "the regime arose". The
+denominator is the population where the regime was **scoreable** — where its presence could be confirmed —
+and the numerator is confirmed occurrences. Always quote both; a bare ratio is not a rate. And an organ's
+own activation may not be its detector, or it has assumed what it must demonstrate.
+
+*Worked example, and the reason this warning is here:* the figure everyone quotes for the somatic gate is
+"about one refusal per thousand tool calls" (7 / 7,979 PreToolUse). That is a true **dose** statement and a
+wrong **regime** statement — it divides by every tool call, including the ~5,100 the gate never evaluated
+because they were not a command channel. Over the scoreable population it is **7 / 2,878 evaluated calls =
+0.24%**, roughly 2.7× the exposure-based figure. Same organ, same audit, one denominator apart.
+
+### Measured regimes — this repo's own store, 2026-07-31
+
+| Organ | Operating regime | `regime_frequency` (occurrences / scoreable) | Reading |
+|---|---|---|---|
+| **1. Somatic interlock** | tonic floor; regime = a catalogued-lethal proposal | **7 / 2,878 evaluated calls = 0.24%** | rare regime, kept on **magnitude** — the consequence class is evidenced by the C1 arc + battle test, not asserted |
+| **7. Endocrine** | stress-conditional (metabolic tier below SATED) | **3,389 / 6,203 stamped records = 54.6%** (STARVING 18.0% + HYPOXIA 36.6%) | **its regime is common, not rare** — so ADR-024 does *not* rescue it; it was already measured in-regime and read modest |
+| **6. Eligibility trace** | consequence-time; regime = segments ≥ 4 | **754 / 2,787 segments = 27.1%** | same: the niche occurs routinely, so "wrong regime" is not the explanation for the null |
+| **2. Epistemic 0-well (G1 abstain)** | conditional; regime = a query with no confident basin | **0 / 4,349** | the declared regime **never occurred here** — dormancy is correct, promotion is blocked until a corpus produces it (adversarial / BYO) |
+| 3–5, 8–12 | see each section above | **UNMEASURED** | promotion-blocked under ADR-024 until a rate exists |
+
+**The result cuts against the organs, not for them.** Endocrine and the eligibility trace were parked as
+"modest", and the obvious hope after reading ADR-024 is that they were simply tested in the wrong regime.
+They were not: their regimes occur on **54.6%** and **27.1%** of the relevant population. Both were measured
+inside their own niche and were genuinely modest there. The rule closes those two cases rather than
+reopening them — which is the point of writing the rate down before arguing from it.
+
+Numbers move with the store; re-derive rather than quote these as constants (`--json` on the gauges, or the
+audit directly). Live figures above are from this repo's own audit and are a **labeled measurement, never a
+population claim** — one developer's traffic is not evidence about anyone else's.
 
 ## Enable-knobs at a glance
 

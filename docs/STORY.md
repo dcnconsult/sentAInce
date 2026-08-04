@@ -124,6 +124,6 @@ science, not just the software.
 ---
 
 **See also:** [`CLAIMS.md`](CLAIMS.md) (the binding evidence ledger) · [`ADR.md`](ADR.md) (the
-architecture decisions — twenty-three and counting, each on the record) · [`../README.md`](../README.md) ·
+architecture decisions — twenty-four and counting, each on the record) · [`../README.md`](../README.md) ·
 [`QUICKSTART.md`](QUICKSTART.md) · the testbed dashboards under
 [`../exocortex/testbed/`](../exocortex/testbed/README.md).

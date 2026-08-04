@@ -5,6 +5,70 @@ What changed, and what it cost us to find out. Claims here must not exceed
 
 Numbers are measured on this project's own hardware unless stated, and negative results are kept.
 
+## [0.1.11] — 2026-08-04
+
+This release closes a loop the project was built to close: the governance RFC drew its first external
+falsification — an autonomous agent operator pressure-testing whether the audit chain's tail anchor is
+itself re-verified from outside the writing path — and auditing the claim against our own ledger found
+the public governance mapping had over-claimed. The correction, the acceptance criterion that came with
+it, the instrumentation the same failure class demanded elsewhere, and a re-measurement that retires the
+bridge's old dormancy reason ship together here.
+
+Nothing touches the kernel or the ADR-016 P1-pinned control plane. The declarative organ ships
+**dormant** as before; the one behavioural change on a live declarative deployment is an *additional*
+audit record class.
+
+### Fixed
+
+- **The governance mapping over-claimed two proposed mechanisms as shipped.** `docs/GOVERNANCE.md`
+  bundled ADR-018 (strict tail anchor + checkpointing) and ADR-017 (colony LtHash digest) — both
+  PROPOSED and unbuilt — into table rows tagged **SHIPPED**, riding their shipped neighbors (the ADR-009
+  chain, the ADR-016 pin). `docs/CLAIMS.md` was honest throughout; the mapping exceeded the binding
+  ledger. Found via the first external falsification on the governance RFC
+  ([Discussion #9](https://github.com/dcnconsult/sentAInce/discussions/9)); the rows now split shipped
+  from proposed and state the honest verification scope — reader-triggered, with tail truncation
+  undetected until ADR-018 builds. Credited in ADR-018's design record, which also adopts the reporter's
+  criterion as an acceptance condition: an anchor is admissible only when its re-verification is
+  recurring and runs outside the writing process's control.
+- **A torn audit row no longer poisons a gauge read.** `credit_funnel_gauge` could return the parked
+  verdict on a mid-write row; it now skips the torn row and says so.
+- **The community roadmap carried a superseded number as a live reason.** It still gave the 8.9% ≥2-note
+  tail as why the bridge stays dormant; re-measurement retired that reason (see Added) and the roadmap
+  now states the real remaining blocker.
+
+### Added
+
+- **The ingest boundary's fail-open is now audited.** `ingest: "tracked"` falls open to `all` by
+  contract (ADR-007) when git cannot resolve inside the hook process — previously with no trace. The
+  live hook path now stamps a `WikiIngestFailOpen` audit record carrying `requested`/`resolved`/
+  `reason`. Read-only consumers (gauges, the MCP server) deliberately do not stamp — measuring a repo
+  must never write to it. `declarative.exclude` is documented as the companion seatbelt bounding what a
+  fall-open can digest (keep it under `idf_max_nodes` or IDF ranking silently degrades to uniform).
+  Knob table rows for `ingest` and `exclude` added to `docs/OPERATIONS.md` — both existed, neither was
+  documented.
+- **The bridge-validity gauge** (`exocortex/gauge/bridge_validity_gauge.py`) — the on-body gate for the
+  dormant hippocampus bridge. Offline geometry was never the open question; whether a proposed `A→D`
+  shortcut is *executably valid* is, and only the body can answer it. This gauge is now the bridge's
+  single flip condition.
+- **The declarative tail, re-measured and banked** (`results/declarative_tail_v1/`): the ≥2-note tail
+  read **8.9% over 79 segments** in the early soak and reads **26.5% of 2,383 injected segments** on
+  2026-07-30. Both figures are correct for their windows — the store is living, so every percentage is a
+  dated snapshot, never a constant. Consequence: the bridge's thermodynamic dormancy reason is retired;
+  the validity gate above is the honest one left.
+- **ADR-024 — conditional essentiality**, and the seventh organ-contract field (`regime_frequency`):
+  judge an organ in its regime, at that regime's measured rate, not on global averages.
+- **`release/tag_drift_sweep.py`** — an advisory pre-release sweep for the drift class this release
+  fixed: an unbuilt ADR riding a bundled row's shipped tag. Exit-1-on-hit; deliberately not a ninth gate
+  unless promoted on the record.
+
+### Docs
+
+- `docs/LANDSCAPE.md` re-reviewed (2026-08-04): the audit bullet now carries the honest scope the #9
+  exchange forced, linking the thread — corrections landing on the record is the page's own contract.
+- `docs/CLAIMS.md` exocortex suite count corrected 413 → 435.
+- A standalone direction post for prospective collaborators:
+  [Discussion #33](https://github.com/dcnconsult/sentAInce/discussions/33).
+
 ## [0.1.10] — 2026-07-25
 
 This release comes out of a measurement pass over the declarative organ: a log audit across the live

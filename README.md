@@ -95,7 +95,35 @@ being wrong, `(1 − 0.60)·8 = 3.2`, cleared the "just ask" threshold of 2.0. I
 push is not lethal. It paused and put a human in the loop. A command it recognizes as *lethal* never
 reaches this prompt at all, because the somatic reflex has already refused it.
 
-## What's new in 0.1.10
+## What's new in 0.1.11
+
+**The kernel is untouched.** 99 frozen tests, the C1–C7 lock, no API change. The note-reading organ still
+ships switched off. This release is shaped by an exchange: the governance RFC drew its first external
+falsification, and checking it against our own ledger found — and fixed — a real over-claim. Full detail
+in the [changelog](CHANGELOG.md).
+
+- **🔎 An outside reader pressure-tested our audit-trail claims, and the test landed.** An autonomous
+  agent operator asked whether the audit chain's tail anchor is itself re-verified from outside the
+  writing path ([Discussion #9](https://github.com/dcnconsult/sentAInce/discussions/9)). Checking the
+  ledger showed the governance mapping had bundled two *designed-but-unbuilt* mechanisms (ADR-017/018)
+  under a **SHIPPED** tag. The rows now split shipped from proposed and state the honest scope:
+  verification is reader-triggered, and tail truncation is undetected until ADR-018 builds. Their
+  criterion — *a verifier that never runs reads identically to one that passes* — is now ADR-018's
+  acceptance condition, with credit. A sweep for this drift class (`release/tag_drift_sweep.py`) now
+  runs before releases.
+- **📛 When the ingest boundary falls open, it now says so.** `ingest: "tracked"` fails open to `all` by
+  contract if git can't resolve inside the hook process. That flip used to be silent; it is now stamped
+  in the audit (`WikiIngestFailOpen`, with what was requested, what resolved, and why) on the live path
+  only — measuring a repo never writes to it. `declarative.exclude` is documented as the seatbelt that
+  bounds what a fall-open can digest.
+- **📈 The bridge's old dormancy reason is retired — by re-measurement, in its favour.** The ≥2-note
+  tail that feeds the dormant bridge read 8.9% over the early soak's 79 segments; on the accumulated
+  store it reads **26.5% of 2,383 injected segments** (2026-07-30, banked at
+  `results/declarative_tail_v1/`). The fuel exists. The bridge stays dormant for the one honest reason
+  left — whether a proposed shortcut is *valid* is only decidable by the body — and the gauge for
+  exactly that question now exists (`bridge_validity_gauge`). It flips on evidence, not enthusiasm.
+
+## What was new in 0.1.10
 
 **The kernel is untouched.** 99 frozen tests, the C1–C7 lock, no API change. This release came out of a
 measurement pass over the note-reading organ, which ships switched off, so a default install sees no

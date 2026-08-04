@@ -75,9 +75,16 @@ def _effective_declarative(state_dir: Path) -> dict:
 # ------------------------------------------------------------------ stage 1–2: the audit funnel
 def audit_funnel(records: list) -> dict:
     """Consequence-anchored stage counts. ``wiki_injected``/``wiki_used`` are stamped on the PostToolUse
-    consequence record only when nonzero, so absence = 0 for that segment."""
+    consequence record only when nonzero, so absence = 0 for that segment.
+
+    Also reports the **multi-note tail**: the share of injected segments crediting ≥2 notes. That tail is
+    the Hippocampus bridge's flip trigger (a bridge needs ≥2 credited notes in one segment to have any
+    route to shortcut), and it is the number CLAIMS binds — so it belongs in a gauge you can re-run, not
+    in a one-off script. It moves with the corpus, the vault and the credited set, so a bare percentage is
+    meaningless: always quote it with ``tail_n`` and the date of the run."""
     prompts = prompts_injected = 0
     cons = inj = used = 0
+    tail = {}
     for r in records:
         ev = r.get("event", "")
         if ev == "UserPromptSubmit":
@@ -86,12 +93,19 @@ def audit_funnel(records: list) -> dict:
                 prompts_injected += 1
         elif ev == "PostToolUse" and r.get("tool") == "Bash" and r.get("outcome") == "ok":
             cons += 1
+            n_used = int(r.get("wiki_used", 0) or 0)
             if int(r.get("wiki_injected", 0) or 0) > 0:
                 inj += 1
-            if int(r.get("wiki_used", 0) or 0) > 0:
+                tail[n_used] = tail.get(n_used, 0) + 1     # denominator = INJECTED segments
+            if n_used > 0:
                 used += 1
+    tail_n = sum(tail.values())
+    ge2 = sum(v for k, v in tail.items() if k >= 2)
     return {"prompts": prompts, "prompts_ctx_injected": prompts_injected,
-            "consequences": cons, "wiki_injected_gt0": inj, "wiki_used_gt0": used}
+            "consequences": cons, "wiki_injected_gt0": inj, "wiki_used_gt0": used,
+            "tail_n": tail_n, "tail_ge2": ge2,
+            "tail_ge2_frac": round(ge2 / tail_n, 3) if tail_n else 0.0,
+            "tail_histogram": {str(k): tail[k] for k in sorted(tail)}}
 
 
 # ------------------------------------------------------------------ stage 3: the colony credit census
@@ -227,7 +241,10 @@ def _fmt(res: dict) -> str:
          f"  STAGE 2 echo/use  : {f['wiki_used_gt0']}/{f['consequences']} had a used-note echo (min_overlap={v.get('min_overlap', '?')})",
          f"  STAGE 3 credit    : {c['note_anchored_classes']}/{c['classes']} classes note-anchored "
          f"({c['note_anchor_edges']} anchor edges; {c['deposits_total']} total deposits)",
-         f"  (context: {f['prompts_ctx_injected']}/{f['prompts']} prompts got ANY injected context)", ""]
+         f"  (context: {f['prompts_ctx_injected']}/{f['prompts']} prompts got ANY injected context)",
+         f"  MULTI-NOTE TAIL   : {f['tail_ge2']}/{f['tail_n']} injected segments credit ≥2 notes "
+         f"({f['tail_ge2_frac']:.1%}) — the Hippocampus-bridge trigger; quote it WITH n and the date",
+         f"                      notes-credited histogram: {f['tail_histogram']}", ""]
     if v.get("nodes"):
         L += [f"  VAULT: {v['nodes']} warmed nodes — {v['creditable_frac']:.1%} echo-creditable at "
               f"min_overlap={v['min_overlap']}  ({v['frac_at_1']:.1%} at 1); lexical surface = "
