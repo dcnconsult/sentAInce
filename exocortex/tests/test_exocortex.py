@@ -379,6 +379,67 @@ def test_precompact_consolidates_all_classes_no_inject(tmp_path, monkeypatch):
     assert SessionState.load(s).resplice is True         # armed → next UserPromptSubmit will splice
 
 
+def test_sessionstart_wallclock_sleep_when_overdue(tmp_path, monkeypatch):
+    """The wall-clock circadian trigger (2026-08-19): sleep's only trigger was PreCompact and compaction
+    went extinct under big context windows, so SessionStart now consolidates when the estate's newest
+    consolidation stamp is older than CIRCADIAN_SLEEP_SECS. A never-consolidated store (stamp 0.0) is
+    maximally overdue — the estate sleeps on the next session start."""
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(tmp_path))
+    import exocortex.hook as hook
+    monkeypatch.setattr(hook, "CIRCADIAN_WAKE_EPOCH", 0.0)          # past the C5 hold (see below)
+    s = "owl"
+    lbl = _converge(s)
+    assert Colony.load(lbl).consolidations == 0                     # never slept
+    from exocortex.hook import handle_sessionstart
+    handle_sessionstart({"session_id": s}, Mode.OBSERVE)
+    col = Colony.load(lbl)
+    assert col.consolidations == 1 and col.last_consolidated > 0    # the wake swept
+    assert col.deposits == 5                                        # sleep never touches deposits
+    assert SessionState.load(s).resplice is True
+
+
+def test_sessionstart_skips_sleep_when_fresh(tmp_path, monkeypatch):
+    """A fresh consolidation stamp (here: PreCompact just fired) suppresses the wall-clock sweep — the
+    two triggers can never double-decay a store inside one circadian window."""
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(tmp_path))
+    import exocortex.hook as hook
+    monkeypatch.setattr(hook, "CIRCADIAN_WAKE_EPOCH", 0.0)
+    s = "nap"
+    lbl = _converge(s)
+    handle_precompact({"session_id": s}, Mode.OBSERVE)              # bonus trigger stamps now
+    assert Colony.load(lbl).consolidations == 1
+    from exocortex.hook import handle_sessionstart
+    handle_sessionstart({"session_id": s}, Mode.OBSERVE)
+    assert Colony.load(lbl).consolidations == 1                     # no second decay pass
+
+
+def test_sessionstart_sleep_inert_before_wake_epoch(tmp_path, monkeypatch):
+    """The PREREG C5 hold: before CIRCADIAN_WAKE_EPOCH the wall-clock trigger is INERT — the brAIn flip
+    window (closes 2026-08-25) ran entirely under the sleepless regime, and every estate deploy executes
+    this checkout, so waking mid-window would change the flip's per-turn surroundings. Time-independent
+    pin: an epoch strictly in the future must suppress the sweep whatever today's date is."""
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(tmp_path))
+    import time as _time
+    import exocortex.hook as hook
+    monkeypatch.setattr(hook, "CIRCADIAN_WAKE_EPOCH", _time.time() + 3600)
+    s = "held"
+    lbl = _converge(s)                                              # never consolidated = maximally overdue
+    from exocortex.hook import handle_sessionstart
+    handle_sessionstart({"session_id": s}, Mode.OBSERVE)
+    assert Colony.load(lbl).consolidations == 0                     # held: overdue but pre-epoch
+
+
+def test_sleep_sweep_min_age_recheck_is_per_store(tmp_path, monkeypatch):
+    """The race guard: min_age is re-checked UNDER each colony lock, so a concurrent trigger that lost
+    the race sweeps nothing (swept == 0) instead of double-decaying."""
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(tmp_path))
+    s = "race"
+    _converge(s)
+    from exocortex.hook import CIRCADIAN_SLEEP_SECS, _sleep_sweep
+    assert _sleep_sweep(s) == 1                                     # first trigger wins, stamps now
+    assert _sleep_sweep(s, min_age=CIRCADIAN_SLEEP_SECS) == 0       # the loser skips every fresh store
+
+
 def test_userpromptsubmit_splices_matching_class(tmp_path, monkeypatch):
     """THE MILESTONE (per-class, verified channel): after a class converges + the PreCompact sleep, a
     SAME-CLASS prompt splices THAT class's dense memory; a repeat of the same class stays silent."""

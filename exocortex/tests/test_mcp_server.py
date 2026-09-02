@@ -277,3 +277,54 @@ def test_cli_transport_flag_defaults_and_choices(monkeypatch):
 
     with pytest.raises(SystemExit):
         mcp_server._parse_args(["--transport", "carrier-pigeon"])
+
+
+def test_server_reachable_subprocesses_never_inherit_stdin():
+    """Every subprocess this server can reach must pass an explicit ``stdin`` (DEVNULL). Root-caused
+    2026-08-09: a child git inheriting the server's stdin — the JSON-RPC stdio pipe with a standing
+    blocking read — parks Git-for-Windows' startup ``NtQueryObject`` probe in the kernel behind that
+    read; the 5 s timeout kills only the ``Git\\cmd`` shim, the mingw grandchild survives holding the
+    output pipes, and ``subprocess.run``'s post-kill ``communicate()`` joins forever ON the event loop
+    (FastMCP runs sync tools on the MainThread) — one `memory_status` call froze the whole server for
+    30+ min and every server start leaked unkillable git zombies. Static pin so a NEW call site in
+    these modules fails here before it can wedge a live host."""
+    import ast
+    import inspect
+
+    import cerebral.intents
+    from exocortex.wiki import store
+
+    offenders = []
+    for mod in (store, cerebral.intents):
+        tree = ast.parse(inspect.getsource(mod))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            f = node.func
+            if (isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name)
+                    and f.value.id == "subprocess"
+                    and f.attr in {"run", "Popen", "check_output", "check_call", "call"}):
+                if "stdin" not in {k.arg for k in node.keywords}:
+                    offenders.append(f"{mod.__name__}:{node.lineno}")
+    assert not offenders, (
+        f"subprocess spawn(s) without explicit stdin — the child inherits the MCP stdio pipe and can "
+        f"wedge the event loop (see _git_tracked_md docstring): {offenders}")
+
+
+def test_git_tracked_md_spawns_git_with_devnull_stdin(tmp_path, monkeypatch):
+    """Behavioral pin of the same contract at the one site the wedge was observed: the git spawn in
+    ``_git_tracked_md`` must not inherit our stdin."""
+    import subprocess as sp
+
+    from exocortex.wiki import store
+
+    seen = {}
+    real_run = sp.run
+
+    def spy(cmd, **kw):
+        seen["stdin"] = kw.get("stdin", "INHERITED")
+        return real_run(cmd, **kw)
+
+    monkeypatch.setattr(store.subprocess, "run", spy)
+    store._git_tracked_md(tmp_path)          # not a repo → returns None; the spawn still happens
+    assert seen["stdin"] == sp.DEVNULL

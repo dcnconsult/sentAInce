@@ -630,6 +630,62 @@ re-baseline, but a red gate nobody runs, which is the same thing wearing a diffe
 means what it says if someone is watching it: **wire the tuner suite into CI** (the standing follow-up),
 or the next omission costs another week.
 
+**Re-baseline record — `6bb3465 → 4c0e671` (change 2026-08-07; recorded 2026-08-18, PI-approved).**
+G8-J4a, the agent-identity audit dimension: subagents run under the *parent* `session_id`, so concurrent
+subagents were indistinguishable in the audit stream; `audit.record()` now carries `agent_id`/`agent_type`
+on every row, threaded from hook stdin at all 7 call sites — the fifth control-plane change since R3
+(`hook.py` only; `colony.py`/`epistemic.py` untouched), admitted per this ADR's bar: **ADR-001 unaffected**
+(no τ added or moved; deposits remain exit-0-only — the change widens what a row *records*, never what
+earns one); no gate decision touched (deny/allow paths identical but for the spread kwargs); chain-safe by
+construction (each record hashes as written; a mixed-era chain verifies green); kernel-lock untouched.
+Live control passed 2026-08-07T15:38Z (a spawned subagent's Read row carries its `agent_id` under the
+parent session — written-row evidence, not an attempt-claim). Suites at the change: product 99/99,
+`exocortex` 438/438. The pin enforces the freeze forward from `4c0e671`.
+
+*The record was 11 days late — the second occurrence of the `62b93ab` lesson.* The change's own commit
+said "no re-baseline": true for the frozen-DNA kernel baseline it meant, wrong for **this** pin, which
+also covers `hook.py`. The gate sat RED 2026-08-07 → 2026-08-18, found only when a routine tuner-suite
+run tripped it — the same unwatched-gate route as before, now with a precedent it ignored. The standing
+CI follow-up has cost a week twice; it is no longer optional.
+
+**Re-baseline record — `4c0e671 → fceaa93` (2026-08-19, PI-approved; recorded same-commit-cycle).**
+The wall-clock circadian sleep: sleep's only trigger was PreCompact, and compaction went extinct under
+big context windows (zero compaction events in 39/40 transcripts after 2026-07-21 — 30 days without a
+consolidation, 48/175 stores never swept, raw edge growth distorting edge-count consumers).
+`handle_sessionstart` now consolidates when the estate's newest `last_consolidated` stamp is older than
+`CIRCADIAN_SLEEP_SECS` (24h — the cadence `DECAY` lived under in compaction's era); the PreCompact sweep
+is extracted **unchanged** into `_sleep_sweep()` (W3 per-store locks, session-before-colony order) plus a
+`min_age` re-check under each colony lock so the two triggers and concurrent session starts can never
+double-decay a store. Admitted per this ADR's bar: **ADR-001 unaffected** (no τ added or moved; deposits
+remain exit-0-only — the change moves *when* the existing decay pass runs, never what earns memory);
+fail-open preserved (sleep never breaks a wake — the `b1f0342` SessionStart lesson); kernel-lock
+untouched. Suites: exocortex 94 (file), tuner 120, lock 99. The pin enforces the freeze forward from
+`fceaa93`. *Process note: this was the first re-baseline under the pre-commit gate — the gate warned at
+the landing commit and blocked further commits until this record, closing the multi-day-RED failure mode
+by construction.*
+
+**Re-baseline record — `fceaa93 → e4bd595` (2026-08-19, same task, recorded same-commit-cycle).** The C5
+hold on the trigger just admitted: every estate deploy executes this editable checkout (verified —
+brAIn's interpreter resolves `exocortex` to this tree), and the brAIn wiki-flip window (PREREG C5,
+single-arm, closes 2026-08-25) has run entirely under the sleepless regime, so waking the colony
+mid-window would change the flip's per-turn splice surroundings — the same contamination class the
+MCP-prewarm fix was queued post-window to avoid. `CIRCADIAN_WAKE_EPOCH` (2026-08-26T00:00Z) makes the
+wall-clock trigger inert until the window closes: a dated guard that becomes a permanent no-op, never a
+knob. Strictly narrower than `fceaa93` (it can only *suppress* a sweep); ADR-001 untouched. Suites:
+exocortex 95, lock 99. The pin enforces the freeze forward from `e4bd595`.
+
+**Follow-up CLOSED (2026-08-18): the tuner suite is wired into CI.** The private monorepo has no remote,
+so GitHub Actions never runs here and the public `ci.yml` cannot carry a commercial leaf — the CI is a
+versioned pre-commit hook, `exocortex/tuner/githooks/pre-commit` (COMMERCIAL_EXCLUDE), installed per
+clone with `git config core.hooksPath exocortex/tuner/githooks`. Every commit pays the pin test (~0.6s);
+a RED pin blocks **all** commits until the recorded re-baseline lands (the re-baseline commit itself
+passes — pytest reads the working-tree test file); staging a pinned control-plane file warns loudly at
+the moment it happens; staging anything under `exocortex/` pays the full tuner suite (~20s). Verified
+with a negative control (baseline forced back to `6bb3465` → block, exit 1), the warning path (a real
+staged `hook.py` edit → warning fired, reverted), and the live positive control (this very commit ran
+the hook). Fail-open only on a missing pytest — a machine problem is not a pin problem — and the hook
+line endings are pinned LF in `.gitattributes` (a CRLF-mangled sh hook is a gate nobody runs, again).
+
 ---
 
 ## ADR-017 — Colony snapshot LtHash digest (tamper-evidence for the mutable procedural layer)

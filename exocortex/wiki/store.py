@@ -36,12 +36,19 @@ def _git_tracked_md(vault: Path, reasons: "list | None" = None) -> "list | None"
     the rglob scan. This is the first subprocess on the per-tool hot path, so it is BOUNDED (timeout) and
     NEVER raises — the ADR-007 numpy-free/fail-open contract carried to a process boundary.
 
+    ``stdin=DEVNULL`` is load-bearing, not hygiene: without it git inherits the caller's stdin. Inside the
+    stdio MCP server that handle is the JSON-RPC pipe with a standing blocking read, and Git-for-Windows'
+    startup probe (``NtQueryObject`` on its std handles, MSYS pty detection) parks in the kernel behind
+    that read — the timeout then kills only the ``Git\\cmd`` shim, the mingw grandchild survives holding
+    the output pipes, and the post-kill ``communicate()`` inside ``subprocess.run`` joins forever. That
+    wedge froze the whole MCP event loop for 30+ min (root-caused 2026-08-09).
+
     ``reasons`` (optional sink) collects WHY it failed. The failure used to be discarded here, which is
     what made the fail-open unauditable downstream — see ``_record_fail_open``."""
     try:
         proc = subprocess.run(
             ["git", "-C", str(vault), "ls-files", "-z", "--", "*.md"],
-            capture_output=True, timeout=5.0,
+            capture_output=True, timeout=5.0, stdin=subprocess.DEVNULL,
         )
         if proc.returncode != 0:
             if reasons is not None:

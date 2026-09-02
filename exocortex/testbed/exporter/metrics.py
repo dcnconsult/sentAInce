@@ -299,9 +299,12 @@ def computed_attribution_gauge() -> dict:
 
 
 def read_colonies(state_dir: Path) -> dict:
-    """label -> {tau: dict, deposits: int, consolidations: int, last_consolidated: float}.
-    Filenames are colony_<label>.json. ``consolidations`` is the circadian-sleep stamp (Q1 provenance:
-    the one deposit-free τ writer, made attributable from the store)."""
+    """label -> {tau: dict, deposits: int, consolidations: int, last_consolidated: float,
+    last_deposit_ts: float}. Filenames are colony_<label>.json. ``consolidations`` is the
+    circadian-sleep stamp (Q1 provenance: the one deposit-free τ writer, made attributable from the
+    store). ``last_deposit_ts`` is the newest edge-deposit stamp in ``meta`` — 0.0 when the store
+    carries no stamps (older stores; synthetic fixtures), which consumers must read as
+    recency-unknown, never as dormant."""
     colonies = {}
     for p in sorted(state_dir.glob("colony_*.json")):
         try:
@@ -310,9 +313,13 @@ def read_colonies(state_dir: Path) -> dict:
             continue
         label = d.get("label") or p.stem[len("colony_"):]
         tau = d.get("tau") if isinstance(d.get("tau"), dict) else {}
+        meta = d.get("meta") if isinstance(d.get("meta"), dict) else {}
+        stamps = [float(m["ts"]) for m in meta.values()
+                  if isinstance(m, dict) and isinstance(m.get("ts"), (int, float))]
         colonies[label] = {"tau": tau, "deposits": d.get("deposits", 0),
                            "consolidations": int(d.get("consolidations", 0) or 0),
-                           "last_consolidated": float(d.get("last_consolidated", 0.0) or 0.0)}
+                           "last_consolidated": float(d.get("last_consolidated", 0.0) or 0.0),
+                           "last_deposit_ts": float(max(stamps)) if stamps else 0.0}
     return colonies
 
 
