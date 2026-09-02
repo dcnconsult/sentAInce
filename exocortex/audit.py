@@ -54,15 +54,21 @@ def record(*, session: str, event: str, mode: str, tool: str = "", command: str 
            energy: float | None = None, tier: str = "", strategy_lock: int = 0,
            injected: bool = False, outcome: str = "", reason: str = "", output: str = "",
            seg_len: int = 0, wiki_injected: int = 0, wiki_used: int = 0,
-           lock_failopen: int = 0) -> dict:
+           lock_failopen: int = 0, agent_id: str = "", agent_type: str = "") -> dict:
     """Build a flat audit record (the compliance + functional fields, spec §5). ``output`` is a
     truncated snippet of the observed stdout/stderr — lets judges verify ACTUAL execution vs a claim.
     ``seg_len`` = #edges in the colony segment a Bash consequence deposited (organ 3D telemetry: the live
     flail-then-succeed length distribution that decides when to flip ``eligibility_trace.mode`` on).
     ``lock_failopen`` = fail-open store-lock acquisitions during this event (ADR-020 W4: the contention
-    telemetry that decides whether the parked single-writer daemon is ever needed; omitted when 0)."""
+    telemetry that decides whether the parked single-writer daemon is ever needed; omitted when 0).
+    ``agent_id``/``agent_type`` = which agent produced the event — subagents run under the PARENT'S
+    ``session_id``, so this is the only dimension separating them from the main loop. Always written,
+    never omit-when-empty (unlike the wiki/W4 fields): an ABSENT field must stay reserved for
+    pre-dimension rows, so the three states stay honest — absent = old era, "" = main loop,
+    value = subagent."""
     return {
-        "session": session, "event": event, "mode": mode, "tool": tool,
+        "session": session, "agent_id": agent_id, "agent_type": agent_type,
+        "event": event, "mode": mode, "tool": tool,
         "command": command, "command_key": command_key, "signature": signature,
         "somatic_permitted": somatic_permitted, "somatic_organ": somatic_organ,
         "epistemic_decision": epistemic_decision, "action": action,

@@ -89,6 +89,13 @@ primitive present, not yet wired), **MARGINAL** (measured small / unproven).
 - **Read-only memory MCP server** — the earned colony + declarative wiki exposed to any MCP host (Claude
   Desktop/Code, Cursor, Cline) as recall tools; **read-only w.r.t. memory** (retrieval deposits no τ,
   preserving ADR-001), multi-repo, non-blocking on large vaults. [`MCP_SERVER.md`](MCP_SERVER.md).
+  **⚠ Known defect (fix queued):** the server's startup pre-warm can **rewrite a repo's derived
+  `wiki_cache.json`** with the wrong inclusion boundary — the target repo's `declarative.exclude` is
+  never applied (it resolves from the *server's* config context), and the `tracked`→`all` fail-open is
+  unstamped for server callers. The cache is **derived state, not memory** — no τ is affected and the
+  live hook re-digests on the signature mismatch rather than serving the wrong corpus; the cost is
+  hot-path parse latency. Queued fix: the pre-warm must not persist its digest, and boundary resolution
+  must use the target repo's config.
 - **Cursor IDE integration (model-independent host)** — the organism runs under Cursor via the provider
   adapter (Claude Code stays default + byte-identical). **Live-verified end-to-end**: somatic veto blocks,
   the splice injects each turn, deposits carry real multi-model provenance. **Honest limit:** a soft,

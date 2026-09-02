@@ -95,7 +95,30 @@ being wrong, `(1 − 0.60)·8 = 3.2`, cleared the "just ask" threshold of 2.0. I
 push is not lethal. It paused and put a human in the loop. A command it recognizes as *lethal* never
 reaches this prompt at all, because the somatic reflex has already refused it.
 
-## What's new in 0.1.11
+## What's new in 0.1.12
+
+**The kernel is untouched.** 99 frozen tests, the C1–C7 lock, no API change. The note-reading organ
+still ships switched off. Two measurements drove this release; full detail in the
+[changelog](CHANGELOG.md).
+
+- **🛌 The organism had silently stopped sleeping — it now sleeps by the clock.** Memory
+  consolidation fired only on context compaction, and large context windows made compaction extinct
+  (zero events in 39/40 transcripts over 30 days; 48/175 stores never consolidated). Session start
+  now runs the consolidation sweep whenever the newest stamp is older than 24 h — fail-open, so
+  sleep can never break a wake, and race-safe under concurrent sessions. The first wall-clock wake
+  was verified live on 2026-08-26: **177/177 stores consolidated, coverage 1.0**, banked at
+  `results/circadian_wake_v1/`.
+- **🔧 A 30-minute memory-server freeze, root-caused to a single inherited file handle.** A `git`
+  spawned by the MCP server inherited the server's stdin — the JSON-RPC pipe — and Windows' git
+  startup probe parked in the kernel behind its standing read, freezing the whole server on one
+  call. Every MCP-reachable spawn now gets `stdin=DEVNULL`, verified by an A/B control (hang → 0.02 s)
+  and pinned so a new call site can't reintroduce the class.
+- **🪪 Audit rows now say which agent acted.** Concurrent subagents share the parent's session id and
+  were indistinguishable in the audit stream; every row now carries `agent_id`/`agent_type`,
+  chain-safe, with the era readable from the row alone. Instrumentation only — nothing consumes it
+  yet, and that is recorded as such.
+
+## What was new in 0.1.11
 
 **The kernel is untouched.** 99 frozen tests, the C1–C7 lock, no API change. The note-reading organ still
 ships switched off. This release is shaped by an exchange: the governance RFC drew its first external

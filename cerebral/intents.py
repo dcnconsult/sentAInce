@@ -122,7 +122,7 @@ def _git_commit_date(vault: Path, rel: str, cache: dict) -> "str | None":
     try:
         proc = subprocess.run(
             ["git", "-C", str(vault), "log", "-1", "--format=%cI", "--", rel],
-            capture_output=True, timeout=5.0,
+            capture_output=True, timeout=5.0, stdin=subprocess.DEVNULL,
         )
         if proc.returncode == 0:
             out = _iso_date(proc.stdout.decode("utf-8", errors="replace").strip())
@@ -235,7 +235,7 @@ def _git_tracked(vault: Path) -> "list | None":
     try:
         proc = subprocess.run(
             ["git", "-C", str(vault), "ls-files", "-z", "--", "*.md"],
-            capture_output=True, timeout=10.0,
+            capture_output=True, timeout=10.0, stdin=subprocess.DEVNULL,
         )
         if proc.returncode != 0:
             return None
@@ -260,7 +260,7 @@ def _git_dates_bulk(vault: Path, rels: list) -> dict:
         cmd = ["git", "-C", str(vault), "log", "--format=%x00%cI", "--name-only", "--"]
         if sum(len(s) for s in spec) < 20000:               # pathspec-limit the walk when it fits the
             cmd += spec                                     # command line; else walk all and filter here
-        proc = subprocess.run(cmd, capture_output=True, timeout=30.0)
+        proc = subprocess.run(cmd, capture_output=True, timeout=30.0, stdin=subprocess.DEVNULL)
         if proc.returncode != 0:
             return {}
         out: dict = {}
@@ -366,7 +366,7 @@ def _git_tracked_json(vault: Path) -> list:
     try:
         proc = subprocess.run(
             ["git", "-C", str(vault), "ls-files", "-z", "--", "*ledger*.json"],
-            capture_output=True, timeout=10.0,
+            capture_output=True, timeout=10.0, stdin=subprocess.DEVNULL,
         )
         if proc.returncode == 0:
             rels = proc.stdout.decode("utf-8", errors="replace").split("\0")

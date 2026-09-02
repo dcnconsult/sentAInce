@@ -5,6 +5,58 @@ What changed, and what it cost us to find out. Claims here must not exceed
 
 Numbers are measured on this project's own hardware unless stated, and negative results are kept.
 
+## [0.1.12] — 2026-09-01
+
+Two instruments drove this release, and both found something real. A live-session post-mortem
+root-caused why one MCP memory call could freeze the whole memory server for half an hour. And an
+edge-count anomaly in the reflection layer traced back to the organism having silently stopped
+sleeping: consolidation's only trigger was context compaction, and big context windows made
+compaction extinct. Both fixes ship here, each with the measurement that found it and the
+regression pin that keeps it closed.
+
+Nothing touches the kernel: the 99-test C1–C7 lock is untouched, there is no API change, and the
+declarative organ still ships **dormant**. Safe upgrade.
+
+### Fixed
+
+- **The MCP stdio server could wedge for 30 minutes on one `memory_status` call.** Root-caused from
+  a live session (2026-08-09): a `git` spawned by the server **inherits the server's stdin** — the
+  JSON-RPC pipe, which always carries a standing blocking read. Git-for-Windows' startup probe parks
+  in the kernel behind that read; the timeout kills only the shim while the grandchild survives
+  holding the output pipes, and the post-kill join then blocks forever **on the event loop** — so one
+  stuck call froze the entire server, background vault-warming wedged identically, and every server
+  start leaked unkillable `git` zombies. Fix: `stdin=DEVNULL` at every MCP-reachable spawn
+  (`exocortex/wiki/store.py`, `cerebral/intents.py`). Verified by A/B control — inherit-stdin hangs
+  to timeout, DEVNULL completes in 0.02 s — and pinned by an AST scan that fails any new subprocess
+  call in those modules without an explicit stdin.
+
+### Added
+
+- **Wall-clock circadian sleep.** Memory consolidation (decay, prune, cap) fired only on context
+  compaction — and compaction went extinct under large context windows: zero compaction events in
+  39/40 transcripts after 2026-07-21, 30 days without a single consolidation, 48/175 stores never
+  consolidated, raw edge growth distorting every edge-count consumer downstream. SessionStart now
+  runs the sweep when the newest consolidation stamp is older than 24 h (the cadence sleep actually
+  lived under in compaction's era). Fail-open — sleep can never break a session start — and
+  idempotent under racing triggers (a min-age re-check under each store's lock). ADR-001 holds: this
+  changes *when* the existing decay pass runs, never what earns memory. **First wake verified live
+  2026-08-26: 177/177 stores consolidated and stamped, coverage 1.0** — banked at
+  `results/circadian_wake_v1/`.
+- **Agent-identity audit dimension.** Subagents run under the parent's session id, so concurrent
+  subagents were indistinguishable in the audit stream. Every audit row now carries
+  `agent_id`/`agent_type`, threaded from hook stdin at all 7 call sites — always written, never
+  omitted, so the era stays readable from the row alone (absent = pre-dimension, `""` = main loop,
+  value = subagent). Chain-safe by construction; mixed-era chains verify green. Instrumentation
+  only: no gate or metric consumes it yet.
+
+### Docs
+
+- **A known defect is on the record before its fix:** the MCP server's startup pre-warm can rewrite
+  a repo's derived `wiki_cache.json` with the wrong inclusion boundary (`docs/ROADMAP.md` §MCP). The
+  cache is derived state, not memory — no τ is affected — and the fix is queued.
+- `docs/CLAIMS.md` test counts refreshed against the real suites: 444 organism / 49 battle /
+  37 cerebral / 120 tuner, plus the untouched 99-lock.
+
 ## [0.1.11] — 2026-08-04
 
 This release closes a loop the project was built to close: the governance RFC drew its first external

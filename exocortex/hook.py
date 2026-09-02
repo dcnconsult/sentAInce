@@ -257,6 +257,15 @@ def classify_outcome(data: dict) -> str:
     return "fail" if any(mk in blob for mk in _FAIL_MARKERS) else "ok"
 
 
+def _agent_fields(data: dict) -> dict:
+    """Agent-identity dimension: the harness stamps ``agent_id``/``agent_type`` on hook payloads for
+    subagent tool calls and omits them on main-loop calls, while ``session_id`` stays the parent's —
+    so without these two fields concurrent subagents are indistinguishable in the audit stream (the
+    reporter-dimension lesson). Spread into every ``audit.record`` call; ``""`` = main loop."""
+    return {"agent_id": str(data.get("agent_id") or ""),
+            "agent_type": str(data.get("agent_type") or "")}
+
+
 # ---- per-event handlers ----
 def handle_pretooluse(data: dict, m: Mode):
     # The Exocortex is the permission authority for the session. Non-command tools (Read/Edit/Write/…)
@@ -293,7 +302,8 @@ def handle_pretooluse(data: dict, m: Mode):
                                    somatic_permitted=(not ps_lethal) if tool == "PowerShell" else None,
                                    somatic_organ=("C1_interlock" if ps_lethal else ""),
                                    reason=(out["hookSpecificOutput"]["permissionDecisionReason"]
-                                           if action == "deny" else "")))
+                                           if action == "deny" else ""),
+                                   **_agent_fields(data)))
         _track_node(session, tool, target)   # colony trail (the path toward the next consequence)
         _buffer_action(session, tool, data)  # wiki attribution: what the model actually did (gated)
         return out
@@ -335,6 +345,7 @@ def handle_pretooluse(data: dict, m: Mode):
         epistemic_decision=everdict.decision.value, action=action,
         energy=st.energy, tier=st.tier(), strategy_lock=st.consecutive_failures(key),
         reason=(out["hookSpecificOutput"]["permissionDecisionReason"] if out else ""),
+        **_agent_fields(data),
     )
     audit.append(rec)
     _track_node(session, "Bash", cmd)   # extend the trail with the command node — loads FRESH under the
@@ -447,6 +458,7 @@ def handle_consequence(data: dict, m: Mode, outcome: str):
         outcome=outcome, output=snippet, seg_len=seg_len,
         wiki_injected=wiki_injected, wiki_used=wiki_used,
         lock_failopen=lock_failopen,   # W4: fail-open lock acquisitions during this consequence
+        **_agent_fields(data),
     ))
     return None
 
@@ -523,37 +535,67 @@ def handle_userpromptsubmit(data: dict, m: Mode):
     audit.append(audit.record(
         session=session, event="UserPromptSubmit", mode=m.value,
         energy=st.energy, tier=st.tier(), injected=bool(blocks), reason=f"class={label}",
+        **_agent_fields(data),
     ))
     return out
 
 
+CIRCADIAN_SLEEP_SECS = 24 * 3600
+# Wall-clock sleep-pressure floor. Sleep's ONLY trigger was PreCompact, and big context windows made
+# compaction extinct (zero compaction events in 39/40 transcripts after 2026-07-21 → 30 days without a
+# single consolidation, 48/175 stores never consolidated, raw edge growth distorting every edge-count
+# consumer). During compaction's era sleep ran ~daily under heavy use (5 events 06-28..07-02), so 24h
+# preserves the cadence DECAY was living under rather than inventing a new one.
+
+CIRCADIAN_WAKE_EPOCH = 1787702400.0   # 2026-08-26T00:00Z — the trigger is INERT before this.
+# PREREG C5 hold (brAIn wiki flip, single-arm, window closes 2026-08-25): every estate deploy executes
+# THIS editable checkout (verified: brAIn's C:/Python314 resolves exocortex here), and the flip's whole
+# window has run under the sleepless regime — waking the colony mid-window would change the per-turn
+# splice surroundings the same way the queued MCP-prewarm fix would have. The epoch is permanent record,
+# not a knob: after 2026-08-26 the guard is a no-op forever and needs no removal.
+
+
+def _sleep_sweep(session: str, min_age: float = 0.0) -> int:
+    """One consolidation pass (decay, prune, cap — endocrine levers) over every colony store, then arm
+    the re-splice flag. ADR-020 W3: consolidate is a cross-process RMW — discover the classes, then
+    re-load and sweep EACH under its own colony lock so a concurrent deposit isn't silently overwritten
+    (one class at a time; every colony lock released before the session flag-write, per the
+    session-before-colony order law). ``min_age`` makes concurrent triggers idempotent: a store
+    consolidated less than ``min_age`` seconds ago is skipped, re-checked UNDER its lock, so two racing
+    sessions can never double-decay the same store."""
+    from exocortex.colony import Colony
+    from exocortex.endocrine import levers
+    prune, cap = levers(SessionState.load(session).tier())   # read-only peek (no save → no race)
+    swept = 0
+    now = time.time()
+    for label in [c.label for c in Colony.all()]:
+        with Colony.locked(label) as col:
+            if min_age and now - col.last_consolidated < min_age:
+                continue
+            col.consolidate(prune=prune, cap=cap)
+            col.save()
+            swept += 1
+    # BUG_SESSIONSTATE_RACE: lock only the flag write — not the whole consolidation sweep above
+    with SessionState.locked(session) as st:
+        st.resplice = True          # wake → re-inject the matching class's map on the next prompt
+        st.save()
+    return swept
+
+
 def handle_precompact(data: dict, m: Mode):
-    """The circadian 'sleep'. EMPIRICALLY VERIFIED (headless capture, 2.1.195): PreCompact fires
+    """The context-pressure 'sleep'. EMPIRICALLY VERIFIED (headless capture, 2.1.195): PreCompact fires
     (trigger auto|manual) but its ``additionalContext`` is NOT injected into the model — so this hook
     does the CONSOLIDATION only (decay once, prune the dust, cap to the strongest reflexes) and sets a
     per-session re-splice flag. The colony lives in ``colony.json`` (it already survives compaction,
     independent of the transcript); the dense memory is spliced back on the next ``UserPromptSubmit``
-    (the verified injection channel) — see [[claude-code-hook-contract-2-1-195]]."""
+    (the verified injection channel) — see [[claude-code-hook-contract-2-1-195]]. Since 2026-08-19 this
+    is the BONUS trigger: the load-bearing one is the wall-clock check in ``handle_sessionstart``
+    (compaction went extinct under big context windows — see CIRCADIAN_SLEEP_SECS)."""
     session = str(data.get("session_id", "session"))
     consolidated = 0
     if colony_enabled():
         try:
-            from exocortex.colony import Colony
-            from exocortex.endocrine import levers
-            prune, cap = levers(SessionState.load(session).tier())   # read-only peek (no save → no race)
-            # ADR-020 W3: consolidate is a cross-process RMW — discover the classes, then re-load and
-            # sweep EACH under its own colony lock so a concurrent deposit isn't silently overwritten
-            # (one class at a time; every colony lock released before the session flag-write below,
-            # per the session-before-colony order law).
-            for label in [c.label for c in Colony.all()]:
-                with Colony.locked(label) as col:
-                    col.consolidate(prune=prune, cap=cap)
-                    col.save()
-                consolidated += 1
-            # BUG_SESSIONSTATE_RACE: lock only the flag write — not the whole consolidation sweep above
-            with SessionState.locked(session) as st:
-                st.resplice = True      # wake → re-inject the matching class's map on the next prompt
-                st.save()
+            consolidated = _sleep_sweep(session)
         except Exception:
             consolidated = 0            # fail open — never block compaction
     # Hippocampus bridge (Ticket 2; gated, dormant): sleep is when geometry PROPOSES provisional A→D edges
@@ -571,7 +613,7 @@ def handle_precompact(data: dict, m: Mode):
         except Exception:
             pass                        # fail open — bridge synthesis must never block compaction
     audit.append(audit.record(session=session, event="PreCompact", mode=m.value,
-                              injected=bool(consolidated)))
+                              injected=bool(consolidated), **_agent_fields(data)))
     return None                         # PreCompact additionalContext is ignored by the harness
 
 
@@ -591,18 +633,37 @@ def handle_sessionstart(data: dict, m: Mode):
                     action=("apoptosis" if enforce else "warn"),
                     reason=("kernel-lock mismatch: "
                             f"mismatched={r.get('mismatched', [])[:5]} missing={r.get('missing', [])[:3]} "
-                            f"{r.get('reason', '')}")))
+                            f"{r.get('reason', '')}"),
+                    **_agent_fields(data)))
                 if enforce:
                     sys.exit(1)             # apoptosis — refuse to operate on mutated DNA
         except SystemExit:
             raise
         except Exception:
             pass                            # a verify *error* must not brick startup (only a verified mismatch does)
+    # Wall-clock circadian sleep: if the estate's newest consolidation stamp is older than
+    # CIRCADIAN_SLEEP_SECS, sweep now — sleep pressure is time-based, not context-pressure-based
+    # (PreCompact stays wired as a bonus trigger; the per-store min_age re-check under each colony lock
+    # keeps the two triggers and concurrent session starts from double-decaying a store). Fail-open:
+    # sleep must never break a wake.
+    slept = 0
+    if colony_enabled() and time.time() >= CIRCADIAN_WAKE_EPOCH:   # C5 hold — inert until 2026-08-26
+        try:
+            from exocortex.colony import Colony
+            stamps = [c.last_consolidated for c in Colony.all()]
+            if stamps and time.time() - max(stamps) >= CIRCADIAN_SLEEP_SECS:
+                slept = _sleep_sweep(session, min_age=CIRCADIAN_SLEEP_SECS)
+        except Exception:
+            slept = 0
+    if slept:
+        audit.append(audit.record(session=session, event="CircadianSleep", mode=m.value,
+                                  reason=f"wall-clock sleep: {slept} classes consolidated",
+                                  injected=True, **_agent_fields(data)))
     st = SessionState(session_id=session)   # fresh session → full energy
     st.resplice = True                       # splice the colony's procedural memory on the first prompt
     st.save()
     audit.append(audit.record(session=session, event="SessionStart", mode=m.value,
-                              energy=st.energy, tier=st.tier()))
+                              energy=st.energy, tier=st.tier(), **_agent_fields(data)))
     return _vitals(m)
 
 

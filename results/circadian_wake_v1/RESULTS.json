@@ -1,0 +1,40 @@
+{
+ "verified_at": "2026-08-26T14:07:18.753883+00:00",
+ "verdict": "+1 wake confirmed",
+ "circadian_sleep_rows_post_epoch": 1,
+ "first_wake_row": {
+  "session": "bce88eac-54d2-4373-b640-29cc75457bfb",
+  "agent_id": "",
+  "agent_type": "",
+  "event": "CircadianSleep",
+  "mode": "somatic",
+  "tool": "",
+  "command": "",
+  "command_key": "",
+  "signature": "",
+  "somatic_permitted": null,
+  "somatic_organ": "",
+  "epistemic_decision": "",
+  "action": "",
+  "energy": null,
+  "tier": "",
+  "strategy_lock": 0,
+  "injected": true,
+  "outcome": "",
+  "reason": "wall-clock sleep: 177 classes consolidated",
+  "output": "",
+  "seg_len": 0,
+  "ts": "2026-08-26T14:07:04.664628+00:00",
+  "prev": "d06b85af147b1e528e0e1d5a7f024b570d93ca5cb91a13c45a0c3019a9e061ce",
+  "hash": "079dcb9caea9b693e31ad5e3ccccbc9a8e2a7c109f6be3cb80f372cbb6ccec96"
+ },
+ "swept_classes_claimed": 177,
+ "stores_total": 177,
+ "stores_stamped_post_epoch": 177,
+ "stamp_coverage": 1.0,
+ "pass_criteria": {
+  "row_exists_injected": true,
+  "swept_positive": true,
+  "coverage>=0.9": true
+ }
+}
