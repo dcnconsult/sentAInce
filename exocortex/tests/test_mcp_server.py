@@ -140,7 +140,7 @@ def test_recall_notes_cls_empty_query_returns_credited_notes_directly(tmp_path, 
         if "warming" not in mcp_server.recall_notes("warm me", cls="seed"):
             break
         time.sleep(0.05)
-    graph = mcp_server._GRAPHS[(str(vault), "all")][1]
+    graph = mcp_server._GRAPHS[(str(vault), "all", ())][1]
     from exocortex.colony import Colony, _SEP
     col = Colony(label="buildcls")
     col.tau = {f"{nid}{_SEP}cue:buildcls": 0.9 for nid in graph.nodes}   # credit every build.md node
@@ -224,7 +224,7 @@ def test_warming_note_counts_files(tmp_path):
     for i in range(4):
         (vault / f"n{i}.md").write_text("# note\n", encoding="utf-8")
     (vault / "notmd.txt").write_text("ignore", encoding="utf-8")
-    note = mcp_server._warming_note(str(vault), "all")
+    note = mcp_server._warming_note(str(vault), "all", [])
     assert "warming" in note and "~4" in note
 
 
@@ -328,3 +328,88 @@ def test_git_tracked_md_spawns_git_with_devnull_stdin(tmp_path, monkeypatch):
     monkeypatch.setattr(store.subprocess, "run", spy)
     store._git_tracked_md(tmp_path)          # not a repo → returns None; the spawn still happens
     assert seen["stdin"] == sp.DEVNULL
+
+
+# --------------------------------------------------------------- the pre-warm cache poisoner (fixed v0.1.13)
+# Defect (attributed 2026-08-06): the server's startup digest resolved `declarative.exclude` from ITS OWN
+# config context (not the target repo's) and, on a signature miss, rewrote the target's hook-owned
+# `wiki_cache.json` — one full-corpus, exclude-blind cache poisoning per server start (114 MB / 187,850
+# nodes observed). Two laws pin the fix: the target's boundary travels EXPLICITLY, and the server persists
+# only to its own `wiki_cache.server.json`.
+
+
+def _target_repo(tmp_path, exclude):
+    """A target repo dir with its own exocortex_config.json + a vault holding one public and one
+    excluded document."""
+    import json
+    repo = tmp_path / "target"; repo.mkdir()
+    vault = repo / "vault"; vault.mkdir()
+    (vault / "keep.md").write_text("# Keep\n\npublic doc body\n", encoding="utf-8")
+    (vault / "secret").mkdir()
+    (vault / "secret" / "hidden.md").write_text("# Hidden\n\nEXCLUDED_TOKEN body\n", encoding="utf-8")
+    (repo / "exocortex_config.json").write_text(json.dumps(
+        {"declarative": {"vault_path": str(vault), "ingest": "all", "exclude": exclude}}), encoding="utf-8")
+    state = repo / ".claude" / "exocortex"; state.mkdir(parents=True)
+    return repo, vault, state
+
+
+def test_repo_decl_reads_the_target_repos_exclude(tmp_path, monkeypatch):
+    """The boundary comes from the TARGET repo's config file — with this process config-blind — and the
+    documented env override still wins."""
+    for var in ("EXOCORTEX_WIKI_VAULT", "EXOCORTEX_WIKI_INGEST", "EXOCORTEX_WIKI_EXCLUDE"):
+        monkeypatch.delenv(var, raising=False)
+    repo, vault, state = _target_repo(tmp_path, ["secret/*"])
+    v, ingest, exclude = mcp_server._repo_decl({"name": "target", "root": repo, "state_dir": state})
+    assert v == str(vault) and ingest == "all" and exclude == ["secret/*"]
+    monkeypatch.setenv("EXOCORTEX_WIKI_EXCLUDE", "a/*, b/*")
+    assert mcp_server._repo_decl({"name": "target", "root": repo, "state_dir": state})[2] == ["a/*", "b/*"]
+
+
+def test_digest_respects_target_exclude_and_never_touches_the_hooks_cache(tmp_path, monkeypatch):
+    """The config-blind consumer check (ROADMAP worklist item 3): digesting a target vault from a server
+    whose own config knows nothing of the target's exclude must (a) honor that exclude and (b) leave the
+    hook-owned `wiki_cache.json` alone — persisting only to `wiki_cache.server.json`."""
+    for var in ("EXOCORTEX_WIKI_VAULT", "EXOCORTEX_WIKI_INGEST", "EXOCORTEX_WIKI_EXCLUDE"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(tmp_path / "server_state"))   # server context ≠ target
+    repo, vault, state = _target_repo(tmp_path, ["secret/*"])
+
+    # a STALE hook cache (wrong signature) is exactly what the old code overwrote
+    hook_cache = state / "wiki_cache.json"
+    stale = '{"signature": "stale", "nodes": []}'
+    hook_cache.write_text(stale, encoding="utf-8")
+
+    _, ingest, exclude = mcp_server._repo_decl({"name": "target", "root": repo, "state_dir": state})
+    g, sig = mcp_server._digest_cached(str(vault), ingest, exclude, state)
+
+    blob = " ".join(n.id + " " + n.text for n in g.nodes.values())
+    assert "keep" in blob.lower()
+    assert "EXCLUDED_TOKEN" not in blob and "hidden" not in blob.lower()   # (a) target boundary honored
+
+    assert hook_cache.read_text(encoding="utf-8") == stale                 # (b) hook cache byte-identical
+    server_cache = state / mcp_server._SERVER_CACHE_NAME
+    assert server_cache.is_file()                                          # server persisted to ITS file
+
+    # warm restart: the server cache is reused (same signature), still without touching the hook's file
+    g2, sig2 = mcp_server._digest_cached(str(vault), ingest, exclude, state)
+    assert sig2 == sig and len(g2.nodes) == len(g.nodes)
+    assert hook_cache.read_text(encoding="utf-8") == stale
+
+
+def test_digest_reuses_a_matching_hook_cache_read_only(tmp_path, monkeypatch):
+    """When the live hook's cache signature MATCHES, the server reuses it (free warmth) and writes
+    nothing at all."""
+    for var in ("EXOCORTEX_WIKI_VAULT", "EXOCORTEX_WIKI_INGEST", "EXOCORTEX_WIKI_EXCLUDE"):
+        monkeypatch.delenv(var, raising=False)
+    import json
+    from exocortex.wiki import store
+    repo, vault, state = _target_repo(tmp_path, ["secret/*"])
+    files = store._md_files(vault, "all", ["secret/*"])
+    sig = store._signature(vault, files)
+    nodes = store._digest_vault(vault, files)
+    (state / "wiki_cache.json").write_text(
+        json.dumps({"signature": sig, "nodes": [store._node_to_dict(n) for n in nodes]}), encoding="utf-8")
+
+    g, out_sig = mcp_server._digest_cached(str(vault), "all", ["secret/*"], state)
+    assert out_sig == sig and len(g.nodes) == len(nodes)
+    assert not (state / mcp_server._SERVER_CACHE_NAME).exists()    # reuse → no write anywhere

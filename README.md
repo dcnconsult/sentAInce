@@ -95,7 +95,39 @@ being wrong, `(1 − 0.60)·8 = 3.2`, cleared the "just ask" threshold of 2.0. I
 push is not lethal. It paused and put a human in the loop. A command it recognizes as *lethal* never
 reaches this prompt at all, because the somatic reflex has already refused it.
 
-## What's new in 0.1.12
+## What's new in 0.1.13
+
+**The kernel is untouched.** 99 frozen tests, the C1–C7 lock, no API change. Every behavior change below
+is either opt-in or can only *withhold* memory, never grant it. This release is built on a red-team pass
+over the memory itself. Full detail in the [changelog](CHANGELOG.md).
+
+- **🧪 A memory red-team suite, with our own open gaps pinned in public.**
+  `exocortex/tests/redteam/` drives the real hook through eight attack families: prompt injection, forged
+  stores, misleading tool output, stale state, conflict, revocation, cross-project transfer and route
+  keying.
+  - **What holds:** text cannot write memory. A prompt that says "remember this", a planted note, or
+    output that claims success on a failed command all earn nothing.
+  - **What is open:** 9 gaps, each a strict xfail that flips the day it is fixed. The public roadmap
+    (§2b) lists them with the gate that closes each.
+- **🔑 Compound commands were remembered by their first word.** `cd repo && pytest` was filed as
+  `bash:cd`.
+  - **Measured:** a pre-registered replay over two repos' recorded traffic found such keys on 23.7% and
+    44.1% of successful-route edges. A working-verb keying cut that to 1.6% and 5.1% without losing
+    fail/pass discrimination (`results/verb_keying_v1/`).
+  - **Shipped as an opt-in:** `colony.verb_keying: working`. The default is unchanged.
+- **🧯 Eight more failure shapes are read as failures.** When a command hides its exit code, the hook
+  judges the outcome from the output. It now also recognizes lowercase exit codes, `exit status`, pytest
+  summaries, `npm ERR!`, `make: ***`, line-start `error:`, `Permission denied` and bare exception lines.
+  Replayed over recorded traffic first, 0.52% and 0.32% of past successes would now read as failures,
+  and every inspectable one was a real failure (`results/outcome_signatures_v1/`). A command that also
+  silences its output is still open.
+- **⚖️ Near-tied routes are now labeled "contested"** in the recalled memory, so the agent sees when
+  memory has no preference. This is read-side only and changes no weights.
+- **🔧 The MCP server no longer rewrites a repo's wiki cache with the wrong boundary.** The fix promised
+  in 0.1.12's notes: the target repo's exclusions now travel with every server digest, and the hook-owned
+  cache is read-only to the server.
+
+## What was new in 0.1.12
 
 **The kernel is untouched.** 99 frozen tests, the C1–C7 lock, no API change. The note-reading organ
 still ships switched off. Two measurements drove this release; full detail in the

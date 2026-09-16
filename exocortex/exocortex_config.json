@@ -33,6 +33,11 @@
     }
   },
 
+  "colony": {
+    "_comment": "R0 / DQ-1: 'first' = shipped first-token keying (`cd repo && pytest` -> bash:cd); 'working' = first non-navigation segment's verb, env/wrapper-stripped (results/verb_keying_v1/PREREG.md). Pre-registered replay +1: nav/env-keyed edges 23.7%->1.6% and 44.1%->5.1%, discrimination kept within 0.004. New deposits only.",
+    "verb_keying": "first"
+  },
+
   "eligibility_trace": {
     "_comment": "Organ 3D (within-segment credit assignment): weight each deposited edge by recency-to-consequence (gamma^delta) instead of uniformly. mode 'off' = uniform deposit (verified status quo); 'trace' = the gauge-verified gamma credit trace (isolates the ah-ha, evaporates the flail prefix; no-op on short segments). See gauge/eligibility_gauge.py.",
     "mode": "off",

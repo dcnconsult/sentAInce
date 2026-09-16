@@ -43,6 +43,7 @@ CAP = _T["max_edges_per_class"]           # §14 per-class leanness ceiling (app
 MIN_DEPOSITS_TO_SPLICE = _T["min_deposits_to_splice"]   # abstain until a class has some repetition
 SESSION_DECAY = _T["session_discount_rate"]             # §13 per-deposit activity discount (thrash catcher)
 WEIGHT_MIN = _T["weight_min"]             # floor so a deep session still records *something*
+CONTEST_RATIO = 0.9                       # R5: alternatives within 10% of the strongest are "contested"
 _SEP = "\t"                               # edge key = "src<TAB>dst" (node names never contain a tab)
 
 # Eligibility trace (organ 3D) — within-segment credit assignment. Module attrs (monkeypatchable) sourced
@@ -97,6 +98,50 @@ def _bash_verb(cmd: str) -> str:
     return verb or "?"
 
 
+# R0 / DQ-1 — working-verb keying. `_bash_verb` keys a compound command by its FIRST token, so
+# `cd repo && pytest` is remembered as `bash:cd` and `VAR=1 python x.py` as `bash:VAR=1` (measured on two
+# repos' recorded traffic: 23.7% / 44.1% of successful-segment edges touch such a key). The working keying
+# takes the first non-navigation segment's verb, env/wrapper-stripped. Definition FROZEN in
+# results/verb_keying_v1/PREREG.md §3; the pre-registered replay kept fail/pass discrimination within 0.004
+# (disposition +1). Ships as `first` (byte-identical); `colony.verb_keying = working` opts in. New deposits
+# only — edges already keyed `bash:cd` are never rewritten, they decay out like any unreinforced route.
+_C = GENOME.get("colony", {})
+VERB_KEYING = str(_C.get("verb_keying", "first")).lower()   # first | working
+_KEY_SEP = re.compile(r"&&|\|\||;")
+_KEY_ENV = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+_KEY_WRAPPERS = frozenset({"sudo", "time", "nohup", "env", "command", "exec"})
+_KEY_NAV = frozenset({"cd", "pushd", "popd", "export", "set", "source", ".", "unset", "shopt", "setopt"})
+
+
+def _segment_verb(seg: str) -> str:
+    toks = seg.split("|", 1)[0].split()
+    while toks and _KEY_ENV.match(toks[0]):
+        toks.pop(0)
+    while toks:
+        if toks[0] == "timeout":
+            toks = toks[2:]
+        elif toks[0] in _KEY_WRAPPERS:
+            toks.pop(0)
+        else:
+            break
+    return os.path.basename(toks[0]).strip("'\";&|()`{}") if toks else ""
+
+
+def _working_verb(cmd: str) -> str:
+    """First non-navigation segment's verb (PREREG §3); all-navigation → the first segment's verb."""
+    verbs = [_segment_verb(s) for s in _KEY_SEP.split(cmd or "") if s.strip()]
+    for v in verbs:
+        if v and v not in _KEY_NAV:
+            return v
+    return next((v for v in verbs if v), "?")
+
+
+def command_verb(cmd: str, keying: str | None = None) -> str:
+    """The verb a command is keyed by under ``keying`` (None → the Genome's ``colony.verb_keying``)."""
+    k = VERB_KEYING if keying is None else keying
+    return _working_verb(cmd) if k == "working" else _bash_verb(cmd)
+
+
 def _file_cat(path: str) -> str:
     b = os.path.basename(str(path or "")).lower()
     if not b:
@@ -106,14 +151,15 @@ def _file_cat(path: str) -> str:
     return "src" if b.endswith(".py") else "other"
 
 
-def verb_node(tool: str, payload: str) -> str:
+def verb_node(tool: str, payload: str, keying: str | None = None) -> str:
     """A node at the verb altitude: a COMMAND tool → its executable verb — Bash as ``bash:``, PowerShell
     as ``ps:`` (D3; distinct namespaces, never silently merged — a `ps:` route is its own evidence, and the
-    P3 replay can compare the streams); a file tool → src|test|other."""
+    P3 replay can compare the streams); a file tool → src|test|other. The command verb follows
+    ``colony.verb_keying`` (R0) unless ``keying`` is given explicitly."""
     if tool == "Bash":
-        return f"bash:{_bash_verb(payload)}"
+        return f"bash:{command_verb(payload, keying)}"
     if tool == "PowerShell":
-        return f"ps:{_bash_verb(payload)}"
+        return f"ps:{command_verb(payload, keying)}"
     return f"{tool}:{_file_cat(payload)}"
 
 
@@ -259,9 +305,19 @@ class Colony:
         lines = [f"[exocortex · consequence-sourced procedural memory — class: {self.label}]",
                  "Routes that have led to VERIFIED success for this kind of task "
                  "(pheromone τ; deposited only on exit 0 — never on failure):"]
+        outs: dict = {}
         for key, wt in top:
             a, b = key.split(_SEP)
             lines.append(f"  {a} → {b}   (τ={wt:.2f})")
+            outs.setdefault(a, []).append((b, wt))
+        # R5 (red-team rt-conf-1): say so when the memory does NOT prefer one route — near-tied alternatives
+        # out of the same step. Read-side only (no τ change). Live prevalence at 0.9: 12–15% of served
+        # classes gain one line (two repos, 2026-09-16).
+        for a, alts in outs.items():
+            top_w = max(w for _, w in alts)
+            tied = [b for b, w in alts if w >= CONTEST_RATIO * top_w]
+            if len(tied) >= 2:
+                lines.append(f"Contested (near-tied τ, no preferred route): {a} → " + " | ".join(tied))
         chain = self.dominant_path()
         if len(chain) >= 2:
             lines.append("Dominant route (greedy widest path): " + " → ".join(chain))

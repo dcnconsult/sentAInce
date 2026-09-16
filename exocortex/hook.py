@@ -239,8 +239,21 @@ def targets_exist(command: str) -> bool:
 
 
 _FAIL_MARKERS = ("Traceback (most recent call last)", "command not found",
-                 "No such file or directory", "fatal:", "FAILED", "AssertionError")
-_EXITCODE_RE = re.compile(r"(?:exit|Exit code)[:\s]+([1-9]\d*)")
+                 "No such file or directory", "fatal:", "FAILED", "AssertionError", "npm ERR!")
+# R1c (red-team rt-tool-1): `exit code 1` / `exit status 2` / `returned non-zero exit status 1` joined the
+# original `exit: N` / `Exit code N` forms.
+_EXITCODE_RE = re.compile(r"\b(?:[Ee]xit(?: code| status)?|returned non-zero exit status)[:\s]+([1-9]\d*)")
+# R1c: shaped failure lines the plain markers missed. Anchored/shaped so prose and grep hits rarely match —
+# replayed over 6,670 recorded `ok` consequences (two repos) before shipping: 0.49% / 0.32% flip to fail, and
+# every inspected flip was genuine failure output (results/outcome_signatures_v1/). A false positive only
+# withholds τ (conservative), never grants it.
+_FAIL_RX = (
+    re.compile(r"\b[1-9]\d* (?:failed|errors?)(?:,| in )"),        # pytest summary: `1 failed, 3 passed in`
+    re.compile(r"make(?:\[\d+\])?: \*\*\*"),                        # make: *** [all] Error 2
+    re.compile(r"(?m)^(?:fatal )?error(?:\[E\d+\])?:"),            # git/cargo/gcc `error:` at line start
+    re.compile(r"(?m)^(?!warning:)[^\n]*Permission denied"),       # shell/find refusals, not git warnings
+    re.compile(r"(?m)^[A-Z][A-Za-z]*(?:Error|Exception): "),      # a bare exception line (no traceback)
+)
 
 
 def classify_outcome(data: dict) -> str:
@@ -254,7 +267,9 @@ def classify_outcome(data: dict) -> str:
         blob = str(tr)
     if _EXITCODE_RE.search(blob):
         return "fail"
-    return "fail" if any(mk in blob for mk in _FAIL_MARKERS) else "ok"
+    if any(mk in blob for mk in _FAIL_MARKERS):
+        return "fail"
+    return "fail" if any(rx.search(blob) for rx in _FAIL_RX) else "ok"
 
 
 def _agent_fields(data: dict) -> dict:

@@ -14,8 +14,8 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
 
 - **99 frozen kernel-lock tests** — the C1–C7 evidence lock (69) + 30 domain-crucible/adapter — **untouched**
   across this entire arc. This is the load-bearing guarantee.
-- **444 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** + **120 tuner** tests, all
-  green (one exocortex test — the alert-engine backtest over a live audit store — auto-skips on storeless
+- **509 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** + **120 tuner** tests, all
+  green (plus **9 strict-xfail memory red-team gaps**, pinned open on purpose in `exocortex/tests/redteam/`) (one exocortex test — the alert-engine backtest over a live audit store — auto-skips on storeless
   clones). The lock and the organ tests are separate suites; organ work never edits the lock.
   Note: `pytest -q` at the repo root collects only the 99-lock (`testpaths`), so the organ suites must be run
   by path — a gate nobody runs is not a gate (ADR-016).
@@ -197,6 +197,14 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
 - **G.A.R.D. is partly aspirational.** Respect (HDC abstain) is *available* (active in the epistemic/full
   somatic mode; the committed default is `observe`); the Φ⁶ Governance pacemaker and
   harmonic Alliance entrainment are **vendored substrate, not yet wired** (Ticket 4).
+- **Procedural keying reads compound commands by their first token (DQ-1, measured 2026-09-16).**
+  `cd repo && pytest` is remembered as `bash:cd`, and a leading `VAR=val` becomes the "verb". On two
+  repos' recorded traffic, **23.7% and 44.1%** of successful-segment edges touch such a key. A
+  pre-registered replay found that a working-verb keying cuts that to **1.6% and 5.1%** without losing
+  fail/pass discrimination: frequency-null clutter and pass/fail overlap both moved by 0.004 or less
+  (`results/verb_keying_v1/`). The fix is built behind `colony.verb_keying`, which **ships `first`**
+  (unchanged). `working` is opt-in and applies to new deposits only; its effect on outcomes is
+  unmeasured. Verb-altitude figures elsewhere in this ledger were measured under first-token keying.
 - **Colony tamper-evidence is proposed, not built (ADR-017).** An LtHash multiset digest of each colony's edge
   set, committed into the ADR-009 chain at consolidation epochs, would make ADR-009's *"injected τ snaps the
   chain"* true for direct `colony_<label>.json` edits — which today it is **not** (the colony sits in neither

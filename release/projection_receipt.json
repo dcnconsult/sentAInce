@@ -1,6 +1,6 @@
 {
   "digest_format": "git-index-blob-v1",
-  "file_count": 360,
+  "file_count": 379,
   "gates": [
     {
       "name": "patent_filed",
@@ -35,8 +35,8 @@
       "ok": true
     }
   ],
-  "generated_utc": "2026-09-02T03:20:48+00:00",
-  "projection_digest": "5eb5b353111bc8f675954e9e22af814748ab8f3d02944c83bbedb6236a419f4a",
-  "release_version": "0.1.12",
+  "generated_utc": "2026-09-16T18:54:08+00:00",
+  "projection_digest": "65220832e37ca16409863f1b9f26718f03073ec71d2079585f4939081dc3fb7b",
+  "release_version": "0.1.13",
   "schema": 1
 }

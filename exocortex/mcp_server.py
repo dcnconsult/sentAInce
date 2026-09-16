@@ -47,7 +47,7 @@ mcp = FastMCP("exocortex-memory")
 _LOCK = threading.RLock()          # REENTRANT: _enter holds it across a call body that re-acquires it
                                    # (via _ensure_warm); a plain Lock would self-deadlock. Serializes the
                                    # per-call EXOCORTEX_STATE_DIR scoping + the _GRAPHS map.
-_GRAPHS: dict = {}                 # (vault, ingest) -> (signature, WikiGraph) — the persistent in-memory cache
+_GRAPHS: dict = {}                 # (vault, ingest, exclude-tuple) -> (signature, WikiGraph) — the persistent in-memory cache
 _WARMING: set = set()             # keys with a background digest in flight (avoid duplicate warms)
 _SEP = "\t"                        # colony τ edge-key separator (mirror of colony._SEP)
 
@@ -86,6 +86,10 @@ def _repos() -> list:
 
 
 def _repo_decl(r: dict) -> tuple:
+    """(vault, ingest, exclude) for a TARGET repo, read from that repo's own config file. ``exclude``
+    is returned explicitly because the server digests OTHER repos' vaults: any code path that lets
+    ``declarative.exclude`` fall back to this process's config context resolves the SERVER's boundary,
+    not the target's — the exact mechanism of the 2026-08-06 cache-poisoning defect."""
     decl = {}
     try:
         cp = r["root"] / "exocortex_config.json"
@@ -93,8 +97,14 @@ def _repo_decl(r: dict) -> tuple:
             decl = json.loads(cp.read_text(encoding="utf-8")).get("declarative", {}) or {}
     except Exception:
         decl = {}
+    env_ex = os.environ.get("EXOCORTEX_WIKI_EXCLUDE")
+    if env_ex is not None:
+        exclude = [s.strip() for s in env_ex.replace(os.pathsep, ",").split(",") if s.strip()]
+    else:
+        exclude = [str(s) for s in (decl.get("exclude") or []) if str(s).strip()]
     return (os.environ.get("EXOCORTEX_WIKI_VAULT") or decl.get("vault_path") or "",
-            os.environ.get("EXOCORTEX_WIKI_INGEST") or decl.get("ingest") or "all")
+            os.environ.get("EXOCORTEX_WIKI_INGEST") or decl.get("ingest") or "all",
+            exclude)
 
 
 def _resolve_repo(repo: str, repos: list):
@@ -156,29 +166,44 @@ def _classify_readonly(prompt: str) -> str:
 
 
 # ----------------------------------------------------------------- vault graph: digest-once, in-memory, non-blocking
-def _digest_cached(vault: str, ingest: str, state_dir: Path):
-    """Digest a vault to a WikiGraph (nodes only — no colony/scars, no global env), reusing the on-disk
-    ``wiki_cache.json`` when its signature matches (the live hook keeps it warm). Cold misses re-digest and
-    rewrite the cache. Returns (graph, signature). Heavy on a cold large vault → always called off-thread."""
+_SERVER_CACHE_NAME = "wiki_cache.server.json"   # the server's OWN digest cache — the live hook never reads it
+
+
+def _digest_cached(vault: str, ingest: str, exclude: list, state_dir: Path):
+    """Digest a vault to a WikiGraph (nodes only — no colony/scars, no global env), with the TARGET
+    repo's boundary passed explicitly. Returns (graph, signature). Heavy on a cold large vault → always
+    called off-thread.
+
+    Two laws, both pins of the 2026-08-06 cache-poisoning defect (114 MB / 187,850 nodes written into a
+    target repo's derived cache, exclude-blind, once per server start):
+    - ``exclude`` is EXPLICIT — never let ``store._md_files`` fall back to this process's config context,
+      which resolves the server's boundary instead of the target's.
+    - the hook's ``wiki_cache.json`` is READ-ONLY here (reused when its signature matches — the live hook
+      keeps it warm). Misses re-digest and persist ONLY to ``wiki_cache.server.json``: the server and the
+      hook may legitimately resolve different file sets (env overrides, ``tracked`` fail-open in a
+      different git context), so a shared write path lets one poison the other."""
     from exocortex.wiki import store
     from exocortex.wiki.node import WikiGraph
     p = Path(vault)
-    files = store._md_files(p, ingest)
+    files = store._md_files(p, ingest, exclude)
     sig = store._signature(p, files)
     nodes = None
-    cache = Path(state_dir) / store._CACHE_NAME
-    if cache.exists():
-        try:
-            d = json.loads(cache.read_text(encoding="utf-8"))
-            if d.get("signature") == sig:
-                nodes = [store._node_from_dict(nd) for nd in d.get("nodes", [])]
-        except Exception:
-            nodes = None
+    for name in (store._CACHE_NAME, _SERVER_CACHE_NAME):    # hook's cache first: warmest, and read-only
+        cache = Path(state_dir) / name
+        if cache.exists():
+            try:
+                d = json.loads(cache.read_text(encoding="utf-8"))
+                if d.get("signature") == sig:
+                    nodes = [store._node_from_dict(nd) for nd in d.get("nodes", [])]
+                    break
+            except Exception:
+                nodes = None
     if nodes is None:
         nodes = store._digest_vault(p, files)
         try:
-            cache.write_text(json.dumps({"signature": sig, "nodes": [store._node_to_dict(n) for n in nodes]}),
-                             encoding="utf-8")
+            (Path(state_dir) / _SERVER_CACHE_NAME).write_text(
+                json.dumps({"signature": sig, "nodes": [store._node_to_dict(n) for n in nodes]}),
+                encoding="utf-8")
         except Exception:
             pass
     g = WikiGraph()
@@ -187,10 +212,14 @@ def _digest_cached(vault: str, ingest: str, state_dir: Path):
     return g, sig
 
 
-def _warm(vault: str, ingest: str, state_dir: Path) -> None:
-    key = (vault, ingest)
+def _graph_key(vault: str, ingest: str, exclude: list) -> tuple:
+    return (vault, ingest, tuple(exclude))
+
+
+def _warm(vault: str, ingest: str, exclude: list, state_dir: Path) -> None:
+    key = _graph_key(vault, ingest, exclude)
     try:
-        g, sig = _digest_cached(vault, ingest, state_dir)
+        g, sig = _digest_cached(vault, ingest, exclude, state_dir)
         with _LOCK:
             _GRAPHS[key] = (sig, g)
     except Exception:
@@ -200,27 +229,27 @@ def _warm(vault: str, ingest: str, state_dir: Path) -> None:
             _WARMING.discard(key)
 
 
-def _ensure_warm(vault: str, ingest: str, state_dir: Path):
+def _ensure_warm(vault: str, ingest: str, exclude: list, state_dir: Path):
     """Return the cached graph if present; else kick a BACKGROUND digest (once) and return None. Never blocks."""
-    key = (vault, ingest)
+    key = _graph_key(vault, ingest, exclude)
     with _LOCK:
         cached = _GRAPHS.get(key)
         if cached:
             return cached[1]
         if key not in _WARMING:
             _WARMING.add(key)
-            threading.Thread(target=_warm, args=(vault, ingest, state_dir), daemon=True).start()
+            threading.Thread(target=_warm, args=(vault, ingest, exclude, state_dir), daemon=True).start()
     return None
 
 
-def _warming_note(vault: str, ingest: str) -> str:
+def _warming_note(vault: str, ingest: str, exclude: list) -> str:
     """A progress-bearing 'warming' string for `memory_status`. Reads only the CHEAP file list
     (`store._md_files` = one `git ls-files` or an rglob + no body reads), so the busy state is attributable
     ('warming — digesting ~N .md files in the background') instead of an opaque black box. Read-only; never
     digests. Falls back to the plain note if the count can't be taken."""
     try:
         from exocortex.wiki import store
-        n = len(store._md_files(Path(vault), ingest))
+        n = len(store._md_files(Path(vault), ingest, exclude))
         return f"warming — digesting ~{n} .md files in the background; node count after digest"
     except Exception:
         return "warming — node count after digest"
@@ -230,9 +259,9 @@ def _prewarm_all() -> None:
     """At startup, kick a background digest of every configured repo's vault so the first recall is instant."""
     try:
         for r in _repos():
-            vault, ingest = _repo_decl(r)
+            vault, ingest, exclude = _repo_decl(r)
             if vault:
-                _ensure_warm(vault, ingest, r["state_dir"])
+                _ensure_warm(vault, ingest, exclude, r["state_dir"])
     except Exception:
         pass
 
@@ -334,10 +363,10 @@ def recall_notes(query: str, repo: str = "", cls: str = "") -> str:
         with _enter(repo) as (r, repos):
             if r is None:
                 return _ambiguous(repo, repos)
-            vault, ingest = _repo_decl(r)
+            vault, ingest, exclude = _repo_decl(r)
             if not vault:
                 return f"(repo [{r['name']}] has no declarative vault configured)"
-            graph = _ensure_warm(vault, ingest, r["state_dir"])   # in-memory; non-blocking
+            graph = _ensure_warm(vault, ingest, exclude, r["state_dir"])   # in-memory; non-blocking
             if graph is None:
                 return (f"(declarative memory for [{r['name']}] is warming in the background — a large vault "
                         f"digests once; ask again in a few seconds)")
@@ -427,16 +456,16 @@ def memory_status(repo: str = "") -> str:
                 n_notes = len(_note_anchors(c))               # τ-credited declarative notes → recall_notes(cls=…, "")
                 notes = f" [notes:{n_notes}]" if n_notes else ""
                 lines.append(f"  · {c.label}{notes}: {c.deposits} deposits, {len(c.tau)} edges — {route}")
-            vault, ingest = _repo_decl(r)
+            vault, ingest, exclude = _repo_decl(r)
             if not vault:
                 lines.append("declarative vault: (not configured)")
             else:
-                cached = _GRAPHS.get((vault, ingest))
+                cached = _GRAPHS.get(_graph_key(vault, ingest, exclude))
                 if cached:
                     lines.append(f"declarative vault: {vault} ({len(cached[1].nodes)} nodes, ingest={ingest})")
                 else:
-                    _ensure_warm(vault, ingest, r["state_dir"])   # kick warm for next time; don't block
-                    lines.append(f"declarative vault: {vault} (ingest={ingest}; {_warming_note(vault, ingest)})")
+                    _ensure_warm(vault, ingest, exclude, r["state_dir"])   # kick warm for next time; don't block
+                    lines.append(f"declarative vault: {vault} (ingest={ingest}; {_warming_note(vault, ingest, exclude)})")
             return "\n".join(lines)
     except Exception as e:
         return f"(memory_status unavailable: {type(e).__name__})"
@@ -453,7 +482,7 @@ def list_repos() -> str:
         lines = ["Repos with earned Exocortex memory:"]
         for r in repos:
             n = len(list(r["state_dir"].glob("colony_*.json")))
-            vault, ingest = _repo_decl(r)
+            vault, ingest, _ = _repo_decl(r)
             decl = f"; declarative vault={Path(vault).name} (ingest={ingest})" if vault else "; no vault"
             lines.append(f"  · {r['name']}: {n} procedural goal-classes{decl}")
         return "\n".join(lines)
@@ -516,7 +545,7 @@ def resurrection_candidates(repo: str = "", now: str = "", limit: int = 25) -> s
             with _enter(repo) as (r, repos):      # brief: resolve repo + vault only (config reads)
                 if r is None:
                     return ("ambiguous", _ambiguous(repo, repos))
-                vault, _ = _repo_decl(r)
+                vault, _, _ = _repo_decl(r)
                 name = r["name"]
             if not vault:
                 return ("novault", f"(repo [{name}] has no declarative vault configured — resurrection "

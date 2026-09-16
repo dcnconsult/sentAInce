@@ -180,6 +180,7 @@ What the system does today, with the verified evidence behind each. Honest statu
 | `epistemic_classifier.abstain_threshold_cosine` | 0.45 | merge vs new-class cutoff (0.30–0.45 verified; 0.65 fragments) |
 | `somatic_gate.mode` | `observe` | `observe`/`somatic`/`full` (`enforce`→`somatic`) |
 | `endocrine.mode` | `off` | `off` (static) or `tier` (allostatic prune/cap by metabolic tier) — dormant |
+| `colony.verb_keying` | `first` | `first` (a command is keyed by its first token, so `cd repo && pytest` → `bash:cd`) or `working` (the first non-navigation verb, env/wrapper-stripped; opt-in, new deposits only — `results/verb_keying_v1/`) |
 | `eligibility_trace.mode` | `off` | `off` (uniform deposit) or `trace` (γ^Δ recency credit) — dormant |
 | `eligibility_trace.gamma` | 0.80 | eligibility decay when `mode: trace` |
 | `declarative.mode` | `off` | `off` or `live` (the declarative wiki organ; also needs `vault_path`) — dormant default |

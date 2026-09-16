@@ -1,0 +1,81 @@
+{
+  "results": {
+    "SentAInce": {
+      "first": {
+        "segments": 3471,
+        "ok_segments": 3222,
+        "M1_nav_env_share": 0.237,
+        "M2_frequency_clutter": 0.0203,
+        "M3_pass_fail_jaccard": 0.1589,
+        "check_consequence_clutter": 0.0,
+        "M4": {
+          "distinct_nodes": 356,
+          "distinct_edges": 2190,
+          "consequence_memory": 3796,
+          "mean_class_entropy": 3.164
+        }
+      },
+      "working": {
+        "segments": 3471,
+        "ok_segments": 3222,
+        "M1_nav_env_share": 0.0163,
+        "M2_frequency_clutter": 0.0192,
+        "M3_pass_fail_jaccard": 0.1548,
+        "check_consequence_clutter": 0.0,
+        "M4": {
+          "distinct_nodes": 363,
+          "distinct_edges": 2326,
+          "consequence_memory": 4218,
+          "mean_class_entropy": 3.461
+        }
+      }
+    },
+    "research-vault": {
+      "first": {
+        "segments": 3634,
+        "ok_segments": 3422,
+        "M1_nav_env_share": 0.4408,
+        "M2_frequency_clutter": 0.0154,
+        "M3_pass_fail_jaccard": 0.1182,
+        "check_consequence_clutter": 0.0,
+        "M4": {
+          "distinct_nodes": 328,
+          "distinct_edges": 2048,
+          "consequence_memory": 2890,
+          "mean_class_entropy": 2.979
+        }
+      },
+      "working": {
+        "segments": 3634,
+        "ok_segments": 3422,
+        "M1_nav_env_share": 0.0507,
+        "M2_frequency_clutter": 0.0176,
+        "M3_pass_fail_jaccard": 0.1214,
+        "check_consequence_clutter": 0.0,
+        "M4": {
+          "distinct_nodes": 357,
+          "distinct_edges": 2364,
+          "consequence_memory": 3301,
+          "mean_class_entropy": 3.338
+        }
+      }
+    }
+  },
+  "verdict": {
+    "disposition": "+1",
+    "per_repo": {
+      "SentAInce": {
+        "a_nav_halved": true,
+        "b_clutter_kept": true,
+        "c_separability_kept": true,
+        "void": false
+      },
+      "research-vault": {
+        "a_nav_halved": true,
+        "b_clutter_kept": true,
+        "c_separability_kept": true,
+        "void": false
+      }
+    }
+  }
+}
