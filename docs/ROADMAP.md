@@ -89,13 +89,15 @@ primitive present, not yet wired), **MARGINAL** (measured small / unproven).
 - **Read-only memory MCP server** — the earned colony + declarative wiki exposed to any MCP host (Claude
   Desktop/Code, Cursor, Cline) as recall tools; **read-only w.r.t. memory** (retrieval deposits no τ,
   preserving ADR-001), multi-repo, non-blocking on large vaults. [`MCP_SERVER.md`](MCP_SERVER.md).
-  **⚠ Known defect (fix queued):** the server's startup pre-warm can **rewrite a repo's derived
-  `wiki_cache.json`** with the wrong inclusion boundary — the target repo's `declarative.exclude` is
-  never applied (it resolves from the *server's* config context), and the `tracked`→`all` fail-open is
-  unstamped for server callers. The cache is **derived state, not memory** — no τ is affected and the
-  live hook re-digests on the signature mismatch rather than serving the wrong corpus; the cost is
-  hot-path parse latency. Queued fix: the pre-warm must not persist its digest, and boundary resolution
-  must use the target repo's config.
+  **✅ Cache-poisoner defect FIXED (v0.1.13).** The startup pre-warm used to rewrite a repo's derived
+  `wiki_cache.json` with the wrong inclusion boundary — the target repo's `declarative.exclude` resolved
+  from the *server's* config context. Now the target's boundary travels explicitly on every server
+  digest, and the server never writes the hook-owned cache: it reuses it read-only on a signature match
+  and persists misses only to its own `wiki_cache.server.json`. Pinned by tests that digest a target
+  vault from a config-blind server and assert the exclude holds and the hook's cache stays
+  byte-identical. The cache was always **derived state, not memory** — no τ was ever affected — and a
+  previously poisoned cache heals on the live hook's next re-digest. Residual (by design): the
+  `tracked`→`all` fail-open audit stamp remains a live-path contract, not a server one.
 - **Cursor IDE integration (model-independent host)** — the organism runs under Cursor via the provider
   adapter (Claude Code stays default + byte-identical). **Live-verified end-to-end**: somatic veto blocks,
   the splice injects each turn, deposits carry real multi-model provenance. **Honest limit:** a soft,
@@ -145,6 +147,27 @@ falsifiable trigger that would justify flipping it.
   gauge for exactly that question now exists (`exocortex/gauge/bridge_validity_gauge.py`). **Trigger to
   flip `suggest`:** that gauge passing on real walked bridges, nothing less.
   [`BRIDGE_ORGAN_DESIGN.md`](../exocortex/docs/BRIDGE_ORGAN_DESIGN.md).
+
+---
+
+## 2b. Memory integrity: measured gaps, and what closes them
+
+Consequence-sourcing stops *text* from writing memory. A prompt that says "remember this", a planted note,
+or output that claims success on a failed command all earn nothing, and the red-team suite pins that. The
+same suite (`exocortex/tests/redteam/`) also pins **the gaps we have not closed** (9 as of 2026-09-16, down from 17 at first run), each as a strict xfail.
+A gap counts as closed only when its test flips.
+
+| Gap family | What the suite shows today | Gate that closes it |
+|---|---|---|
+| Outcome signal | Eight common failure shapes (lowercase exit codes, `exit status`, pytest summaries, `npm ERR!`, `make: ***`, line-start `error:`, `Permission denied`, bare exception lines) are now read as failures, after a replay over recorded traffic (`results/outcome_signatures_v1/`). **Still open:** a command that masks its exit code *and* silences its output leaves nothing to read | A check of the command text itself, with legitimate-deposit loss measured on a replay first |
+| Route keying | Compound commands (`cd X && …`, `ENV=val cmd`) are keyed on their first token rather than the working verb | A pre-registered replay shows clutter discrimination holds under working-verb keying; ledger figures re-run and re-dated |
+| Store tamper-evidence | A direct edit of a colony store is not detected (ADR-017 is designed, not built) | A forged edge never reaches context under enforce, with no false alarms on live stores |
+| Revocation | No targeted way to revoke a single route; a quarantined note escapes by being edited | A targeted revoke, verified by the pinned red-team tests flipping |
+| Staleness | Recency decay is built but ships dormant, and routes are not tied to the artifacts they used | The non-stationarity gauge clears its bar on go-forward data |
+| Conflict | Near-tied competing routes now carry a read-side "contested" marker. Contradicting notes are still surfaced unmarked | Declarative contradiction detection stays parked until a gauge supports it |
+| Credit window | A trivially-succeeding final command credits the whole trail | Held for adversarial settings until a banked traffic measurement sizes the natural rate |
+
+Revocation and tamper-evidence are **protection**, so they stay in the open core.
 
 ---
 

@@ -674,6 +674,64 @@ wall-clock trigger inert until the window closes: a dated guard that becomes a p
 knob. Strictly narrower than `fceaa93` (it can only *suppress* a sweep); ADR-001 untouched. Suites:
 exocortex 95, lock 99. The pin enforces the freeze forward from `e4bd595`.
 
+**Re-baseline record: `e4bd595 → 980f4cf` (2026-09-16, PI-approved, recorded in the next commit).**
+
+**What changed.** R0 / DQ-1, working-verb keying behind `colony.verb_keying`. The memory red-team replay
+found that `colony._bash_verb` keys a compound command by its first token: `cd repo && pytest` is filed as
+`bash:cd`, and `VAR=1 python x.py` as `bash:VAR=1`. A pre-registered replay (`results/verb_keying_v1/`,
+with the PREREG frozen before the gauge existed) came back +1 on two repos:
+- nav/env-keyed successful-segment edges fell 23.7% → 1.6% and 44.1% → 5.1%;
+- frequency-null clutter and pass/fail overlap moved by ≤ 0.004 (tolerance 0.02);
+- the consequence-clutter check was 0.
+
+`colony.py` gains `command_verb()` / `_working_verb()`, the single implementation that the gauge now
+imports, and `verb_node(..., keying=None)` follows the Genome knob. This is the seventh control-plane change
+since R3, admitted per this ADR's bar:
+- **ADR-001 unaffected.** No τ is added or moved, and deposits stay exit-0-only. The change alters which
+  *node name* a verified route is filed under, never what earns it.
+- **Ships byte-identical.** The committed default is `first`, pinned by a test comparing `command_verb`
+  against `_bash_verb`. `working` is an ADR-003 opt-in that affects new deposits only: existing
+  `bash:cd` edges are never rewritten and decay out like any unreinforced route.
+- **No hook.py or epistemic.py edit.**
+- **Frozen DNA untouched** (`integrity --verify` ok).
+
+**Suites:** lock 99, exocortex 489 + 18 strict xfail (1 known exporter flake, 6/6 alone), battle +
+cerebral 86, tuner 120.
+
+**Honest scope.** The gauge shows no *loss* of discrimination, not a gain, and route efficacy stays
+unmeasured. **Open consequence:** after a local flip, `sentaince why` reconstructs older segments under the
+new keying, so provenance for pre-flip deposits reads the new names. That is a display mismatch, not a
+τ change.
+
+The pin enforces the freeze forward from `980f4cf`.
+
+**Re-baseline record: `980f4cf → 8435d6c` (2026-09-16, PI-approved, recorded in the next commit).**
+
+**What changed.** Two memory red-team quick wins. This is the eighth control-plane change since R3 and the
+first to touch `hook.py` and `colony.py` together.
+- **R1c** (`hook.py`, gap `rt-tool-1`). `classify_outcome` reads eight more masked-failure shapes:
+  lowercase exit code, exit status, pytest `N failed,`, `npm ERR!`, `make: ***`, line-start `error:`,
+  `Permission denied` (not on `warning:` lines), and a bare exception line.
+  - **Replay** (`results/outcome_signatures_v1/`): 0.52% and 0.32% of recorded `ok` consequences now
+    read `fail`, and every inspectable flip is genuine failure output.
+  - **Tuning:** two rules were tightened after a first replay showed benign flips.
+- **R5** (`colony.py`, gap `rt-conf-1`). `Colony.splice` appends one read-side line when alternatives out of
+  one step are within 10% of the strongest. Live prevalence: 12–15% of served classes.
+
+**Admitted per this ADR's bar:**
+- **ADR-001 unaffected.** R1c can only *withhold* a deposit, never add one, which is strictly more
+  conservative. R5 moves no τ; it changes what the splice *says*, which is agent-facing text.
+- **Frozen DNA untouched.**
+
+**Suites:** lock 99, exocortex 509 + 9 strict xfail, battle + cerebral 86, tuner 120.
+
+**Honest scope.**
+- The replay classifies stored 240-character snippets, so its flip rates are lower bounds.
+- The fully silenced case stays open (R1a).
+- Whether the contested marker changes agent behavior is unmeasured.
+
+The pin enforces the freeze forward from `8435d6c`.
+
 **Follow-up CLOSED (2026-08-18): the tuner suite is wired into CI.** The private monorepo has no remote,
 so GitHub Actions never runs here and the public `ci.yml` cannot carry a commercial leaf — the CI is a
 versioned pre-commit hook, `exocortex/tuner/githooks/pre-commit` (COMMERCIAL_EXCLUDE), installed per

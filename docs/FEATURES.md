@@ -309,6 +309,7 @@ population claim** — one developer's traffic is not evidence about anyone else
 | Ant colony | LIVE | `EXOCORTEX_COLONY` (env off-switch) | on → `0` disables |
 | Slime-mold prune | LIVE | `thermodynamics.prune_floor` / `.decay` | `0.05` / `0.9` |
 | Transcriptome splice | LIVE | `thermodynamics.min_deposits_to_splice`; `EXOCORTEX_COLONY_SPLICE` | `2`; on → `0` disables |
+| — working-verb keying (R0) | OPT-IN | `colony.verb_keying` | `first` → `working` |
 | Eligibility trace | DORMANT | `eligibility_trace.mode` | `off` → `trace` |
 | Endocrine | DORMANT | `endocrine.mode` | `off` → `tier` |
 | Declarative wiki | LIVE (local) / ships DORMANT | `declarative.mode` + `declarative.vault_path` | `off`+`""` → `live`+path |

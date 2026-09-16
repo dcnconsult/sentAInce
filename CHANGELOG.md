@@ -5,6 +5,65 @@ What changed, and what it cost us to find out. Claims here must not exceed
 
 Numbers are measured on this project's own hardware unless stated, and negative results are kept.
 
+## [0.1.13] — 2026-09-16
+
+A red-team pass over the memory itself drove this release: eight attack families driven through the real
+hook, each attack run against the code before any test was written, and every gap pinned as a strict
+xfail rather than hidden. A read-only replay of two repos' recorded audits then sized what to fix first.
+The largest finding was not an attack: it was how compound commands are keyed. Every fix below was
+replayed or pre-registered before it landed.
+
+Nothing touches the kernel. The 99-test C1–C7 lock is untouched and there is no API change. Two
+control-plane edits were admitted under ADR-016 with recorded re-baselines (`980f4cf`, `8435d6c`). Every
+behavior change is either opt-in or can only withhold a memory deposit, never add one. Safe upgrade.
+
+### Added
+
+- **Memory red-team suite** (`exocortex/tests/redteam/`, 41 passing + 9 strict-xfail).
+  - **Attack families:** prompt injection, forged stores, misleading tool output, stale state, conflict,
+    revocation, cross-project transfer, route keying.
+  - **What passes pins what holds:** text-only attacks earn no τ; the audit-edit control is detected;
+    memory never crosses project state directories.
+  - **What xfails pins what is open**, including:
+    - a hand-edited colony store is not detected (ADR-017 is designed, not built);
+    - a trivially-succeeding final command credits the whole trail;
+    - recency decay ships dormant;
+    - there is no targeted revoke for a route.
+- **`colony.verb_keying`**: `first` (default, unchanged) or `working` (opt-in; new deposits only).
+  - **The problem:** the shipped keying files `cd repo && pytest` as `bash:cd`, and `VAR=1 python x.py`
+    as `bash:VAR=1`.
+  - **The evidence:** the pre-registration (`results/verb_keying_v1/PREREG.md`) was frozen before the
+    gauge existed. The replay over two repos' traffic was +1: navigation/env-keyed edges fell 23.7% →
+    1.6% and 44.1% → 5.1%, while frequency-null clutter and pass/fail overlap moved by ≤ 0.004.
+  - **Scope:** the result shows no *loss* of discrimination, not a gain. Whether the keying helps an
+    agent reach `exit 0` is unmeasured. Gauge: `exocortex/gauge/verb_keying_gauge.py`.
+- **A "contested" line in recalled procedural memory** when alternatives out of one step are within 10%
+  of the strongest. It is read-side only (no τ change). About 12–15% of served classes on two live stores
+  gain one line.
+
+### Fixed
+
+- **Masked failures read as success.** When an agent masks a command's exit code (`|| true`,
+  `; echo "exit: $?"`), the hook judges the outcome from stdout/stderr.
+  - **Newly recognized:** lowercase `exit code N`, `exit status N`, pytest `N failed,` summaries,
+    `npm ERR!`, `make: ***`, line-start `error:`, `Permission denied` (except on `warning:` lines) and
+    bare exception lines.
+  - **Replay before shipping:** over 6,671 recorded successes, 0.52% / 0.32% now read as failures, and
+    every inspectable flip was genuine failure output (`results/outcome_signatures_v1/`). Two rules were
+    tightened after a first replay showed benign flips. A false positive only withholds τ.
+  - **Still open:** a command that also silences its output leaves nothing to read.
+- **The MCP pre-warm cache poisoner** (on the record since 0.1.12). The server now carries the target
+  repo's `declarative.exclude` on every digest and never writes the hook-owned `wiki_cache.json`; server
+  misses persist to `wiki_cache.server.json`. Poisoned caches self-heal on the hook's next re-digest.
+
+### Docs
+
+- **ROADMAP §2b** lists the memory-integrity gap families and the measured gate that closes each.
+- **CLAIMS** records the keying defect (DQ-1) with its banked numbers, and the test counts are refreshed:
+  509 organism (+9 strict-xfail red-team gaps) / 49 battle / 37 cerebral / 120 tuner, plus the untouched
+  99-lock.
+- **ADR-016** carries both re-baseline records.
+
 ## [0.1.12] — 2026-09-01
 
 Two instruments drove this release, and both found something real. A live-session post-mortem

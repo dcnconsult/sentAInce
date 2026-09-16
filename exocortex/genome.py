@@ -67,6 +67,15 @@ DEFAULTS = {
             "HYPOXIA":  {"prune_floor": 0.12, "max_edges_per_class": 16},   # shed exploration, stay lean
         },
     },
+    "colony": {
+        # R0 / DQ-1 — how a command is keyed at the verb altitude. "first" (the shipped, byte-identical
+        # keying) takes the first token, so `cd repo && pytest` is remembered as `bash:cd`; "working" takes
+        # the first non-navigation segment's verb, env/wrapper-stripped (definition frozen in
+        # results/verb_keying_v1/PREREG.md §3). The pre-registered replay on two repos cut nav/env-keyed
+        # edges 23.7%→1.6% and 44.1%→5.1% with fail/pass discrimination kept within 0.004 (+1). New deposits
+        # only; existing edges are never rewritten. Opt in locally; the committed default stays "first".
+        "verb_keying": "first",        # first | working
+    },
     "eligibility_trace": {
         # Organ 3D — within-segment credit assignment. Weight each deposited edge by recency-to-consequence
         # (γ^Δ, Δ = steps before exit 0) instead of uniformly, so the "ah-ha" step that preceded success
