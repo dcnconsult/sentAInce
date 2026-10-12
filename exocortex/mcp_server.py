@@ -53,14 +53,16 @@ _SEP = "\t"                        # colony τ edge-key separator (mirror of col
 
 
 def _note_anchors(colony) -> list:
-    """The DECLARATIVE note anchors a colony credits — node ids containing '.md', ranked by incident τ. These
-    are the deliberately-recallable notes: ``memory_status`` counts them (``[notes:N]``) and ``recall_notes``
-    (an explicit ``cls`` + empty ``query``) returns them directly, bypassing the lexical proposer. Procedural
-    verb-nodes (``Read:src``, ``bash:pytest``) carry no '.md' → excluded. Read-only."""
+    """The DECLARATIVE note anchors a colony credits — note NodeIds (``wiki.digest.is_note_id``), ranked by
+    incident τ. These are the deliberately-recallable notes: ``memory_status`` counts them (``[notes:N]``) and
+    ``recall_notes`` (an explicit ``cls`` + empty ``query``) returns them directly, bypassing the lexical
+    proposer. Procedural verb-nodes are excluded — including one whose argument merely names a Markdown file
+    (``bash:BODY='GOVERNANCE.md``), which the earlier ``'.md' in nid`` rule over-counted. Read-only."""
+    from exocortex.wiki.digest import is_note_id
     inc: dict = {}
     for k, w in (getattr(colony, "tau", None) or {}).items():
         for nid in k.split(_SEP):
-            if ".md" in nid:
+            if is_note_id(nid):
                 inc[nid] = inc.get(nid, 0.0) + float(w)
     return sorted(inc.items(), key=lambda kv: -kv[1])
 

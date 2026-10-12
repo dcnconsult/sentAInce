@@ -5,6 +5,49 @@ What changed, and what it cost us to find out. Claims here must not exceed
 
 Numbers are measured on this project's own hardware unless stated, and negative results are kept.
 
+## [0.1.14] — 2026-10-12
+
+This release is about **what the agent is told about its own memory**. `memory_status` reports how many
+verified notes a task class has earned (`[notes:N]`). An audit of that count against real stores found it
+counting a few of the wrong things. Building a check that compares the count against what the agent actually
+received turned up a second id-shape mismatch, which is fixed in the same change.
+
+The kernel is untouched: the 99-test C1–C7 lock passes as before, there is no API change, and the
+ADR-016-pinned control plane (`hook.py`, `colony.py`, `epistemic.py`) is byte-identical. The new hook ships
+dormant. Safe upgrade.
+
+### Fixed
+
+- **`[notes:N]` counted procedural steps as notes.** The rule was "any node id containing `.md`". A census of
+  the maintainer's stores (2026-10-12) found **5 of 349** such ids were *shell steps* whose argument named a
+  Markdown file (`bash:README.md`), not notes. The count and
+  `recall_notes` now accept only note NodeIds as the digest mints them (`{path}.md#{hash}`, plus the `~n`
+  suffix for duplicate blocks), via one rule in `exocortex/wiki/digest.py`. The regression tests fail
+  against the old rule. The research gauges keep their original rule so that banked results stay
+  reproducible.
+
+### Added
+
+- **Memory inventory notice** (`exocortex/wiki/inventory.py`, **dormant**). This is a second, *sibling*
+  `UserPromptSubmit` hook; the pinned main hook is unchanged. It compares the notes a task class has earned
+  against the current vault, and tells the agent when credited memory is missing or stale. For example:
+  *"Only 3 of 4 are present: 1 removed from the vault (…). Memory for this task is incomplete or outdated —
+  verify the affected conventions against the code before relying on it."*
+  - **Exact, not heuristic:** note ids are content-identity, so a changed hash is a changed note.
+  - **Read-only:** it writes no τ, no cue, and not the digest cache. All three are pinned by test.
+  - **Enable:** set `declarative.inventory_notice` to `gap` (or `always`), then register
+    `python -m exocortex.wiki.inventory UserPromptSubmit --state <repo>/.claude/exocortex` after the main
+    hook (see `exocortex/docs/USERS_GUIDE.md`).
+  - **Not claimed:** whether the notice changes what an agent does. That is unmeasured here.
+
+### Docs
+
+- **ADR-025 — Judgment Port (PROPOSED).** This is a doctrine and an interface contract for fast
+  typed-judgment models. Such a model may inform a human decision but never make one. It may never write τ,
+  grant credit, or allow or deny a command. Backends default to local, and a failure falls back to the
+  status quo. No judgment is shown without this estate's own measured calibration. The ADR builds nothing
+  and names no vendor. Its first measurement is a pre-registered offline shadow replay.
+
 ## [0.1.13] — 2026-09-16
 
 A red-team pass over the memory itself drove this release: eight attack families driven through the real

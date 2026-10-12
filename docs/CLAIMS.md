@@ -14,7 +14,7 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
 
 - **99 frozen kernel-lock tests** — the C1–C7 evidence lock (69) + 30 domain-crucible/adapter — **untouched**
   across this entire arc. This is the load-bearing guarantee.
-- **509 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** + **120 tuner** tests, all
+- **523 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** + **120 tuner** tests, all
   green (plus **9 strict-xfail memory red-team gaps**, pinned open on purpose in `exocortex/tests/redteam/`) (one exocortex test — the alert-engine backtest over a live audit store — auto-skips on storeless
   clones). The lock and the organ tests are separate suites; organ work never edits the lock.
   Note: `pytest -q` at the repo root collects only the 99-lock (`testpaths`), so the organ suites must be run
@@ -100,7 +100,8 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
   Desktop/Code, Cursor, Cline, …) as recall tools (`recall_procedural`, `recall_notes`, `memory_status`,
   `list_repos`), multi-repo via `EXOCORTEX_PROJECTS_ROOT`. **Read-only w.r.t. MEMORY proven** by a byte-level
   test (retrieval deposits no τ — preserves ADR-001: Desktop *consumes*, only a verified `exit 0` on the Code
-  side *earns*). `cls=` + empty-`query` direct recall and the `[notes:N]` count make the credited declarative
+  side *earns*). `cls=` + empty-`query` direct recall and the `[notes:N]` count (note NodeIds only since 0.1.14 —
+  procedural steps that merely name a `.md` file are no longer counted) make the credited declarative
   path deliberately reachable (it otherwise needs a lexical+classifier coincidence). Large vaults digest once in
   a background thread so tool calls never block (the 240s host-timeout fix). `exocortex/mcp_server.py`.
 - **One-command deploy** — `python -m exocortex.deploy install|uninstall|status <repo> [--provider
@@ -159,6 +160,13 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
   mismatch fails closed `exit 1` at SessionStart) + a hash-chained audit ledger. Ships `integrity.mode = off`
   so a stale baseline never bricks dev; enforced on the live TAO deployment (66 frozen files, `ok=True`).
   `exocortex/integrity.py`.
+
+- **Memory inventory notice** — a sibling `UserPromptSubmit` hook (`exocortex/wiki/inventory.py`; the
+  ADR-016-pinned hook is untouched) that reconciles a class's credited note anchors against the current vault
+  and states which credited notes were removed or edited since they earned τ. **Proven:** the reconciliation
+  is exact (content-identity NodeIds) and read-only (no τ, cue, or digest-cache write), by test
+  (`exocortex/tests/test_inventory_notice.py`). **Not claimed:** any effect on agent behaviour — unmeasured
+  here. `declarative.inventory_notice = off`.
 
 ## MARGINAL / UNPROVEN (honest limits — the "data gates ambition" record)
 - **Deposit windows are short.** Procedural routes are **median 2** edges (cross-model: haiku & sonnet

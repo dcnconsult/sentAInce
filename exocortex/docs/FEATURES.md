@@ -46,6 +46,13 @@ What the system does today, with the verified evidence behind each. Honest statu
   340-real-prompt replay): distinct docs proposed **51 → 104 of 105**, top-doc share **29% → 6%**, and the
   falsifying control — recall of docs that have actually earned τ — **81% → 96%**, so the diversity did not
   come at relevance's expense. This is a **retrieval-quality** measurement, not an outcome claim.
+- **Memory inventory notice** **[dormant]** — a *sibling* `UserPromptSubmit` hook
+  (`exocortex/wiki/inventory.py`; the pinned main hook is untouched) that reconciles the class's credited note
+  anchors against the current vault and says so when a credited note was **removed** or **edited** since it
+  earned τ ("Only 3 of 4 are present: 1 removed from the vault (…)"). Exact, not heuristic: NodeIds are
+  content-identity, so a changed hash is a changed note. Read-only. Enable with `declarative.inventory_notice`
+  = `gap` and register `python -m exocortex.wiki.inventory UserPromptSubmit --state <repo>/.claude/exocortex`
+  after the main hook. Its effect on agent behaviour is **not measured** here.
 
 ## Classification
 
@@ -190,6 +197,7 @@ What the system does today, with the verified evidence behind each. Honest statu
 | `declarative.lexical_rank` | `rank` | `rank` (IDF-weighted relevance before `proposer_k` truncates) or `file` (the pre-fix vault-file order, under which the cap selected alphabetically) |
 | `declarative.idf_max_nodes` | 20000 | corpus ceiling for the IDF pass (one O(N) walk **per hook**); above it, ranking continues on uniform weights |
 | `declarative.explore_rotate` | `rotate` | `rotate` (least-offered-first, via `wiki_offers.json`) or `order` (proposer order — re-offers the same un-credited notes every turn) |
+| `declarative.inventory_notice` | `off` | `off`, `gap` (state only a credited-vs-present mismatch) or `always` — the sibling inventory hook; also needs the hook registered |
 | `provenance.mode` | `off` | `off` / `recency` / `full` (F3 readout decay by edge age / + model-distance) — dormant |
 | `provenance.recency_halflife_days` | 30 | τ readout-weight half-life when `recency`/`full` |
 | `integrity.mode` | `off` | `off` / `warn` / `enforce` (kernel-lock apoptosis on frozen-DNA mismatch) — dormant |
