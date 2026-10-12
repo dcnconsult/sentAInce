@@ -95,7 +95,26 @@ being wrong, `(1 − 0.60)·8 = 3.2`, cleared the "just ask" threshold of 2.0. I
 push is not lethal. It paused and put a human in the loop. A command it recognizes as *lethal* never
 reaches this prompt at all, because the somatic reflex has already refused it.
 
-## What's new in 0.1.13
+## What's new in 0.1.14
+
+**The kernel is untouched.** 99 frozen tests, the C1–C7 lock, no API change, and the pinned hook is
+byte-identical. This release is about what the agent is told about its own memory. Full detail in the
+[changelog](CHANGELOG.md).
+
+- **🔢 `[notes:N]` now counts notes, and only notes.** The count of verified notes per task class was
+  matching any id containing `.md`, which also caught shell steps that merely *named* a Markdown file (5 of
+  349 such ids in a census of the maintainer's stores). It now accepts only note ids as the digest mints them, and the regression tests fail on
+  the old rule.
+- **🧾 A memory inventory notice (dormant, opt-in).** A sibling hook compares the notes a task class has
+  earned against the current vault. When a credited note was deleted or edited since it earned τ, the
+  agent is told so, by name, before it relies on it. It is read-only and exact (note ids are
+  content-hashes). Turn it on with `declarative.inventory_notice: gap` and one extra hook line. Whether it
+  changes agent behaviour is not yet measured.
+- **⚖️ ADR-025, Judgment Port (proposed).** This is the contract for plugging fast typed-judgment models in
+  beside a human decision, never in place of one. It covers no τ writes, local-first backends, and
+  calibration measured on your own estate before a probability is shown.
+
+## What was new in 0.1.13
 
 **The kernel is untouched.** 99 frozen tests, the C1–C7 lock, no API change. Every behavior change below
 is either opt-in or can only *withhold* memory, never grant it. This release is built on a red-team pass

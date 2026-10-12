@@ -135,6 +135,18 @@ def digest_document(doc_id: str, raw_markdown: str) -> list[ExonNode]:
     return exons
 
 
+# A declarative NodeId as ``digest_document`` mints it: ``{relpath}.md#{hex hash}`` plus the optional ``~n``
+# duplicate-block suffix. The lookahead rejects ``prefix:`` node ids (``cue:``, procedural verb nodes).
+_NOTE_ID_RE = re.compile(r"(?![A-Za-z_]+:)[^#\t]+\.md#[0-9a-f]+(?:~\d+)?")
+
+
+def is_note_id(nid: str) -> bool:
+    """True iff ``nid`` is a declarative note NodeId. Stricter than ``'.md' in nid``, which also matches a
+    PROCEDURAL verb node whose argument mentions a Markdown file (e.g. ``bash:BODY='GOVERNANCE.md``) — the
+    loose rule counted those as credited notes. Verb nodes carry a ``verb:`` prefix and no content hash."""
+    return bool(_NOTE_ID_RE.fullmatch(str(nid)))
+
+
 # ----------------------------------------------------------- the Z3 digestion (sleep-only, fail-open)
 _Z3_DIM = 2048                 # M — HDC hypervector width (phase_router capacity K_c ~= 0.40*M); tunable
 _PROJ_SEED = 0x46524551        # "FREQ" — fixed so encoding is deterministic across sessions

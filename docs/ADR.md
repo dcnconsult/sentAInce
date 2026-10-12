@@ -1248,9 +1248,87 @@ scoreable occurrences, or detected by the candidate organ's own activation.
 
 ---
 
+## ADR-025 — Judgment Port: typed judgment may inform a human decision, never decide one
+
+**Status:** PROPOSED (2026-09-27). This ADR is a doctrine and an interface contract. **No code exists yet and
+nothing is wired.** It was prompted by intaking a new class of *fast typed-judgment* models. These answer
+typed boolean, choice or score questions with probabilities instead of generated text. The intake also covered
+the memory stacks now built on them (**+1 alignment · 0 transfer**). PI direction: embrace new architectures
+and plug them in where they help a human make a decision.
+
+**Context.** The organism has no fast judgment organ, and it says so. Goal-class matching is lexical or
+embedding-based, with an abstain. The epistemic `VERIFY` lane asks the human with a reason derived from rules.
+Meanwhile, memory stacks elsewhere now let a judgment model decide what memory keeps. That is the opposite
+valence of ADR-001.
+
+There are two wrong responses:
+- ignore the capability and lose it;
+- adopt the judge as a writer or a gate, and give up ADR-001, ADR-009 and ADR-013 in the process.
+
+This ADR fixes the third position.
+
+**Decision.**
+
+1. **A typed contract, vendor-neutral.**
+   - A judgment is one of three question kinds: `bool` (a probability), `choice` (one probability per option),
+     or `score` (a distribution over a legend).
+   - Every answer is stamped with its backend id, model version and latency.
+   - The output space is bounded. No free text ever reaches a decision point.
+   - Any backend that meets the contract plugs in. No vendor is named in the organism.
+2. **It speaks only at a declared human decision point.** A judgment is rendered *beside* a question a human
+   already answers. It never decides that question. The candidate points are:
+   - the epistemic `VERIFY` ask;
+   - a sleep-time review queue (conflicting or stale notes, for a human revoke);
+   - dream promotion;
+   - triage of inbound contributions.
+3. **What it may never do.**
+   - **Write τ or any organism store.** A judgment is authority-shaped, and authority never earns τ
+     (ADR-001, ADR-013). This is enforced by the same byte-identical-store test pattern as ADR-023.
+   - **Grant or withhold a credit** (ADR-001).
+   - **Allow or deny a command.** Language is not a tamper boundary (ADR-009). The somatic floor remains the
+     boundary, and a judge can never override it (ADR-024 §6).
+4. **Backends default to local, and failure means the status quo.**
+   - **B0**, a deterministic baseline, is always present.
+   - **B1** is a local model.
+   - **B2** is a remote service. It is opt-in only, per decision point, with egress disclosed at configuration
+     time. It is never a default and never runs on the `PreToolUse` path.
+   - On a timeout or error, the decision point renders exactly as it does today. The port fails open to the
+     status quo, never to a weaker floor.
+5. **Every judgment is a logged claim, and its value is measured against consequences.**
+   - Each judgment is recorded in the hash-chained audit (ADR-009) with the digest of its inputs and its
+     backend id.
+   - Where a later consequence exists, the two are joined.
+   - What the human sees beside a probability is **that backend's measured calibration on this estate**,
+     never the provider's claim. A backend without a measured record here is labelled *uncalibrated here*.
+6. **Gauge-first and regime-declared.** Before a backend is promoted at a decision point, that point must
+   declare its regime and its rate, with numerator and denominator (ADR-002, ADR-024 §3/§3a). The census taken
+   when this ADR was drafted shows why this clause exists:
+   - The `VERIFY` ask fired **10 times in 32,742** recorded tool calls, all approved and all exit 0. That
+     regime is too rare and too saturated to score.
+   - The inbound-contribution queue was empty all census week.
+   - The one densely scoreable lane is command consequence: **849 failures in 12,572** shell consequences.
+
+   So the first measurement is a pre-registered **offline shadow replay** on that consequence stream, not a
+   live decision point. It uses a time-ordered, session-atomic holdout. Its bar: a judge must beat the
+   organism's *own* per-command history on held-out consequences, with calibration measured, before it earns
+   any decision point.
+
+**What this ADR does not do.** It builds nothing, wires nothing, names no provider and claims no benefit. It
+does not touch the pinned `exocortex/hook.py`. Any future `VERIFY` enrichment lands as a sibling module under
+an ADR-016 re-baseline, or it does not land.
+
+**−1 conditions.**
+- A judgment ever writes τ, grants or withholds a credit, or decides allow or deny.
+- A remote backend becomes a default, or runs on the `PreToolUse` path.
+- A probability is shown to a human without this estate's measured calibration or the *uncalibrated here*
+  label.
+- A backend is promoted at a decision point whose regime rate was not declared first.
+
+---
+
 ## The through-line
 
-These twenty-four decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
+These twenty-five decisions are one law seen from many angles: **a memory or an action must be backed by a fresh
 consequence, nothing unproven reaches the user's hot path or the committed defaults, and the organism's own
 integrity is a mathematical invariant — not a secret.**
 Consequence-sourcing (ADR-001) is the law; the σ economy (ADR-004) and suggest-then-verify (ADR-008) protect

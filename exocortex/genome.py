@@ -177,6 +177,13 @@ DEFAULTS = {
         # note that keeps failing to earn τ sinks below fresher tissue. NOT a σ scar — nothing is banned,
         # and the counter clears the moment a note earns τ. `EXOCORTEX_EXPLORE_ROTATE` (0/1) overrides.
         "explore_rotate": "rotate",     # rotate | order
+        # Memory inventory notice — a SIBLING UserPromptSubmit hook (`exocortex/wiki/inventory.py`, not the
+        # pinned hook) that reconciles the class's credited note anchors against the current vault and
+        # states, mechanically, which credited notes were REMOVED or EDITED since they earned τ. Read-only
+        # (never writes τ, cues or the digest cache). Ships DORMANT; also needs the hook registered and the
+        # declarative organ live. `gap` emits only on a mismatch; `always` also states the count when intact.
+        # `EXOCORTEX_INVENTORY_NOTICE` overrides. Efficacy on agent behaviour is unmeasured publicly.
+        "inventory_notice": "off",      # off | gap | always
         "attribution": {
             # Used-note attribution (#2): credit τ ONLY to notes whose distinctive content (code / inline
             # / path tokens) echoes in the exit-0 segment's actions — never merely because injected (that

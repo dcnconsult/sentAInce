@@ -174,6 +174,12 @@ earns). Tools: `recall_procedural(task)`, `recall_notes(query)`, `memory_status(
   notes `[notes:N]`; call `recall_notes(cls="<class>", query="")` to get those notes **directly** (an empty
   `query` with an explicit `cls` bypasses the lexical proposer + the semantic classifier). `cls=` works on
   `recall_procedural` too. A large vault digests once in the background — the first call may return "warming".
+- **`[notes:N]` counts note NodeIds only** (`{path}.md#{hash}`). Before 0.1.14 a procedural step whose
+  argument named a Markdown file (e.g. a shell command mentioning `GOVERNANCE.md`) was also counted.
+- **Inventory notice (dormant):** to have the agent *told* when a credited note has gone missing or changed,
+  set `declarative.inventory_notice` to `gap` and add a second `UserPromptSubmit` command after the main hook:
+  `python -m exocortex.wiki.inventory UserPromptSubmit --state <repo>/.claude/exocortex`
+  (`EXOCORTEX_INVENTORY_NOTICE=gap` overrides the Genome). It reads only; it never writes τ or the digest cache.
 
 ## 8. One-command deploy (`exocortex/deploy.py`)
 

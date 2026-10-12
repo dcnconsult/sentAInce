@@ -114,6 +114,31 @@ def test_note_anchors_ranks_md_nodes_only():
     assert all(".md" in a for a, _ in anchors)
 
 
+def test_note_anchors_exclude_verb_nodes_that_mention_md():
+    # regression: the loose '.md' in nid rule counted a PROCEDURAL verb node naming a Markdown file as a
+    # credited note — inflating [notes:N] and feeding a non-note into recall_notes.
+    from exocortex.colony import Colony, _SEP
+    col = Colony(tau={f"cue:c{_SEP}bash:BODY='GOVERNANCE.md": 3.0,
+                      f"cue:c{_SEP}Read:docs/README.md": 2.0,
+                      f"cue:c{_SEP}docs/n01.md#02d93d4e7436": 0.5,
+                      f"docs/n01.md#02d93d4e7436{_SEP}docs/n01.md#02d93d4e7436~1": 0.2})   # dup-block suffix
+    assert [a for a, _ in mcp_server._note_anchors(col)] == ["docs/n01.md#02d93d4e7436",
+                                                             "docs/n01.md#02d93d4e7436~1"]
+
+
+def test_memory_status_does_not_count_verb_nodes_as_notes(tmp_path, monkeypatch):
+    state = tmp_path / "state"; state.mkdir()
+    monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(state))
+    monkeypatch.delenv("EXOCORTEX_PROJECTS_ROOT", raising=False)
+    from exocortex.colony import Colony, _SEP
+    col = Colony(label="verbcls")
+    col.tau = {f"cue:verbcls{_SEP}bash:BODY='GOVERNANCE.md": 0.9, f"cue:verbcls{_SEP}docs/a.md#1f": 0.5}
+    col.deposits = 3
+    col.save()
+    out = mcp_server.memory_status()
+    assert "[notes:1]" in out and "[notes:2]" not in out
+
+
 def test_memory_status_marks_credited_note_count(tmp_path, monkeypatch):
     state = tmp_path / "state"; state.mkdir()
     monkeypatch.setenv("EXOCORTEX_STATE_DIR", str(state))
@@ -194,7 +219,7 @@ def test_recall_for_prompt_surfaces_credited_notes_hint_on_lexical_miss(tmp_path
     monkeypatch.delenv("EXOCORTEX_WIKI_VAULT", raising=False)    # no vault → notes abstains "(...)"
     prompt = "work on the guide accrual arc"
     label = _plant_colony(prompt,
-                          [("cue:ga", "docs/GUIDE.md#h1", 1.5), ("docs/GUIDE.md#h1", "bash:pytest", 0.7)])
+                          [("cue:ga", "docs/GUIDE.md#a1", 1.5), ("docs/GUIDE.md#a1", "bash:pytest", 0.7)])
     out = mcp_server.recall_for_prompt(prompt)
     assert "consequence-sourced procedural memory" in out        # the route half
     assert "τ-credited note" in out and label in out             # the D6 hint names class + count
