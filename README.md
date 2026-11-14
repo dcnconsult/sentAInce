@@ -95,7 +95,34 @@ being wrong, `(1 − 0.60)·8 = 3.2`, cleared the "just ask" threshold of 2.0. I
 push is not lethal. It paused and put a human in the loop. A command it recognizes as *lethal* never
 reaches this prompt at all, because the somatic reflex has already refused it.
 
-## What's new in 0.1.14
+## What's new in 0.1.15
+
+**The kernel is untouched.** 99 frozen tests, the C1–C7 lock, no API change, and the pinned hook is
+byte-identical. This release makes the memory readout age-aware by default, fixes orientation across
+repositories, and speeds up the exporter. Full detail in the [changelog](CHANGELOG.md).
+
+- **⏳ Recency decay ships on by default (`provenance.mode = recency`).** A pre-registered re-gauge
+  (`results/nonstationarity_v2/`) found routes drifting within a task class above a permutation null on 7 of
+  8 repositories.
+  - **What changes for you:** a route that is never reconfirmed reads at a decayed weight, with a 30-day
+    half-life. A low weight means "not reconfirmed lately", not "known wrong", and a stale route is still
+    offered.
+  - **Honest size:** it mostly lowers the weight shown for stale routes on quiet repos, and changes which
+    route ranks first in about 1% of classes. Whether it helps an agent succeed is unmeasured.
+  - **Opt out:** `provenance.mode = off` restores the previous readout byte-identically.
+- **🧭 Orientation works for repositories anywhere on disk.** It now resolves repositories outside the
+  projects root through the repo registry, no longer misses tests in large repositories, and lets a
+  capsule's declared status outrank README prose.
+- **⚡ A faster metrics exporter.** `/metrics` memoizes the gauge board: 7.3 s per render before; 2.67 s
+  cold and 0.31 s warm after, on the maintainer's estate. Cached values carry their age.
+- **📜 The deployed recall skill explains the readout**, including decayed weights. Re-run
+  `python -m exocortex.deploy install` to pick it up.
+- **🧪 Consumer contract tests** pin the surfaces downstream tools depend on, and the red-team suite is
+  down to 8 open gaps from 9 (the recency default closes `rt-stale-1`).
+- **📏 Three new read-only gauges**, each shipped with its pre-registration and result under `results/`.
+  The three mechanisms they tested are parked on those results; the changelog has the numbers.
+
+## What was new in 0.1.14
 
 **The kernel is untouched.** 99 frozen tests, the C1–C7 lock, no API change, and the pinned hook is
 byte-identical. This release is about what the agent is told about its own memory. Full detail in the

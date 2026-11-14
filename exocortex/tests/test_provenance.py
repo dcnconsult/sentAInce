@@ -1,12 +1,14 @@
 """F3 provenance / non-stationarity organ — per-edge (ts, model) stamping + recency/version readout decay.
 
-Ships DORMANT (PROV_MODE 'off'): recording is inert unless a caller passes `ts`, and the readout uses raw τ.
-These tests drive the live behavior by monkeypatching the module mode, mirroring the eligibility-trace tests.
+Ships LIVE as 'recency' since 2026-10-26 (results/nonstationarity_v2/). Recording is inert unless a caller
+passes `ts`; 'off' keeps the raw-τ readout. These tests pin each mode by monkeypatching the module mode,
+mirroring the eligibility-trace tests.
 """
 import json
 import time
 
 from exocortex import colony as C
+from exocortex.genome import DEFAULTS
 
 SEP = C._SEP
 
@@ -22,10 +24,14 @@ def test_dormant_by_default_no_ts_no_meta_and_save_omits_lane(tmp_path, monkeypa
     assert set(d) == {"label", "tau", "deposits"}
 
 
-def test_off_mode_readout_is_raw_tau():
+def test_shipped_default_is_recency():
+    assert DEFAULTS["provenance"]["mode"] == "recency"
+
+
+def test_off_mode_readout_is_raw_tau(monkeypatch):
+    monkeypatch.setattr(C, "PROV_MODE", "off")
     col = C.Colony(tau={f"a{SEP}b": 1.0, f"c{SEP}d": 1.0},
                    meta={f"a{SEP}b": {"ts": 1.0, "model": ""}})
-    assert C.PROV_MODE == "off"                  # genome default
     assert col._eff_tau(now=1e9) is col.tau      # no copy, no decay → identical object
 
 

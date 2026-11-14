@@ -43,6 +43,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import time
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -127,6 +128,41 @@ def provenance(records: list, colonies: list) -> dict:
         "edges": tot_edges,
         "edge_ts_coverage": round(with_ts / tot_edges, 3) if tot_edges else None,
         "model_coverage": round(with_model / tot_edges, 3) if tot_edges else None,   # colony-edge model stamps (F3)
+    }
+
+
+def stamp_age(colonies: list, now: float, halflife_days: float = 30.0) -> dict:
+    """What would recency decay actually DO today? (nonstationarity_v2 PREREG §4 D2–D3, descriptive.)
+    The τ-weighted share of STAMPED edges older than one half-life and than 90 days, and the share of classes
+    (≥2 edges) whose strongest edge changes when τ is weighted by ``0.5^(age/halflife)`` — unstamped edges
+    weigh 1.0, mirroring ``colony._recency_weight`` (never penalize what cannot be dated)."""
+    hl = halflife_days * 86400.0
+    stamped = old_hl = old_90 = 0.0
+    classes = changed = 0
+    for _label, tau, meta in colonies:
+        weighted = {}
+        for k, w in tau.items():
+            if _SEP not in k:
+                continue
+            m = meta.get(k) if isinstance(meta, dict) else None
+            ts = m.get("ts") if isinstance(m, dict) else None
+            age = max(0.0, now - float(ts)) if ts else None
+            if age is not None:
+                stamped += w
+                old_hl += w if age > hl else 0.0
+                old_90 += w if age > 90 * 86400.0 else 0.0
+            weighted[k] = w * (0.5 ** (age / hl) if age is not None else 1.0)
+        if len(weighted) >= 2:
+            classes += 1
+            raw_top = max(weighted, key=lambda k: (tau[k], k))
+            rec_top = max(weighted, key=lambda k: (weighted[k], k))
+            changed += int(raw_top != rec_top)
+    return {
+        "stamped_tau": round(stamped, 3),
+        "tau_share_older_halflife": round(old_hl / stamped, 3) if stamped else None,
+        "tau_share_older_90d": round(old_90 / stamped, 3) if stamped else None,
+        "classes_2plus_edges": classes,
+        "dominant_change_share": round(changed / classes, 3) if classes else None,
     }
 
 
@@ -313,17 +349,19 @@ def discover(scan_root: Path) -> list:
     return found
 
 
-def run(state_dirs: list | None = None, scan_root: Path | None = None) -> dict:
+def run(state_dirs: list | None = None, scan_root: Path | None = None, now: float | None = None) -> dict:
     dirs = [Path(d) for d in (state_dirs or [])]
     if not dirs:
         dirs = discover(scan_root or _REPO_ROOT.parent)
+    ref = time.time() if now is None else now
     per_repo, all_col, all_rec = [], [], []
     for sd in dirs:
         col, rec = load_colonies(sd), load_audit(sd)
         if not col and not rec:
             continue
         per_repo.append({"repo": sd.parents[1].name,
-                         "provenance": provenance(rec, col), "temporal": temporal(rec),
+                         "provenance": provenance(rec, col), "stamp_age": stamp_age(col, ref),
+                         "temporal": temporal(rec),
                          "stationarity": stationarity(rec), "stationarity_by_class": stationarity_by_class(rec)})
         all_col.extend(col); all_rec.extend(rec)
     p, t, s, sc = provenance(all_rec, all_col), temporal(all_rec), stationarity(all_rec), stationarity_by_class(all_rec)
@@ -342,6 +380,9 @@ def _fmt(res: dict) -> str:
                      f"recent_q={t['recent_quartile_frac']} sess={t['sessions']} | "
                      f"drift_pooled={s['drift_tv']} within={sc['mean_within_class_drift']} "
                      f"null={sc['null_drift']} excess={sc['mean_excess_drift']}({sc['classes_measured']}cls)")
+        a = r["stamp_age"]
+        lines.append(f"      stamps: tau>{30}d={a['tau_share_older_halflife']} tau>90d={a['tau_share_older_90d']} "
+                     f"dominant_change={a['dominant_change_share']} ({a['classes_2plus_edges']}cls)")
     p, t, s, sc = (res["aggregate"]["provenance"], res["aggregate"]["temporal"],
                    res["aggregate"]["stationarity"], res["aggregate"]["stationarity_by_class"])
     lines += ["", "AGGREGATE:",
@@ -368,8 +409,9 @@ def main(argv=None) -> int:
     ap.add_argument("--state-dir", action="append", default=[], help="explicit .claude/exocortex dir (repeatable)")
     ap.add_argument("--scan-root", default=None, help="dir to scan for */.claude/exocortex")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
+    ap.add_argument("--now", type=float, default=None, help="reference epoch for stamp age (default: now)")
     args = ap.parse_args(argv)
-    res = run(args.state_dir or None, Path(args.scan_root) if args.scan_root else None)
+    res = run(args.state_dir or None, Path(args.scan_root) if args.scan_root else None, now=args.now)
     print(json.dumps(res, indent=2) if args.json else _fmt(res), end="" if args.json else "\n")
     return 0
 

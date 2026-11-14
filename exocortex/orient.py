@@ -61,6 +61,74 @@ _SKIP_DIRS = {".git", ".claude", ".cursor", "node_modules", ".venv", "venv", "__
 _SKIP_FILES = {"exocortex_config.json", "AGENTS.md"}
 _PROBE_DEPTH = 2        # bounded mtime walk: repo root + two levels
 _PROBE_CAP = 500        # stop stat-ing after this many files — orientation, not an audit
+_TEST_DIRS = {"tests", "test"}
+
+# The host-wide fleet registry the exporter already reads (``testbed/exporter/metrics.ESTATE_DEFAULT``).
+# Its ``root`` is the path AS SEEN BY THE EXPORTER (often an in-container mount); an optional ``host_root``
+# carries the host path. Orientation reuses this file — never a second list that could drift.
+REGISTRY_ENV = "EXOCORTEX_REPO_REGISTRY"
+
+
+def registry_path() -> Path:
+    return Path(os.environ.get(REGISTRY_ENV) or (Path.home() / ".exocortex" / "repos.json"))
+
+
+def registry_roots(path=None) -> dict:
+    """``{name: host Path}`` for registered repos whose ``host_root`` or ``root`` exists on THIS host
+    (``host_root`` first: ``root`` may be an in-container path). Unreadable/absent registry → ``{}``."""
+    p = Path(path) if path else registry_path()
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    entries = data.get("repos", []) if isinstance(data, dict) else data
+    out: dict = {}
+    for e in entries if isinstance(entries, list) else []:
+        if not isinstance(e, dict) or not e.get("name"):
+            continue
+        for cand in (e.get("host_root"), e.get("root")):
+            if cand and Path(cand).is_dir():
+                out[str(e["name"])] = Path(cand)
+                break
+    return out
+
+
+def resolve_root(name: str, projects_root=None, registry: dict | None = None):
+    """Where ``name`` lives on this host: ``<projects_root>/<name>`` if that directory exists, else the
+    fleet registry's host root, else None (probes then degrade honestly to a declared-only view). Before
+    this, every caller GUESSED ``<projects_root>/<name>``, so an estate-external repo such as
+    the research vault never had its capsule read and graded on the estate audit date (review 2026-10-12)."""
+    if projects_root:
+        guess = Path(projects_root) / name
+        if guess.is_dir():
+            return guess
+    reg = registry_roots() if registry is None else registry
+    return reg.get(name)
+
+
+def _tests_present(root: Path) -> bool:
+    """Tests exist at the root or one package level down (``tests/``, ``<pkg>/tests/``, ``test_*.py``).
+    Independent of the mtime walk's file cap: in a large repo that cap ran out (e.g. ``docs/`` with 399
+    files) before ``tests/`` was ever visited, so repos with 38-47 test files read "no tests"."""
+    def _has(d: Path) -> bool:
+        try:
+            for e in os.scandir(d):
+                n = e.name
+                if e.is_dir(follow_symlinks=False) and n in _TEST_DIRS:
+                    return True
+                if e.is_file() and n.endswith(".py") and (n.startswith("test_") or n.endswith("_test.py")):
+                    return True
+        except OSError:
+            return False
+        return False
+    if _has(root):
+        return True
+    try:
+        subdirs = [e.path for e in os.scandir(root)
+                   if e.is_dir(follow_symlinks=False) and e.name not in _SKIP_DIRS and not e.name.startswith(".")]
+    except OSError:
+        return False
+    return any(_has(Path(s)) for s in subdirs)
 
 
 # ----------------------------------------------------------------------------- sources: capsule + REPO_LOG
@@ -191,6 +259,7 @@ def probe(root) -> dict:
         if seen >= _PROBE_CAP:
             break
     out["files_seen"] = seen
+    out["tests_present"] = out["tests_present"] or _tests_present(root)
     if latest:
         out["last_activity"] = date.fromtimestamp(latest)
     return out
@@ -207,9 +276,18 @@ def _declared(name: str, capsule: dict | None, log: dict) -> dict:
              if isinstance(e, dict) and e.get("edge") in EDGES and e.get("target")]
     links += [t for t in (log.get("links") or []) if t[0] == name and t not in links]
     status = str(row.get("status") or "")
-    superseded = (str(cap.get("canonical_status") or "").lower() == "superseded"
+    cap_status = str(cap.get("canonical_status") or "").strip().lower()
+    # An explicit capsule status is the repo's own, fresher word and wins over prose. The REPO_LOG prose
+    # substring (the cerebral/intents.py ledger-label convention) is consulted ONLY when the capsule is
+    # silent: one estate repo's prose mentions a *rung result* "SUPERSEDED-BY-DATE", and the bare
+    # substring graded the canonical repo itself superseded (estate review 2026-10-12).
+    superseded = (cap_status == "superseded"
                   or any(e == "superseded_by" for _, e, _ in links)
-                  or "supersed" in status.lower())     # the cerebral/intents.py ledger-label convention
+                  or (not cap_status and "supersed" in status.lower()))
+    # Declared activity: the newer of the REPO_LOG row and the capsule's own `declared_activity`. Before,
+    # only the log could set it, so "re-orient, then update the capsule" could never clear a drift-Low.
+    log_act, cap_act = row.get("last_activity"), _iso(cap.get("declared_activity"))
+    declared_activity = max((d for d in (log_act, cap_act) if d), default=None)
     return {
         "name": name,
         "source": ("capsule+repo_log" if cap and row else "capsule" if cap else
@@ -222,7 +300,7 @@ def _declared(name: str, capsule: dict | None, log: dict) -> dict:
         "last_reviewed": (_iso(cap.get("last_reviewed")) if cap.get("last_reviewed")
                           else (log.get("audited") if row else None)),   # the estate audit date vouches
                                                                          # only for repos it actually rowed
-        "declared_activity": row.get("last_activity"),
+        "declared_activity": declared_activity,
         "known_risks": [r for r in cap.get("known_risks", []) if r],
         "status": status,
         "links": links,
@@ -325,6 +403,7 @@ def estate_repos(projects_root, log: dict | None = None) -> list[dict]:
     ``projects_root``; absent → root=None and the probes degrade honestly to a declared-only view."""
     log = load_log() if log is None else log
     proot = Path(projects_root) if projects_root else None
+    registry = registry_roots()
     out: dict[str, dict] = {}
     if proot and proot.is_dir():
         for child in sorted(proot.iterdir()):
@@ -333,9 +412,13 @@ def estate_repos(projects_root, log: dict | None = None) -> list[dict]:
                     out[child.name] = {"name": child.name, "root": child}
             except OSError:
                 continue
-    for name in (log.get("rows") or {}):
+    # Log rows and the fleet registry (out-of-root repos) — roots RESOLVED, never guessed. A log-only
+    # name with no host root at all keeps the old ``<projects_root>/<name>`` guess so the probe can say
+    # "root not reachable" instead of the repo vanishing from the estate.
+    for name in list(log.get("rows") or {}) + list(registry):
         if name not in out:
-            out[name] = {"name": name, "root": (proot / name) if proot else None}
+            root = resolve_root(name, proot, registry)
+            out[name] = {"name": name, "root": root if root else ((proot / name) if proot else None)}
     return [out[k] for k in sorted(out)]
 
 
@@ -511,7 +594,7 @@ def main(argv=None) -> int:
     if not a.name:
         ap.print_help()
         return 2
-    root = Path(a.root) if a.root else (Path(a.projects_root) / a.name if a.projects_root else None)
+    root = Path(a.root) if a.root else resolve_root(a.name, a.projects_root)
     print(render(orient(a.name, root, log)))
     return 0
 

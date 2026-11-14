@@ -154,20 +154,39 @@ falsifiable trigger that would justify flipping it.
 
 Consequence-sourcing stops *text* from writing memory. A prompt that says "remember this", a planted note,
 or output that claims success on a failed command all earn nothing, and the red-team suite pins that. The
-same suite (`exocortex/tests/redteam/`) also pins **the gaps we have not closed** (9 as of 2026-09-16, down from 17 at first run), each as a strict xfail.
+same suite (`exocortex/tests/redteam/`) also pins **the gaps we have not closed** (8 as of 2026-10-26, down from 17 at first run), each as a strict xfail.
 A gap counts as closed only when its test flips.
 
 | Gap family | What the suite shows today | Gate that closes it |
 |---|---|---|
-| Outcome signal | Eight common failure shapes (lowercase exit codes, `exit status`, pytest summaries, `npm ERR!`, `make: ***`, line-start `error:`, `Permission denied`, bare exception lines) are now read as failures, after a replay over recorded traffic (`results/outcome_signatures_v1/`). **Still open:** a command that masks its exit code *and* silences its output leaves nothing to read | A check of the command text itself, with legitimate-deposit loss measured on a replay first |
+| Outcome signal | Eight common failure shapes (lowercase exit codes, `exit status`, pytest summaries, `npm ERR!`, `make: ***`, line-start `error:`, `Permission denied`, bare exception lines) are now read as failures, after a replay over recorded traffic (`results/outcome_signatures_v1/`). **Still open:** a command that masks its exit code *and* silences its output leaves nothing to read. A pre-registered replay (2026-10-26, `results/masked_exit_v1/`) found that withholding credit from such commands would cost under 1% of deposits. On one of two repos, though, its sanity check showed these commands retried *less* often than comparable ones, so the rule was not built | A check of the command text itself, re-gauged on new data with a failure signal that can tell success apart from "nothing to retry" |
 | Route keying | Compound commands (`cd X && …`, `ENV=val cmd`) are keyed on their first token rather than the working verb | A pre-registered replay shows clutter discrimination holds under working-verb keying; ledger figures re-run and re-dated |
 | Store tamper-evidence | A direct edit of a colony store is not detected (ADR-017 is designed, not built) | A forged edge never reaches context under enforce, with no false alarms on live stores |
 | Revocation | No targeted way to revoke a single route; a quarantined note escapes by being edited | A targeted revoke, verified by the pinned red-team tests flipping |
-| Staleness | Recency decay is built but ships dormant, and routes are not tied to the artifacts they used | The non-stationarity gauge clears its bar on go-forward data |
+| Staleness | Routes are not tied to the artifacts they used. A pre-registered re-gauge on go-forward data (2026-10-26, `results/nonstationarity_v2/`) cleared its bar on 7 of 8 evaluable repos. Recency decay now ships on by default: it mostly reduces the weight shown for stale routes on quiet repos and rarely changes which route ranks first. A stale route is still offered, at its decayed weight. A pre-registered snapshot (2026-10-26, `results/read_time_validity_v1/`) found **no** served route or note citing a file that no longer exists. These repositories almost never delete or rename files, and routes are kept at the level of verbs, so they never name a file. Tying memory to the files it cites is parked until a repository with real file churn shows the need | Re-run the same gauge on a repository with real file churn. A floor that withholds decayed routes would silence 18–69% of task classes today, so it waits for an outcome measure rather than a prevalence one |
 | Conflict | Near-tied competing routes now carry a read-side "contested" marker. Contradicting notes are still surfaced unmarked | Declarative contradiction detection stays parked until a gauge supports it |
 | Credit window | A trivially-succeeding final command credits the whole trail | Held for adversarial settings until a banked traffic measurement sizes the natural rate |
 
 Revocation and tamper-evidence are **protection**, so they stay in the open core.
+
+### What is next (added 2026-10-28)
+
+Every gauge above measures how often something happens, not whether memory helps an agent finish its
+work. The one outcome experiment so far is parked at p = 0.0781 against a p ≤ 0.05 gate. So the next items
+are:
+
+- **An external outcome benchmark.** A pre-registration, frozen before any harness code, that names the
+  benchmark, the arms (memory off, recency decay on, a weight floor on), the primary outcome and the
+  result that would count against us. The same harness records exactly which suggestion was shown on each
+  turn. It also re-runs the stale-citation gauge unchanged on repositories that really do delete and rename
+  files. It runs in stages (learn one task mix, then re-test every earlier one), because recency decay,
+  pruning and the edge cap all forget by design, and what that costs has never been measured.
+- **Working-verb keying, finished.** The local trial is at 263 of 300 depositing consequences. Two
+  Windows keying artifacts (`python.exe` vs `python`, and a quoted executable path) get fixed and pinned
+  before the trial is evaluated.
+- **Cross-repo memory, measured before it is built.** Routes kept at the level of verbs barely recur
+  across repositories, and the few that do are shell grammar. A density check on a higher-level unit comes
+  before any cross-repo design.
 
 ---
 

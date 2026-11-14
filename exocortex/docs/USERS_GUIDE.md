@@ -103,7 +103,9 @@ Tuning tips (measured):
 - **`provenance.mode`** (organ F3) — `off` (raw-τ readout, the verified status quo) / `recency` (decay the
   readout by edge age, half-life `recency_halflife_days`) / `full` (+ a `version_penalty` when a stamped edge's
   model ≠ the current one). Recording the `(ts, model)` stamp is always on once a deposit supplies it; only the
-  *readout* changes when you flip the mode. Leave `off` until a soak shows genuinely stale/cross-model routes.
+  *readout* changes when you flip the mode. Ships `recency` since 2026-10-26: a pre-registered re-gauge found
+  within-class drift on 7 of 8 repos (`results/nonstationarity_v2/`). It mostly lowers the weight shown for
+  stale routes on quiet repos and rarely changes which route ranks first. Set `off` to restore the raw readout.
 - **`integrity.mode`** — `off` / `warn` (audit a frozen-DNA mismatch, continue) / `enforce` (fail-closed `exit 1`
   apoptosis at SessionStart). After any legitimate edit to a frozen kernel file, run
   `python -m exocortex.integrity --update-baseline` or the next session refuses to start. The exocortex layer is

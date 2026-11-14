@@ -393,8 +393,14 @@ the organism's earned state.
 - Recall NEVER writes: no tool here deposits, updates, or deletes memory. Deposits happen only
   through the hooks, only on verified success. If asked to "make the organism remember X", explain
   that memory is earned by doing X successfully, not declared.
-- A recalled route reflects what worked BEFORE — stale paths are possible; the τ weight is
-  confidence earned then, not a guarantee now.
+- A recalled route reflects what worked BEFORE — stale paths are possible. By default the τ weight
+  shown is decayed by how long ago the route was last reconfirmed (recency decay, 30-day half-life;
+  `provenance.mode = off` shows the raw weight). A low weight means "not reconfirmed lately", not
+  "known wrong"; a high weight is confidence earned then, not a guarantee now.
+- A **contested** line means the alternatives out of a step are near-tied: neither has earned the
+  lead, so check both against the code rather than taking the first.
+- If a session notice says earned notes are **missing or outdated** in the vault, verify the
+  affected conventions against the code before relying on any of them.
 """
 
 

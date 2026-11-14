@@ -108,3 +108,25 @@ def test_run_over_state_dir_and_verdict(tmp_path):
     assert res["aggregate"]["provenance"]["model_coverage"] == 0.0     # instrument absent
     assert res["verdict"]["F3_nonstationarity"]["signal"] is True      # disjoint early/late mix → drift
     assert res["verdict"]["F3_nonstationarity"]["instrument_absent"] is True
+
+
+def test_stamp_age_weights_only_stamped_edges_and_detects_a_dominant_change():
+    # nonstationarity_v2 PREREG §4 D2–D3. now = day 100; half-life 30 d.
+    day = 86400.0
+    now = 100 * day
+    cols = [("c1", {f"a{SEP}b": 4.0, f"a{SEP}c": 3.0},                          # old strong vs fresh weaker
+             {f"a{SEP}b": {"ts": now - 95 * day}, f"a{SEP}c": {"ts": now - 1 * day}}),
+            ("c2", {f"x{SEP}y": 2.0, f"x{SEP}z": 1.0}, {}),                       # unstamped → never penalized
+            ("c3", {f"p{SEP}q": 1.0}, {f"p{SEP}q": {"ts": now - 40 * day}})]    # one edge: no ranking
+    a = g.stamp_age(cols, now)
+    assert a["stamped_tau"] == 8.0
+    assert a["tau_share_older_halflife"] == round(5.0 / 8.0, 3)    # a→b (95 d) + p→q (40 d)
+    assert a["tau_share_older_90d"] == round(4.0 / 8.0, 3)         # a→b only
+    assert a["classes_2plus_edges"] == 2
+    assert a["dominant_change_share"] == 0.5                         # c1 flips (4·2^-95/30 < 3·2^-1/30); c2 does not
+
+
+def test_stamp_age_on_an_unstamped_store_is_empty_not_zero():
+    a = g.stamp_age([("c", {f"a{SEP}b": 1.0, f"b{SEP}c": 2.0}, {})], now=1.0)
+    assert a["stamped_tau"] == 0.0 and a["tau_share_older_halflife"] is None
+    assert a["dominant_change_share"] == 0.0

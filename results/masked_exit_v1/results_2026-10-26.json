@@ -1,0 +1,204 @@
+{
+ "stores": {
+  "SentAInce": {
+   "silent": {
+    "population": 3275,
+    "withheld": 3,
+    "L_loss_share": 0.0009,
+    "C_starved_classes": 0,
+    "R_retry_excess": -0.0747,
+    "R_ci95": [
+     -0.234,
+     0.0058
+    ],
+    "R_dropped_withheld": 0,
+    "D2_top_withheld_verbs": [
+     [
+      "grep",
+      1
+     ],
+     [
+      "python",
+      1
+     ],
+     [
+      "GitHub",
+      1
+     ]
+    ],
+    "D3_raw_retry": {
+     "withheld": 0.3333,
+     "kept": 0.3035
+    }
+   },
+   "masked": {
+    "population": 3275,
+    "withheld": 206,
+    "L_loss_share": 0.0629,
+    "C_starved_classes": 1,
+    "R_retry_excess": -0.0728,
+    "R_ci95": [
+     -0.1557,
+     0.0153
+    ],
+    "R_dropped_withheld": 8,
+    "D2_top_withheld_verbs": [
+     [
+      "echo",
+      70
+     ],
+     [
+      "git",
+      21
+     ],
+     [
+      "python",
+      17
+     ],
+     [
+      "rm",
+      17
+     ],
+     [
+      "ls",
+      15
+     ],
+     [
+      "grep",
+      9
+     ],
+     [
+      "mkdir",
+      7
+     ],
+     [
+      "docker",
+      5
+     ]
+    ],
+    "D3_raw_retry": {
+     "withheld": 0.2233,
+     "kept": 0.3089
+    }
+   },
+   "D1_powershell": {
+    "ps_ok_rows": 230,
+    "ps_mask_idiom_rows": 18
+   }
+  },
+  "research-vault": {
+   "silent": {
+    "population": 6488,
+    "withheld": 57,
+    "L_loss_share": 0.0088,
+    "C_starved_classes": 0,
+    "R_retry_excess": -0.199,
+    "R_ci95": [
+     -0.2806,
+     -0.1156
+    ],
+    "R_dropped_withheld": 1,
+    "D2_top_withheld_verbs": [
+     [
+      "python",
+      24
+     ],
+     [
+      "python.exe",
+      7
+     ],
+     [
+      "docker",
+      6
+     ],
+     [
+      "mkdir",
+      4
+     ],
+     [
+      "git",
+      4
+     ],
+     [
+      "sleep",
+      3
+     ],
+     [
+      "tail",
+      2
+     ],
+     [
+      "echo",
+      2
+     ]
+    ],
+    "D3_raw_retry": {
+     "withheld": 0.1404,
+     "kept": 0.2968
+    }
+   },
+   "masked": {
+    "population": 6488,
+    "withheld": 375,
+    "L_loss_share": 0.0578,
+    "C_starved_classes": 0,
+    "R_retry_excess": -0.0582,
+    "R_ci95": [
+     -0.123,
+     0.0192
+    ],
+    "R_dropped_withheld": 13,
+    "D2_top_withheld_verbs": [
+     [
+      "python",
+      129
+     ],
+     [
+      "echo",
+      37
+     ],
+     [
+      "git",
+      35
+     ],
+     [
+      "python.exe",
+      23
+     ],
+     [
+      "cat",
+      18
+     ],
+     [
+      "for",
+      14
+     ],
+     [
+      "tail",
+      14
+     ],
+     [
+      "ls",
+      12
+     ]
+    ],
+    "D3_raw_retry": {
+     "withheld": 0.2587,
+     "kept": 0.2977
+    }
+   },
+   "D1_powershell": {
+    "ps_ok_rows": 366,
+    "ps_mask_idiom_rows": 37
+   }
+  }
+ },
+ "verdicts": {
+  "silent": {
+   "disposition": 0
+  },
+  "masked": {
+   "disposition": 0
+  }
+ }
+}

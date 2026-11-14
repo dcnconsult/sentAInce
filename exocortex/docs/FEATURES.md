@@ -88,7 +88,7 @@ What the system does today, with the verified evidence behind each. Honest statu
   Gauge-proven to isolate the "ah-ha"; but real accruals (haiku **and** sonnet, identical: median segment 2,
   ~26 % ≥ 4) show the deposit window is structurally short (trail re-roots per Bash) → a no-op on ~74 % of
   deposits. Kept off; ships with `seg_len` audit telemetry to re-size the prize on other workloads. `off | trace`.
-- **Provenance / non-stationarity (organ F3)** **[dormant]** (`provenance.mode`) — stamps each deposited edge
+- **Provenance / non-stationarity (organ F3)** **[live, `recency`, since 2026-10-26]** (`provenance.mode`) — stamps each deposited edge
   with `(ts, model)` (model sourced from the transcript *tail* — the hook stdin carries none) and decays τ AT
   READOUT by recency (`recency`) or recency + a version-distance penalty across model upgrades (`full`).
   Recording is **non-destructive** — a parallel `meta{ts,model}` lane synced to the pruned τ; only the readout
@@ -198,6 +198,6 @@ What the system does today, with the verified evidence behind each. Honest statu
 | `declarative.idf_max_nodes` | 20000 | corpus ceiling for the IDF pass (one O(N) walk **per hook**); above it, ranking continues on uniform weights |
 | `declarative.explore_rotate` | `rotate` | `rotate` (least-offered-first, via `wiki_offers.json`) or `order` (proposer order — re-offers the same un-credited notes every turn) |
 | `declarative.inventory_notice` | `off` | `off`, `gap` (state only a credited-vs-present mismatch) or `always` — the sibling inventory hook; also needs the hook registered |
-| `provenance.mode` | `off` | `off` / `recency` / `full` (F3 readout decay by edge age / + model-distance) — dormant |
+| `provenance.mode` | `recency` | `off` / `recency` / `full` (F3 readout decay by edge age / + model-distance) — live since 2026-10-26 |
 | `provenance.recency_halflife_days` | 30 | τ readout-weight half-life when `recency`/`full` |
 | `integrity.mode` | `off` | `off` / `warn` / `enforce` (kernel-lock apoptosis on frozen-DNA mismatch) — dormant |
