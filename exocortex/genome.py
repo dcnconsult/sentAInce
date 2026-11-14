@@ -98,12 +98,13 @@ DEFAULTS = {
         # instrument was ABSENT on the live store (0% model-id / per-edge-ts coverage) → version-distance is
         # UNMEASURABLE retroactively; F3 is a go-forward instrument whose first value is to START recording it.
         # Recording is NON-DESTRUCTIVE — a parallel per-edge `meta{ts,model}` lane; only the READOUT re-ranks.
-        # Ships DORMANT: "off" → readout uses the raw τ (the verified status quo, byte-identical); "recency" →
-        # τ readout-weight decays by edge age (half-life below); "full" adds the version-distance penalty
-        # (INERT until model-id sourcing is wired — the hook stdin contract carries no model field; until then
-        # all stamps share model="" → no version term fires). Legacy edges with no stamp are NEVER penalized
-        # (fail-open). Re-gauge once provenance accrues (and add class-bucketing to the gauge).
-        "mode": "off",                 # off | recency | full
+        # "off" → readout uses the raw τ (byte-identical to pre-F3); "recency" → τ readout-weight decays by edge
+        # age (half-life below); "full" adds the version-distance penalty (INERT until model-id sourcing is wired
+        # at readout). Legacy edges with no stamp are NEVER penalized (fail-open). LIVE by default since
+        # 2026-10-26 — an ADR-003 judgment on the pre-registered re-gauge (results/nonstationarity_v2/: excess
+        # drift ≥ 0.10 on 7 of 8 evaluable stores, 99% stamp coverage). Honest size: it rescales stale τ and
+        # rarely re-ranks (2 of 266 classes); efficacy is unmeasured. "off" reverts byte-identically.
+        "mode": "recency",             # off | recency | full
         "recency_halflife_days": 30.0, # τ readout-weight halves every N days of edge age (conservative)
         "version_penalty": 0.5,        # readout multiplier for an edge whose stamped model != the current model
     },

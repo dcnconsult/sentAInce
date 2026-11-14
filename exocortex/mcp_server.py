@@ -513,11 +513,10 @@ def orient_repo(repo: str = "") -> str:
         # guessed under EXOCORTEX_PROJECTS_ROOT (absent → declared-only view, probes degrade honestly).
         cands = {r["name"]: r for r in repos}
         proot = os.environ.get("EXOCORTEX_PROJECTS_ROOT")
-        for name in (log.get("rows") or {}):
+        registry = _orient.registry_roots()         # out-of-root repos (fleet registry host_root/root)
+        for name in list(log.get("rows") or {}) + list(registry):
             if name not in cands:
-                root = Path(proot) / name if proot else None
-                cands.setdefault(name, {"name": name,
-                                        "root": root if (root and root.is_dir()) else None})
+                cands.setdefault(name, {"name": name, "root": _orient.resolve_root(name, proot, registry)})
         cand_list = sorted(cands.values(), key=lambda r: r["name"])
         r = _resolve_repo(repo, cand_list)
         if r is None and not repo:

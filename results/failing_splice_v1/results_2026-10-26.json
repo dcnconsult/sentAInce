@@ -1,0 +1,225 @@
+{
+ "stores": {
+  "repo-A": {
+   "turns": 219,
+   "N_spliced": 50,
+   "followed": 27,
+   "F_follow_rate": 0.54,
+   "X_contradiction_rate": 0.0741,
+   "E_excess": -0.0421,
+   "E_ci95": [
+    -0.1622,
+    0.1004
+   ],
+   "E_dropped_followed": 0,
+   "off_route_failure_rate": 0.086,
+   "contradictions": 2,
+   "P_median": 0.0,
+   "P_share_ge2": 0.0,
+   "deposit_before_next_share": 1.0
+  },
+  "repo-C": {
+   "turns": 63,
+   "N_spliced": 16,
+   "followed": 7,
+   "F_follow_rate": 0.4375,
+   "X_contradiction_rate": 0.0,
+   "E_excess": -0.0612,
+   "E_ci95": [
+    -0.1154,
+    0.0
+   ],
+   "E_dropped_followed": 0,
+   "off_route_failure_rate": 0.0706,
+   "contradictions": 0,
+   "P_median": null,
+   "P_share_ge2": null,
+   "deposit_before_next_share": null
+  },
+  "repo-D": {
+   "turns": 4,
+   "N_spliced": 0,
+   "followed": 0,
+   "F_follow_rate": null,
+   "X_contradiction_rate": null,
+   "E_excess": null,
+   "E_ci95": [
+    null,
+    null
+   ],
+   "E_dropped_followed": 0,
+   "off_route_failure_rate": 0.0,
+   "contradictions": 0,
+   "P_median": null,
+   "P_share_ge2": null,
+   "deposit_before_next_share": null
+  },
+  "repo-E": {
+   "turns": 49,
+   "N_spliced": 9,
+   "followed": 4,
+   "F_follow_rate": 0.4444,
+   "X_contradiction_rate": 0.25,
+   "E_excess": 0.0865,
+   "E_ci95": [
+    0.0,
+    0.2593
+   ],
+   "E_dropped_followed": 0,
+   "off_route_failure_rate": 0.0943,
+   "contradictions": 1,
+   "P_median": 0,
+   "P_share_ge2": 0.0,
+   "deposit_before_next_share": 1.0
+  },
+  "repo-F": {
+   "turns": 4,
+   "N_spliced": 0,
+   "followed": 0,
+   "F_follow_rate": null,
+   "X_contradiction_rate": null,
+   "E_excess": null,
+   "E_ci95": [
+    null,
+    null
+   ],
+   "E_dropped_followed": 0,
+   "off_route_failure_rate": 0.0,
+   "contradictions": 0,
+   "P_median": null,
+   "P_share_ge2": null,
+   "deposit_before_next_share": null
+  },
+  "repo-G": {
+   "turns": 0,
+   "N_spliced": 0,
+   "followed": 0,
+   "F_follow_rate": null,
+   "X_contradiction_rate": null,
+   "E_excess": null,
+   "E_ci95": [
+    null,
+    null
+   ],
+   "E_dropped_followed": 0,
+   "off_route_failure_rate": null,
+   "contradictions": 0,
+   "P_median": null,
+   "P_share_ge2": null,
+   "deposit_before_next_share": null
+  },
+  "SentAInce": {
+   "turns": 563,
+   "N_spliced": 312,
+   "followed": 160,
+   "F_follow_rate": 0.5128,
+   "X_contradiction_rate": 0.0688,
+   "E_excess": -0.0333,
+   "E_ci95": [
+    -0.1248,
+    0.0537
+   ],
+   "E_dropped_followed": 0,
+   "off_route_failure_rate": 0.0758,
+   "contradictions": 11,
+   "P_median": 0,
+   "P_share_ge2": 0.0909,
+   "deposit_before_next_share": 1.0
+  },
+  "repo-B": {
+   "turns": 237,
+   "N_spliced": 48,
+   "followed": 26,
+   "F_follow_rate": 0.5417,
+   "X_contradiction_rate": 0.0,
+   "E_excess": -0.0187,
+   "E_ci95": [
+    -0.0448,
+    0.0
+   ],
+   "E_dropped_followed": 0,
+   "off_route_failure_rate": 0.0427,
+   "contradictions": 0,
+   "P_median": null,
+   "P_share_ge2": null,
+   "deposit_before_next_share": null
+  },
+  "cursor_testbed": {
+   "turns": 22,
+   "N_spliced": 1,
+   "followed": 1,
+   "F_follow_rate": 1.0,
+   "X_contradiction_rate": 0.0,
+   "E_excess": 0.0,
+   "E_ci95": [
+    0.0,
+    0.0
+   ],
+   "E_dropped_followed": 0,
+   "off_route_failure_rate": 0.1,
+   "contradictions": 0,
+   "P_median": null,
+   "P_share_ge2": null,
+   "deposit_before_next_share": null
+  },
+  "lab": {
+   "turns": 229,
+   "N_spliced": 76,
+   "followed": 29,
+   "F_follow_rate": 0.3816,
+   "X_contradiction_rate": 0.0,
+   "E_excess": -0.065,
+   "E_ci95": [
+    -0.1101,
+    -0.0287
+   ],
+   "E_dropped_followed": 0,
+   "off_route_failure_rate": 0.0665,
+   "contradictions": 0,
+   "P_median": null,
+   "P_share_ge2": null,
+   "deposit_before_next_share": null
+  },
+  "repo-H": {
+   "turns": 60,
+   "N_spliced": 25,
+   "followed": 23,
+   "F_follow_rate": 0.92,
+   "X_contradiction_rate": 0.0,
+   "E_excess": -0.0435,
+   "E_ci95": [
+    -0.1714,
+    0.0
+   ],
+   "E_dropped_followed": 0,
+   "off_route_failure_rate": 0.0282,
+   "contradictions": 0,
+   "P_median": null,
+   "P_share_ge2": null,
+   "deposit_before_next_share": null
+  },
+  "research-vault": {
+   "turns": 934,
+   "N_spliced": 312,
+   "followed": 209,
+   "F_follow_rate": 0.6699,
+   "X_contradiction_rate": 0.0574,
+   "E_excess": 0.0042,
+   "E_ci95": [
+    -0.0259,
+    0.0352
+   ],
+   "E_dropped_followed": 0,
+   "off_route_failure_rate": 0.0696,
+   "contradictions": 12,
+   "P_median": 0.0,
+   "P_share_ge2": 0.0,
+   "deposit_before_next_share": 1.0
+  }
+ },
+ "verdict": {
+  "disposition": 0,
+  "evaluable": 2,
+  "passing": 0
+ }
+}

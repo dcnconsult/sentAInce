@@ -59,8 +59,9 @@ def test_every_dormant_claim_actually_ships_off():
 
 
 def test_known_dormant_organs_belt_and_braces():
-    """The five organs the docs promise ship OFF — asserted by name so a table rewrite can't silently
-    drop the invariant."""
-    for key in ("endocrine.mode", "eligibility_trace.mode", "provenance.mode",
-                "integrity.mode", "declarative.mode"):
+    """The four organs the docs promise ship OFF — asserted by name so a table rewrite can't silently
+    drop the invariant. F3 provenance left this list on 2026-10-26 (flipped to 'recency' on a
+    pre-registered +1, results/nonstationarity_v2/); it is pinned live below."""
+    for key in ("endocrine.mode", "eligibility_trace.mode", "integrity.mode", "declarative.mode"):
         assert _lookup(key) == "off", f"{key} ships {_lookup(key)!r}, docs promise 'off'"
+    assert _lookup("provenance.mode") == "recency"

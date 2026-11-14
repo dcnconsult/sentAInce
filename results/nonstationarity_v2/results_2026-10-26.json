@@ -1,0 +1,493 @@
+{
+  "per_repo": [
+    {
+      "provenance": {
+        "consequences": 678,
+        "edges": 142,
+        "edge_ts_coverage": 1.0,
+        "model_coverage": 1.0
+      },
+      "stamp_age": {
+        "stamped_tau": 20.166,
+        "tau_share_older_halflife": 1.0,
+        "tau_share_older_90d": 0.0,
+        "classes_2plus_edges": 18,
+        "dominant_change_share": 0.0
+      },
+      "temporal": {
+        "ts_coverage": 1.0,
+        "span_days": 16.92,
+        "recent_quartile_frac": 0.01,
+        "sessions": 6
+      },
+      "stationarity": {
+        "keyed_consequences": 678,
+        "drift_tv": 0.372,
+        "verb_churn": 0.625,
+        "n_born": 11,
+        "n_died": 9,
+        "distinct_verbs": 32
+      },
+      "stationarity_by_class": {
+        "classes_measured": 10,
+        "consequences": 649,
+        "mean_within_class_drift": 0.481,
+        "null_drift": 0.184,
+        "mean_excess_drift": 0.297
+      },
+      "repo": "repo-A"
+    },
+    {
+      "provenance": {
+        "consequences": 269,
+        "edges": 397,
+        "edge_ts_coverage": 1.0,
+        "model_coverage": 1.0
+      },
+      "stamp_age": {
+        "stamped_tau": 83.72,
+        "tau_share_older_halflife": 1.0,
+        "tau_share_older_90d": 1.0,
+        "classes_2plus_edges": 26,
+        "dominant_change_share": 0.0
+      },
+      "temporal": {
+        "ts_coverage": 1.0,
+        "span_days": 2.52,
+        "recent_quartile_frac": 0.141,
+        "sessions": 7
+      },
+      "stationarity": {
+        "keyed_consequences": 269,
+        "drift_tv": 0.8,
+        "verb_churn": 0.808,
+        "n_born": 16,
+        "n_died": 5,
+        "distinct_verbs": 26
+      },
+      "stationarity_by_class": {
+        "classes_measured": 15,
+        "consequences": 220,
+        "mean_within_class_drift": 0.497,
+        "null_drift": 0.277,
+        "mean_excess_drift": 0.221
+      },
+      "repo": "repo-C"
+    },
+    {
+      "provenance": {
+        "consequences": 21,
+        "edges": 30,
+        "edge_ts_coverage": 1.0,
+        "model_coverage": 1.0
+      },
+      "stamp_age": {
+        "stamped_tau": 7.249,
+        "tau_share_older_halflife": 1.0,
+        "tau_share_older_90d": 1.0,
+        "classes_2plus_edges": 4,
+        "dominant_change_share": 0.0
+      },
+      "temporal": {
+        "ts_coverage": 1.0,
+        "span_days": 0.08,
+        "recent_quartile_frac": 0.238,
+        "sessions": 1
+      },
+      "stationarity": {
+        "keyed_consequences": 21,
+        "drift_tv": 0.518,
+        "verb_churn": 0.6,
+        "n_born": 1,
+        "n_died": 2,
+        "distinct_verbs": 5
+      },
+      "stationarity_by_class": {
+        "classes_measured": 0,
+        "consequences": 0,
+        "mean_within_class_drift": null,
+        "null_drift": null,
+        "mean_excess_drift": null
+      },
+      "repo": "repo-D"
+    },
+    {
+      "provenance": {
+        "consequences": 329,
+        "edges": 100,
+        "edge_ts_coverage": 1.0,
+        "model_coverage": 1.0
+      },
+      "stamp_age": {
+        "stamped_tau": 32.355,
+        "tau_share_older_halflife": 1.0,
+        "tau_share_older_90d": 0.659,
+        "classes_2plus_edges": 16,
+        "dominant_change_share": 0.0
+      },
+      "temporal": {
+        "ts_coverage": 1.0,
+        "span_days": 38.15,
+        "recent_quartile_frac": 0.021,
+        "sessions": 7
+      },
+      "stationarity": {
+        "keyed_consequences": 329,
+        "drift_tv": 0.897,
+        "verb_churn": 0.75,
+        "n_born": 3,
+        "n_died": 9,
+        "distinct_verbs": 16
+      },
+      "stationarity_by_class": {
+        "classes_measured": 10,
+        "consequences": 269,
+        "mean_within_class_drift": 0.148,
+        "null_drift": 0.087,
+        "mean_excess_drift": 0.061
+      },
+      "repo": "repo-E"
+    },
+    {
+      "provenance": {
+        "consequences": 41,
+        "edges": 57,
+        "edge_ts_coverage": 1.0,
+        "model_coverage": 1.0
+      },
+      "stamp_age": {
+        "stamped_tau": 13.063,
+        "tau_share_older_halflife": 1.0,
+        "tau_share_older_90d": 0.783,
+        "classes_2plus_edges": 3,
+        "dominant_change_share": 0.0
+      },
+      "temporal": {
+        "ts_coverage": 1.0,
+        "span_days": 17.33,
+        "recent_quartile_frac": 0.585,
+        "sessions": 2
+      },
+      "stationarity": {
+        "keyed_consequences": 41,
+        "drift_tv": 0.712,
+        "verb_churn": 0.818,
+        "n_born": 2,
+        "n_died": 7,
+        "distinct_verbs": 11
+      },
+      "stationarity_by_class": {
+        "classes_measured": 2,
+        "consequences": 37,
+        "mean_within_class_drift": 0.683,
+        "null_drift": 0.367,
+        "mean_excess_drift": 0.315
+      },
+      "repo": "repo-F"
+    },
+    {
+      "provenance": {
+        "consequences": 0,
+        "edges": 0,
+        "edge_ts_coverage": null,
+        "model_coverage": null
+      },
+      "stamp_age": {
+        "stamped_tau": 0.0,
+        "tau_share_older_halflife": null,
+        "tau_share_older_90d": null,
+        "classes_2plus_edges": 0,
+        "dominant_change_share": null
+      },
+      "temporal": {
+        "ts_coverage": null,
+        "span_days": null,
+        "recent_quartile_frac": null,
+        "sessions": 0
+      },
+      "stationarity": {
+        "keyed_consequences": 0,
+        "drift_tv": null,
+        "verb_churn": null,
+        "born": null,
+        "died": null
+      },
+      "stationarity_by_class": {
+        "classes_measured": 0,
+        "consequences": 0,
+        "mean_within_class_drift": null,
+        "null_drift": null,
+        "mean_excess_drift": null
+      },
+      "repo": "repo-G"
+    },
+    {
+      "provenance": {
+        "consequences": 3820,
+        "edges": 153,
+        "edge_ts_coverage": 0.993,
+        "model_coverage": 0.974
+      },
+      "stamp_age": {
+        "stamped_tau": 25.687,
+        "tau_share_older_halflife": 0.184,
+        "tau_share_older_90d": 0.049,
+        "classes_2plus_edges": 17,
+        "dominant_change_share": 0.0
+      },
+      "temporal": {
+        "ts_coverage": 1.0,
+        "span_days": 120.62,
+        "recent_quartile_frac": 0.062,
+        "sessions": 110
+      },
+      "stationarity": {
+        "keyed_consequences": 3820,
+        "drift_tv": 0.227,
+        "verb_churn": 0.726,
+        "n_born": 53,
+        "n_died": 16,
+        "distinct_verbs": 95
+      },
+      "stationarity_by_class": {
+        "classes_measured": 105,
+        "consequences": 3533,
+        "mean_within_class_drift": 0.494,
+        "null_drift": 0.274,
+        "mean_excess_drift": 0.219
+      },
+      "repo": "SentAInce"
+    },
+    {
+      "provenance": {
+        "consequences": 1091,
+        "edges": 587,
+        "edge_ts_coverage": 1.0,
+        "model_coverage": 1.0
+      },
+      "stamp_age": {
+        "stamped_tau": 143.735,
+        "tau_share_older_halflife": 1.0,
+        "tau_share_older_90d": 0.498,
+        "classes_2plus_edges": 57,
+        "dominant_change_share": 0.0
+      },
+      "temporal": {
+        "ts_coverage": 1.0,
+        "span_days": 45.85,
+        "recent_quartile_frac": 0.096,
+        "sessions": 16
+      },
+      "stationarity": {
+        "keyed_consequences": 1091,
+        "drift_tv": 0.41,
+        "verb_churn": 0.609,
+        "n_born": 17,
+        "n_died": 11,
+        "distinct_verbs": 46
+      },
+      "stationarity_by_class": {
+        "classes_measured": 35,
+        "consequences": 1000,
+        "mean_within_class_drift": 0.361,
+        "null_drift": 0.223,
+        "mean_excess_drift": 0.138
+      },
+      "repo": "repo-B"
+    },
+    {
+      "provenance": {
+        "consequences": 147,
+        "edges": 31,
+        "edge_ts_coverage": 1.0,
+        "model_coverage": 1.0
+      },
+      "stamp_age": {
+        "stamped_tau": 12.796,
+        "tau_share_older_halflife": 1.0,
+        "tau_share_older_90d": 1.0,
+        "classes_2plus_edges": 2,
+        "dominant_change_share": 0.0
+      },
+      "temporal": {
+        "ts_coverage": 1.0,
+        "span_days": 1.02,
+        "recent_quartile_frac": 0.034,
+        "sessions": 18
+      },
+      "stationarity": {
+        "keyed_consequences": 147,
+        "drift_tv": 0.688,
+        "verb_churn": 0.694,
+        "n_born": 16,
+        "n_died": 9,
+        "distinct_verbs": 36
+      },
+      "stationarity_by_class": {
+        "classes_measured": 1,
+        "consequences": 17,
+        "mean_within_class_drift": 0.889,
+        "null_drift": 0.41,
+        "mean_excess_drift": 0.479
+      },
+      "repo": "cursor_testbed"
+    },
+    {
+      "provenance": {
+        "consequences": 1591,
+        "edges": 989,
+        "edge_ts_coverage": 1.0,
+        "model_coverage": 0.966
+      },
+      "stamp_age": {
+        "stamped_tau": 160.554,
+        "tau_share_older_halflife": 0.847,
+        "tau_share_older_90d": 0.635,
+        "classes_2plus_edges": 97,
+        "dominant_change_share": 0.021
+      },
+      "temporal": {
+        "ts_coverage": 1.0,
+        "span_days": 97.94,
+        "recent_quartile_frac": 0.224,
+        "sessions": 32
+      },
+      "stationarity": {
+        "keyed_consequences": 1591,
+        "drift_tv": 0.526,
+        "verb_churn": 0.726,
+        "n_born": 27,
+        "n_died": 58,
+        "distinct_verbs": 117
+      },
+      "stationarity_by_class": {
+        "classes_measured": 56,
+        "consequences": 1419,
+        "mean_within_class_drift": 0.579,
+        "null_drift": 0.377,
+        "mean_excess_drift": 0.202
+      },
+      "repo": "lab"
+    },
+    {
+      "provenance": {
+        "consequences": 220,
+        "edges": 192,
+        "edge_ts_coverage": 0.901,
+        "model_coverage": 0.891
+      },
+      "stamp_age": {
+        "stamped_tau": 39.218,
+        "tau_share_older_halflife": 1.0,
+        "tau_share_older_90d": 0.0,
+        "classes_2plus_edges": 19,
+        "dominant_change_share": 0.0
+      },
+      "temporal": {
+        "ts_coverage": 1.0,
+        "span_days": 45.28,
+        "recent_quartile_frac": 0.936,
+        "sessions": 6
+      },
+      "stationarity": {
+        "keyed_consequences": 220,
+        "drift_tv": 0.473,
+        "verb_churn": 0.6,
+        "n_born": 3,
+        "n_died": 6,
+        "distinct_verbs": 15
+      },
+      "stationarity_by_class": {
+        "classes_measured": 10,
+        "consequences": 187,
+        "mean_within_class_drift": 0.508,
+        "null_drift": 0.303,
+        "mean_excess_drift": 0.204
+      },
+      "repo": "repo-H"
+    },
+    {
+      "provenance": {
+        "consequences": 7383,
+        "edges": 149,
+        "edge_ts_coverage": 1.0,
+        "model_coverage": 0.953
+      },
+      "stamp_age": {
+        "stamped_tau": 19.331,
+        "tau_share_older_halflife": 0.03,
+        "tau_share_older_90d": 0.0,
+        "classes_2plus_edges": 16,
+        "dominant_change_share": 0.0
+      },
+      "temporal": {
+        "ts_coverage": 1.0,
+        "span_days": 107.25,
+        "recent_quartile_frac": 0.46,
+        "sessions": 72
+      },
+      "stationarity": {
+        "keyed_consequences": 7383,
+        "drift_tv": 0.269,
+        "verb_churn": 0.745,
+        "n_born": 58,
+        "n_died": 82,
+        "distinct_verbs": 188
+      },
+      "stationarity_by_class": {
+        "classes_measured": 104,
+        "consequences": 6805,
+        "mean_within_class_drift": 0.379,
+        "null_drift": 0.206,
+        "mean_excess_drift": 0.173
+      },
+      "repo": "research-vault"
+    }
+  ],
+  "aggregate": {
+    "provenance": {
+      "consequences": 15590,
+      "edges": 2827,
+      "edge_ts_coverage": 0.993,
+      "model_coverage": 0.977
+    },
+    "temporal": {
+      "ts_coverage": 1.0,
+      "span_days": 120.62,
+      "recent_quartile_frac": 0.196,
+      "sessions": 276
+    },
+    "stationarity": {
+      "keyed_consequences": 15590,
+      "drift_tv": 0.18,
+      "verb_churn": 0.714,
+      "n_born": 96,
+      "n_died": 129,
+      "distinct_verbs": 315
+    },
+    "stationarity_by_class": {
+      "classes_measured": 348,
+      "consequences": 14150,
+      "mean_within_class_drift": 0.428,
+      "null_drift": 0.24,
+      "mean_excess_drift": 0.188
+    }
+  },
+  "verdict": {
+    "F3_nonstationarity": {
+      "signal": true,
+      "excess_drift": 0.188,
+      "within_class_drift": 0.428,
+      "null_drift": 0.24,
+      "drift_tv_pooled": 0.18,
+      "classes_measured": 348,
+      "verb_churn": 0.714,
+      "instrument_absent": false
+    }
+  },
+  "thresholds": {
+    "drift_tv": 0.25,
+    "verb_churn": 0.4
+  },
+  "now": 1793059200
+}

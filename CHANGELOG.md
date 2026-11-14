@@ -5,6 +5,74 @@ What changed, and what it cost us to find out. Claims here must not exceed
 
 Numbers are measured on this project's own hardware unless stated, and negative results are kept.
 
+## [Unreleased]
+
+## [0.1.15] — 2026-11-14
+
+This release makes the memory readout **age-aware by default**, makes cross-repository orientation work
+for repositories that live anywhere on disk, and makes the metrics exporter fast again. The default change
+rests on a pre-registered re-gauge, published under `results/` with its frozen protocol.
+
+The kernel is untouched: the 99-test C1–C7 lock passes as before, there is no API change, and the
+ADR-016-pinned control plane (`hook.py`, `colony.py`, `epistemic.py`) is byte-identical. **One default
+changes** (recency decay, below), with a one-line opt-out that restores the previous readout exactly.
+
+### Changed
+
+- **Recency decay now ships on (`provenance.mode = recency`).**
+  - **Why:** a pre-registered re-gauge (`results/nonstationarity_v2/`) found within-class route drift above
+    its permutation null on 7 of 8 repos, with 99% of edges now timestamped.
+  - **What changes:** a route that is never reconfirmed reads at a decayed weight, with a 30-day half-life.
+    In practice this mostly lowers the weight shown for stale routes on quiet repos, and it changes which
+    route ranks first in about 1% of classes. A stale route is still offered.
+  - **Not claimed:** whether this helps an agent succeed is unmeasured.
+  - **Opt out:** `provenance.mode = off` restores the raw readout byte-identically.
+  - Red-team gap `rt-stale-1` closes, leaving 8 open.
+
+### Added
+
+- **The recall skill that `deploy install` writes now explains the readout it sees.** It covers
+  recency-decayed weights (a low weight means "not reconfirmed lately", not "known wrong"), the
+  "Contested" line, and the inventory notice. An existing deployment picks this up on its next
+  `python -m exocortex.deploy install`; the skill is only ever overwritten when it carries our marker.
+- **Consumer contract tests** (`exocortex/tests/test_consumer_contracts.py`). They pin the audit, colony,
+  keying, exporter and plugin surfaces that downstream tools depend on, so an incompatible change fails here
+  first.
+- **Three new read-only gauges**, each with its pre-registration and banked result:
+  `exocortex/gauge/masked_exit_gauge.py`, `failing_splice_gauge.py` and `read_time_validity_gauge.py`. Run
+  them on your own stores to see how your memory behaves (see *Measured* below for what ours showed).
+
+### Fixed
+
+- **Orientation finds repositories outside the projects root** (`exocortex/orient.py`). The estate view, the
+  `orient_repo` MCP tool and the CLI each guessed `<projects_root>/<name>`, so a repository that lives
+  elsewhere was never really read. One resolver now checks that path first and then the repo registry the
+  exporter already uses (`~/.exocortex/repos.json`, or `EXOCORTEX_REPO_REGISTRY`). A name with no known
+  root is never invented.
+- **Orientation no longer reports "no tests found" on large repositories.** The probe only saw tests in
+  directories its bounded file walk reached. Test presence is now checked directly at the root and one
+  package level down, independent of that cap.
+- **A capsule's declared status now outranks README prose** when orientation grades a repository, and a
+  capsule may declare its own activity.
+- **The exporter's `/metrics` no longer recomputes the gauge board on every scrape.** The gauges are
+  slow-moving statistics and are now memoized for 300 s. Measured on the maintainer's 17-repo estate
+  (2026-10-12): one render took 7.3 s before; after, 2.67 s cold and 0.31 s warm. Cached values carry their
+  age in `exocortex_gauge_board_age_seconds` and are never presented as computed this scrape.
+  `EXOCORTEX_EXPORTER_GAUGE_TTL_S=0` restores per-scrape computation. Per-repo metrics stay live.
+
+### Measured
+
+Three candidate mechanisms were gauged under frozen pre-registrations and are parked on their results:
+
+- *Credit-withholding for silenced, exit-masked commands* (`results/masked_exit_v1/`). The cost was small,
+  under 1% of deposits, but on one of two repos such commands were retried *less* often than comparable
+  ones, so the rule's own decision criterion was not met. The red-team gap stays pinned.
+- *A "failing" marker for a suggested route* (`results/failing_splice_v1/`). Suggested routes fail rarely
+  (6–7% of followed turns), like the same commands do elsewhere, and are never re-suggested unchanged.
+- *A read-time check of the files a served memory cites* (`results/read_time_validity_v1/`). Nothing served
+  cites a file that no longer exists, because the measured repositories almost never delete or rename
+  files. Parked until a repository with real file churn shows the need.
+
 ## [0.1.14] — 2026-10-12
 
 This release is about **what the agent is told about its own memory**. `memory_status` reports how many

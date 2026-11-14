@@ -14,8 +14,8 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
 
 - **99 frozen kernel-lock tests** — the C1–C7 evidence lock (69) + 30 domain-crucible/adapter — **untouched**
   across this entire arc. This is the load-bearing guarantee.
-- **523 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** + **120 tuner** tests, all
-  green (plus **9 strict-xfail memory red-team gaps**, pinned open on purpose in `exocortex/tests/redteam/`) (one exocortex test — the alert-engine backtest over a live audit store — auto-skips on storeless
+- **621 Exocortex/organism tests** + **49 battle-test** + **37 cerebral-substrate** + **120 tuner** tests, all
+  green (plus **8 strict-xfail memory red-team gaps**, pinned open on purpose in `exocortex/tests/redteam/`) (one exocortex test — the alert-engine backtest over a live audit store — auto-skips on storeless
   clones). The lock and the organ tests are separate suites; organ work never edits the lock.
   Note: `pytest -q` at the repo root collects only the 99-lock (`testpaths`), so the organ suites must be run
   by path — a gate nobody runs is not a gate (ADR-016).
@@ -96,6 +96,22 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
 
 ## LIVE (running, accruing telemetry)
 - **Procedural colony** — deposits/splices on the user's real sessions (per-project `colony_*.json`).
+- **Provenance recency decay (organ F3), `provenance.mode = recency` since 2026-10-26.** Each deposited edge
+  is stamped `(ts, model)`, and its τ is decayed **at readout** with a 30-day half-life. On-disk τ is
+  unchanged, and an unstamped legacy edge is never penalized.
+  - **Evidence:** a pre-registered re-gauge on go-forward stamps (`results/nonstationarity_v2/`). Within-class
+    verb-mix drift exceeds its permutation null by ≥ 0.10 on **7 of 8** evaluable stores (this repo 0.219,
+    research vault 0.173). Edge stamp coverage is 0.993 and model-id coverage 0.977.
+  - **The v1 instrument gap is closed.** v1 had 0% coverage, so version-distance was unmeasurable.
+  - **The flip is an ADR-003 judgment on that +1.**
+  - **Honest size:**
+    - It mostly rescales stale τ on quiet repos and re-ranks the strongest edge in only 2 of 266 classes.
+    - A stale route still splices, because the abstain counts deposits, not τ.
+    - It does not age out a route that keeps failing inside an otherwise active class.
+  - **Unmeasured:** whether decayed readout helps an agent reach `exit 0`. This repo ran `recency` locally
+    from 2026-07-30 with no harm recorded, and no efficacy measured either.
+  - **Inert:** the version term (`full`), until model-id sourcing is wired at readout.
+  - **Red-team `rt-stale-1` is closed.** Its test reads the Genome default.
 - **Read-only memory MCP server** — exposes the earned colony + declarative wiki to any MCP host (Claude
   Desktop/Code, Cursor, Cline, …) as recall tools (`recall_procedural`, `recall_notes`, `memory_status`,
   `list_repos`), multi-repo via `EXOCORTEX_PROJECTS_ROOT`. **Read-only w.r.t. MEMORY proven** by a byte-level
@@ -149,13 +165,6 @@ be small or not yet measured). Numbers are from this repo (re-verify by re-runni
   unmet: the on-body bridge-validity gauge **does not exist**, and `bridge_gauge` states that executable
   validity of a direct `A→D` is *not offline-decidable* (only the body settles whether skipped steps
   mattered); its topological path counts are self-flagged as cycle-inflated. `declarative.bridge.mode = off`.
-- **Provenance / non-stationarity (organ F3)** — stamps each deposited edge with `(ts, model)` (model sourced
-  from the transcript tail, since the hook stdin carries none) and decays τ AT READOUT by recency (+ a
-  version-distance penalty across model upgrades). Gauge (`exocortex/gauge/nonstationarity_gauge.py`): the
-  instrument was **absent retroactively** (0% model/ts coverage → version-distance unmeasurable; F3 is a
-  *go-forward* instrument, the W6 anti-poisoning prerequisite), and the recency signal — de-confounded by
-  goal-class and de-biased by a permutation null — is **real-but-modest (excess ≈ 0.20** over the small-sample
-  floor). `provenance.mode = off` (recording is non-destructive; only readout re-ranks when flipped).
 - **Integrity (ADR-009)** — kernel-lock apoptosis (hash the frozen safety DNA vs a committed baseline; a
   mismatch fails closed `exit 1` at SessionStart) + a hash-chained audit ledger. Ships `integrity.mode = off`
   so a stale baseline never bricks dev; enforced on the live TAO deployment (66 frozen files, `ok=True`).

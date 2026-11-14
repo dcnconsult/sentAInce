@@ -6,7 +6,16 @@ from datetime import date, datetime
 
 import json
 
+import pytest
+
 from exocortex import orient
+
+
+@pytest.fixture(autouse=True)
+def _isolate_fleet_registry(tmp_path, monkeypatch):
+    """Never read the HOST's ~/.exocortex/repos.json: once its research-vault entry gained a resolvable
+    host_root it leaked into the estate tests (2026-10-13). Tests that need a registry set their own."""
+    monkeypatch.setenv(orient.REGISTRY_ENV, str(tmp_path / "no-registry.json"))
 
 TODAY = date(2026, 7, 8)
 
@@ -291,3 +300,153 @@ def test_seed_marks_superseded_status(tmp_path, monkeypatch):
     _repo(tmp_path, "BravoOld", deployed=True)
     orient.seed(tmp_path)
     assert (orient.load_capsule(tmp_path / "BravoOld") or {})["canonical_status"] == "superseded"
+
+
+# ----------------------------------------------------------------------------- estate review 2026-10-12 regressions
+_LOG_RUNG_PROSE = _LOG_FIXTURE.replace(
+    "| 1 | **Alpha** | 2026-06-30 | 1d | Beta | High | **A** | Flagship, actively developed. |",
+    "| 1 | **Alpha** | 2026-06-30 | 1d | Beta | High | **A** | Rung 13's 0 SUPERSEDED-BY-DATE by branch P; "
+    "rung 14 open. |")
+
+
+def _capsule(root, **fields):
+    cap = orient.skeleton(root.name)
+    cap.update(fields)
+    orient.capsule_path(root).parent.mkdir(parents=True, exist_ok=True)
+    orient.capsule_path(root).write_text(json.dumps(cap), encoding="utf-8")
+
+
+def test_prose_mentioning_a_superseded_result_does_not_supersede_a_canonical_repo(tmp_path, monkeypatch):
+    """An estate repo (repo-A in public results): its log prose says a RUNG was superseded; the substring graded the repo itself."""
+    _write_log(tmp_path, monkeypatch, _LOG_RUNG_PROSE)
+    root = _repo(tmp_path, "Alpha", mtime=date(2026, 6, 30))
+    _capsule(root, canonical_status="canonical", last_reviewed="2026-07-07")
+    v = orient.orient("Alpha", root, today=TODAY)
+    assert v["declared"]["superseded"] is False and v["grade"] == "High"
+
+
+def test_prose_still_supersedes_when_the_capsule_is_silent(tmp_path, monkeypatch):
+    """The ledger-label convention survives where no capsule speaks (BravoOld's prose + link)."""
+    _write_log(tmp_path, monkeypatch, _LOG_RUNG_PROSE)
+    root = _repo(tmp_path, "Alpha", mtime=date(2026, 6, 30))
+    v = orient.orient("Alpha", root, today=TODAY)                # no capsule: prose rule applies
+    assert v["declared"]["superseded"] is True
+
+
+def test_an_explicitly_superseded_capsule_stays_superseded(tmp_path, monkeypatch):
+    _write_log(tmp_path, monkeypatch)
+    root = _repo(tmp_path, "Alpha", mtime=date(2026, 6, 30))
+    _capsule(root, canonical_status="superseded", last_reviewed="2026-07-07")
+    assert orient.orient("Alpha", root, today=TODAY)["declared"]["superseded"] is True
+
+
+def test_capsule_declared_activity_can_clear_a_drift_low(tmp_path, monkeypatch):
+    """'Re-orient, then update the capsule' must be able to clear activity drift; before, only the log could."""
+    _write_log(tmp_path, monkeypatch)
+    root = _repo(tmp_path, "Liar", mtime=date(2026, 7, 6))       # log says 2026-01-01 -> drift Low
+    _capsule(root, canonical_status="canonical", last_reviewed="2026-07-07")
+    assert orient.orient("Liar", root, today=TODAY)["grade"] == "Low"
+    _capsule(root, canonical_status="canonical", last_reviewed="2026-07-07", declared_activity="2026-07-06")
+    v = orient.orient("Liar", root, today=TODAY)
+    assert v["declared"]["declared_activity"] == date(2026, 7, 6) and v["grade"] == "High"
+
+
+def test_an_older_capsule_activity_never_overrides_a_newer_log_row(tmp_path, monkeypatch):
+    _write_log(tmp_path, monkeypatch)
+    root = _repo(tmp_path, "Alpha", mtime=date(2026, 6, 30))
+    _capsule(root, canonical_status="canonical", last_reviewed="2026-07-07", declared_activity="2026-01-01")
+    assert orient.orient("Alpha", root, today=TODAY)["declared"]["declared_activity"] == date(2026, 6, 30)
+
+
+# ----------------------------------------------------------------------------- 2026-10-13: out-of-root repos + test probe
+def _registry(tmp_path, monkeypatch, entries):
+    p = tmp_path / "repos.json"
+    p.write_text(json.dumps({"repos": entries}), encoding="utf-8")
+    monkeypatch.setenv(orient.REGISTRY_ENV, str(p))
+    return p
+
+
+def test_registry_host_root_beats_an_in_container_root(tmp_path, monkeypatch):
+    ext = _repo(tmp_path / "elsewhere", "Ext")
+    _registry(tmp_path, monkeypatch, [{"name": "Ext", "root": "/projects-ext/Ext", "host_root": str(ext)}])
+    assert orient.registry_roots() == {"Ext": ext}
+
+
+def test_registry_unreadable_or_unresolvable_is_empty(tmp_path, monkeypatch):
+    monkeypatch.setenv(orient.REGISTRY_ENV, str(tmp_path / "missing.json"))
+    assert orient.registry_roots() == {}
+    _registry(tmp_path, monkeypatch, [{"name": "Ghost", "root": "/projects-ext/Ghost"}])
+    assert orient.registry_roots() == {}                        # no host path exists -> omitted, never invented
+
+
+def test_resolve_root_prefers_the_projects_root_then_the_registry(tmp_path, monkeypatch):
+    proot = tmp_path / "estate"
+    inside = _repo(proot, "Alpha")
+    ext = _repo(tmp_path / "elsewhere", "Ext")
+    _registry(tmp_path, monkeypatch, [{"name": "Alpha", "host_root": str(ext)}, {"name": "Ext", "host_root": str(ext)}])
+    assert orient.resolve_root("Alpha", proot) == inside
+    assert orient.resolve_root("Ext", proot) == ext
+    assert orient.resolve_root("Nobody", proot) is None
+
+
+def test_an_out_of_root_repo_is_oriented_from_its_own_capsule(tmp_path, monkeypatch):
+    """The research vault: estate-external, registered with an in-container root; before, its capsule was
+    never read and it graded on the estate audit date (Low, 'review stale')."""
+    _write_log(tmp_path, monkeypatch)
+    proot = tmp_path / "estate"
+    proot.mkdir()
+    ext = _repo(tmp_path / "elsewhere", "Ext", mtime=date(2026, 7, 6))
+    cap = orient.skeleton("Ext")
+    cap.update({"canonical_status": "canonical", "tier": "A", "last_reviewed": "2026-07-07",
+                "declared_activity": "2026-07-06"})
+    orient.capsule_path(ext).parent.mkdir(parents=True)
+    orient.capsule_path(ext).write_text(json.dumps(cap), encoding="utf-8")
+    _registry(tmp_path, monkeypatch, [{"name": "Ext", "root": "/projects-ext/Ext", "host_root": str(ext)}])
+    repos = {r["name"]: r for r in orient.estate_repos(proot)}
+    assert repos["Ext"]["root"] == ext
+    v = orient.orient("Ext", repos["Ext"]["root"], today=TODAY)
+    assert v["probe"]["capsule_present"] and v["grade"] == "High"
+
+
+def test_tests_behind_the_probe_cap_are_still_found(tmp_path, monkeypatch):
+    """tao-zeta: docs/ (399 files) exhausted the cap before tests/ (47 files) was visited."""
+    monkeypatch.setattr(orient, "_PROBE_CAP", 5)
+    root = _repo(tmp_path, "Big", tests=False)
+    (root / "docs").mkdir()
+    for i in range(20):
+        (root / "docs" / f"n{i:03d}.md").write_text("x", encoding="utf-8")
+    (root / "tests").mkdir()                                     # sorts after docs/
+    (root / "tests" / "test_a.py").write_text("def test_a():\n    pass\n", encoding="utf-8")
+    p = orient.probe(root)
+    assert p["files_seen"] == 5 and p["tests_present"] is True
+
+
+def test_package_level_tests_are_found(tmp_path):
+    root = _repo(tmp_path, "Pkg", tests=False)
+    (root / "b0lab" / "tests").mkdir(parents=True)
+    assert orient.probe(root)["tests_present"] is True
+
+
+def test_a_repo_without_tests_still_reads_no_tests(tmp_path):
+    root = _repo(tmp_path, "Bare", tests=False)
+    (root / "docs").mkdir()
+    (root / "docs" / "readme.md").write_text("x", encoding="utf-8")
+    assert orient.probe(root)["tests_present"] is False
+
+
+def test_mcp_orient_repo_resolves_an_out_of_root_repo(tmp_path, monkeypatch):
+    pytest.importorskip("mcp")          # optional extra: the MCP server is not importable without it
+    _write_log(tmp_path, monkeypatch)
+    proot = tmp_path / "estate"
+    proot.mkdir()
+    monkeypatch.setenv("EXOCORTEX_PROJECTS_ROOT", str(proot))
+    monkeypatch.delenv("EXOCORTEX_STATE_DIR", raising=False)
+    ext = _repo(tmp_path / "elsewhere", "Ext")
+    cap = orient.skeleton("Ext")
+    cap.update({"canonical_status": "canonical", "last_reviewed": "2026-07-07"})
+    orient.capsule_path(ext).parent.mkdir(parents=True)
+    orient.capsule_path(ext).write_text(json.dumps(cap), encoding="utf-8")
+    _registry(tmp_path, monkeypatch, [{"name": "Ext", "root": "/projects-ext/Ext", "host_root": str(ext)}])
+    from exocortex import mcp_server
+    out = mcp_server.orient_repo("Ext")
+    assert "Repo Orientation Capsule — Ext" in out and "last reviewed: 2026-07-07" in out

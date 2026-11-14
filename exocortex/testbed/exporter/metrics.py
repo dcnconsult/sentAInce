@@ -35,6 +35,8 @@ import copy
 import json
 import os
 import sys
+import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote
@@ -53,7 +55,9 @@ DEFAULT_STATE_DIR = _ROOT / ".claude" / "exocortex"
 # (a bare list is the accepted legacy form). Readers MUST ignore unknown keys — the file is a shared
 # contract that downstream consumers may extend; the web editor preserves keys it doesn't know verbatim.
 ESTATE_DEFAULT = Path.home() / ".exocortex" / "repos.json"
-ESTATE_ENTRY_KEYS = ("name", "root", "tags", "display")   # the keys the web editor itself writes
+ESTATE_ENTRY_KEYS = ("name", "root", "host_root", "tags", "display")   # the keys the web editor writes;
+# `host_root` = the HOST path of an out-of-root repo whose `root` is an in-container mount (read by
+# exocortex.orient.registry_roots); kept here so an editor re-add never silently drops it.
 CONSEQUENCE_EVENTS = ("PostToolUse", "PostToolUseFailure")
 STATE_SUBPATH = (".claude", "exocortex")
 CONFIG_FILENAME = "exocortex_config.json"
@@ -484,8 +488,42 @@ def _emit_global_attribution(p: Prom) -> None:
 
 
 # ----------------------------------------------------------------------------- live gauges (wired in-process)
+# TTL memo. Profiled 2026-10-12 over the live 17-repo estate: one render took 7.3 s, of which 6.6 s was
+# these gauges (5.2 s the non-stationarity gauge alone) and only 0.57 s the per-repo collection. They are
+# slow-moving estate statistics recomputed from scratch on every scrape, which pushed /metrics past the
+# lab's 8 s watermark. Cached values are labelled by `exocortex_gauge_board_age_seconds`, never passed off
+# as computed this scrape. `EXOCORTEX_EXPORTER_GAUGE_TTL_S=0` restores per-scrape computation.
+_GAUGE_TTL_DEFAULT_S = 300.0
+_GAUGE_CACHE: dict = {}                    # key -> (computed_at_monotonic, result)
+_GAUGE_LOCK = threading.Lock()             # ThreadingHTTPServer: one cold computation, never two in parallel
+
+
+def _gauge_ttl_s() -> float:
+    try:
+        return max(0.0, float(os.environ.get("EXOCORTEX_EXPORTER_GAUGE_TTL_S", _GAUGE_TTL_DEFAULT_S)))
+    except ValueError:
+        return _GAUGE_TTL_DEFAULT_S
+
+
 def _collect_gauges(repos: list[dict]) -> dict:
-    """Run the LIVE, stdlib (numpy-free) gauges ONCE per scrape over the exporter's repo set → per-repo
+    """``_compute_gauges`` behind the TTL memo, keyed by the exact repo set. Adds ``age_s``: seconds since
+    the returned values were computed (0.0 when computed for this scrape)."""
+    ttl = _gauge_ttl_s()
+    key = tuple(sorted((r["name"], str(r["state_dir"])) for r in repos))
+    with _GAUGE_LOCK:
+        hit = _GAUGE_CACHE.get(key)
+        now = time.monotonic()
+        if ttl > 0 and hit is not None and now - hit[0] < ttl:
+            return {**hit[1], "age_s": round(now - hit[0], 1)}
+        res = _compute_gauges(repos)
+        _GAUGE_CACHE.clear()                   # one repo set at a time — no unbounded growth
+        if ttl > 0:
+            _GAUGE_CACHE[key] = (time.monotonic(), res)
+        return {**res, "age_s": 0.0}
+
+
+def _compute_gauges(repos: list[dict]) -> dict:
+    """Run the LIVE, stdlib (numpy-free) gauges over the exporter's repo set → per-repo
     metrics + a verdict signal per candidate organ. Each gauge is wrapped fail-open (a broken gauge can't
     sink the scrape). The offline/simulation (numpy) gauges are NOT run here — their static verdicts live in
     ``OFFLINE_GAUGE_VERDICTS``. Returns ``{"per_repo": {repo: {metric: value}}, "signals": {gauge: (0|1, note)}}``."""
@@ -567,7 +605,10 @@ def render(repos: list[dict]) -> str:
     p.gauge("exocortex_exporter_up", 1, "1 if the exporter served this scrape.")
     p.gauge("exocortex_repos_discovered", len(repos), "Number of repos the exporter is reporting on.")
     _emit_global_attribution(p)
-    gauges = _collect_gauges(repos)                  # live stdlib gauges, once over the whole repo set
+    gauges = _collect_gauges(repos)                  # live stdlib gauges over the whole repo set (TTL memo)
+    p.gauge("exocortex_gauge_board_age_seconds", gauges.get("age_s", 0.0),
+            "Seconds since the live gauge board + per-repo gauge metrics were computed (0 = this scrape; "
+            "cached up to EXOCORTEX_EXPORTER_GAUGE_TTL_S, default 300).")
     _emit_gauge_board(p, gauges)                     # global verdict board (live signals + offline static)
     for r in repos:
         p.base_labels = {"repo": r["name"]}
@@ -579,7 +620,8 @@ def render(repos: list[dict]) -> str:
         except Exception as e:                       # one bad repo must not sink the whole scrape
             p.gauge("exocortex_repo_error", 1, "1 if this repo failed to collect.", {"error": str(e)[:120]})
         for mname, val in (gauges["per_repo"].get(r["name"]) or {}).items():   # per-repo live gauge metrics
-            p.gauge("exocortex_" + mname, val, "Live gauge metric (per-repo, computed in-process this scrape).")
+            p.gauge("exocortex_" + mname, val, "Live gauge metric (per-repo, computed in-process; see "
+                                               "exocortex_gauge_board_age_seconds for its age).")
         p.base_labels = {}
     return p.render()
 

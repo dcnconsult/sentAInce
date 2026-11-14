@@ -1,0 +1,219 @@
+{
+ "stores": {
+  "SentAInce": {
+   "procedural": {
+    "servable_classes": 36,
+    "classes_with_artifact_bound_node": 0,
+    "artifact_nodes": {},
+    "tau_floor_classes": 25,
+    "tau_floor_share": 0.6944
+   },
+   "declarative": {
+    "D1": {
+     "credited_ids": 64,
+     "present": 59,
+     "orphans": 5,
+     "evaluable": true,
+     "citations": {
+      "present": 81,
+      "unresolved": 13
+     },
+     "V1": 0.0,
+     "V1_tau_weighted": 0.0
+    },
+    "D2": {
+     "offered_docs": 95,
+     "present_docs": 94,
+     "gone_docs": 1,
+     "gone_offers": 1,
+     "evaluable": true,
+     "citations": {
+      "unresolved": 112,
+      "present": 1270
+     },
+     "V2": 0.0,
+     "U2": 0.0
+    },
+    "D0": {
+     "blocks": 2924,
+     "citations": {
+      "present": 1868,
+      "unresolved": 178
+     },
+     "share_blocks_citing_vanished": 0.0
+    }
+   },
+   "declarative_serving": true
+  },
+  "repo-B": {
+   "procedural": {
+    "servable_classes": 53,
+    "classes_with_artifact_bound_node": 0,
+    "artifact_nodes": {},
+    "tau_floor_classes": 23,
+    "tau_floor_share": 0.434
+   },
+   "declarative": {
+    "D1": {
+     "credited_ids": 16,
+     "present": 16,
+     "orphans": 0,
+     "evaluable": false,
+     "citations": {
+      "present": 9
+     },
+     "V1": 0.0,
+     "V1_tau_weighted": 0.0
+    },
+    "D2": {
+     "offered_docs": 107,
+     "present_docs": 107,
+     "gone_docs": 0,
+     "gone_offers": 0,
+     "evaluable": true,
+     "citations": {
+      "present": 391,
+      "unresolved": 66
+     },
+     "V2": 0.0,
+     "U2": 0.0
+    },
+    "D0": {
+     "blocks": 14229,
+     "citations": {
+      "present": 943,
+      "unresolved": 144
+     },
+     "share_blocks_citing_vanished": 0.0
+    }
+   },
+   "declarative_serving": true
+  },
+  "lab": {
+   "procedural": {
+    "servable_classes": 91,
+    "classes_with_artifact_bound_node": 1,
+    "artifact_nodes": {
+     "present": 1
+    },
+    "tau_floor_classes": 63,
+    "tau_floor_share": 0.6923
+   },
+   "declarative": null,
+   "declarative_serving": false
+  },
+  "repo-A": {
+   "procedural": {
+    "servable_classes": 17,
+    "classes_with_artifact_bound_node": 0,
+    "artifact_nodes": {},
+    "tau_floor_classes": 4,
+    "tau_floor_share": 0.2353
+   },
+   "declarative": null,
+   "declarative_serving": false
+  },
+  "repo-C": {
+   "procedural": {
+    "servable_classes": 25,
+    "classes_with_artifact_bound_node": 0,
+    "artifact_nodes": {},
+    "tau_floor_classes": 16,
+    "tau_floor_share": 0.64
+   },
+   "declarative": null,
+   "declarative_serving": false
+  },
+  "repo-E": {
+   "procedural": {
+    "servable_classes": 18,
+    "classes_with_artifact_bound_node": 0,
+    "artifact_nodes": {},
+    "tau_floor_classes": 5,
+    "tau_floor_share": 0.2778
+   },
+   "declarative": null,
+   "declarative_serving": false
+  },
+  "repo-H": {
+   "procedural": {
+    "servable_classes": 17,
+    "classes_with_artifact_bound_node": 0,
+    "artifact_nodes": {},
+    "tau_floor_classes": 3,
+    "tau_floor_share": 0.1765
+   },
+   "declarative": null,
+   "declarative_serving": false
+  },
+  "research-vault": {
+   "procedural": {
+    "servable_classes": 32,
+    "classes_with_artifact_bound_node": 0,
+    "artifact_nodes": {},
+    "tau_floor_classes": 15,
+    "tau_floor_share": 0.4688
+   },
+   "declarative": null,
+   "declarative_serving": false
+  }
+ },
+ "verdict": {
+  "disposition": -1,
+  "passing": [],
+  "evaluable_populations": 3,
+  "precision": null
+ },
+ "run": {
+  "date": "2026-10-26",
+  "now_epoch": 1793036619,
+  "prereg_commit": "a1a46a9",
+  "gauge": "exocortex/gauge/read_time_validity_gauge.py"
+ },
+ "precision_audit": {
+  "required": false,
+  "reason": "no passing store (PREREG \u00a75)"
+ },
+ "sensitivity_unresolved_as_vanished": {
+  "_label": "NOT the frozen metric: worst case if every unresolved citation were stale",
+  "SentAInce": {
+   "V1": 0.1356,
+   "V1_tau_weighted": 0.2298,
+   "V2": 0.0248,
+   "U2": 0.2824,
+   "D0": 0.0407
+  },
+  "repo-B": {
+   "V1": 0.0,
+   "V1_tau_weighted": 0.0,
+   "V2": 0.0098,
+   "U2": 0.2028,
+   "D0": 0.0065
+  }
+ },
+ "d1_unresolved_inspection": {
+  "_label": "post-run inspection of the 8 SentAInce D1 notes with an unresolved citation (kinds only)",
+  "notes": 8,
+  "external_file_outside_repo": 2,
+  "generated_build_dir": 1,
+  "extraction_artifact": 1,
+  "cross_repo_dir": 2,
+  "proposed_never_created": 1,
+  "never_tracked_scripts_possibly_stale": 1,
+  "V1_if_possibly_stale_counted": 0.0169
+ },
+ "churn": {
+  "SentAInce": {
+   "commits": 514,
+   "ever_tracked_paths": 1109,
+   "deleted_paths": 2,
+   "renames": 0
+  },
+  "repo-B": {
+   "commits": 90,
+   "ever_tracked_paths": 1820,
+   "deleted_paths": 0,
+   "renames": 0
+  }
+ }
+}
